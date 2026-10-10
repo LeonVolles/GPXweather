@@ -93,6 +93,30 @@ today's goal.
 If you declined location access by mistake: iPhone **Settings → Privacy &
 Security → Location Services → Safari Websites → While Using the App**.
 
+### At the end of the day
+
+You have two ways to close a day:
+
+- **🏁 End today here** (on today's card) saves your current position as the
+  end of today. The plan then continues tomorrow from there with your daily
+  distance. Tapped too early? **Undo** reopens the day.
+- **📤 Upload today's ride (GPX)** – load the track you recorded with your
+  bike computer, watch or phone app (Garmin, Wahoo, Komoot, Strava …). The app
+  finds where the ride lies on your route, ends that day there and adds the
+  real numbers to the **✓ Completed** list: time on the road and average speed.
+  Your recorded ride is drawn on the map. You can also add earlier days later
+  with **📤 Add a ridden day** in the Completed list – the date is taken from
+  the GPX.
+
+### Your pace
+
+From your completed days the app learns how far you really ride per day, and –
+from uploaded rides – how fast you travel including breaks. With **Plan with my
+average from completed days** switched on in Settings (default), the coming
+stages, riding times and the arrival date use your own pace instead of the
+values you set. "Your pace" in *What's ahead* shows the numbers, based on your
+last seven riding days.
+
 ### 4. Read the forecast
 
 - The green box at the top shows **today's stage**.

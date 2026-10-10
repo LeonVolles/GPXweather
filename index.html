@@ -214,6 +214,7 @@
     <button type="button" id="deleteTour" title="Remove this tour from this device" aria-label="Remove this tour">🗑</button>
   </div>
   <input type="file" id="file" class="file-input">
+  <input type="file" id="rideFile" class="file-input">
   <label class="drop" id="drop" for="file">
     <strong id="drop-title">Drop a GPX file here or tap to choose one</strong>
     <span class="muted small">The file stays on your device. Nothing is uploaded.</span>
@@ -234,6 +235,7 @@
           <input type="range" id="perDay" min="10" max="250" step="5" value="80">
           <input type="number" id="perDayNum" min="5" max="400" step="1" value="80" inputmode="numeric" aria-label="Distance per day in km">
         </div>
+        <div class="muted small" id="perDayNote"></div>
       </div>
       <div class="ctl">
         <label for="startKm">Current position: km <span id="startKmOut" class="num">0</span> of <span id="totalOut" class="num">–</span></label>
@@ -261,6 +263,11 @@
         <div class="models" id="models"></div>
       </div>
       <div class="ctl">
+        <label>Your pace</label>
+        <label class="check"><input type="checkbox" id="useHistory"> Plan with my average from completed days</label>
+        <div class="muted small" id="historyInfo"></div>
+      </div>
+      <div class="ctl">
         <label>When the app opens</label>
         <label class="check"><input type="checkbox" id="autoGps"> Update my position from GPS</label>
       </div>
@@ -286,6 +293,7 @@
     <div class="small muted" style="margin-top:8px">
       <span class="badge"><span class="swatch" style="background:var(--route-a)"></span>/<span class="swatch" style="background:var(--route-b)"></span> stages</span> ·
       <span class="badge"><span class="swatch" style="background:var(--ridden)"></span> already ridden</span> ·
+      <span class="badge"><span class="swatch" style="background:var(--m5)"></span> your recorded rides</span> ·
       <span class="badge">┄ gap in the GPX (straight line)</span> ·
       <span class="badge"><span class="dot" style="background:var(--critical)"></span> your position</span>
     </div>
@@ -587,6 +595,7 @@ const S = {
   speed: DEFAULTS.speed,
   models: new Set(MODELS.filter((m) => m.on).map((m) => m.id)),
   autoGps: false,
+  useHistory: true,       // plan future stages with the pace of the completed days
   days: {},               // ride log: "YYYY-MM-DD" -> { start, end } in km
   stages: [],
   tours: [],              // [{ id, name, total }]
@@ -935,8 +944,15 @@ function rangeStats(a, b) {
 
 function logPosition(prevKm, nextKm) {
   const d = todayStr();
-  if (S.days[d]) S.days[d].end = nextKm;
+  const e = S.days[d];
+  if (e && e.closed) return;   // the day was already ended; later position changes don't alter it
+  if (e) e.end = nextKm;
   else S.days[d] = { start: prevKm, end: nextKm };
+}
+
+function todayClosed() {
+  const e = S.days[todayStr()];
+  return !!(e && e.closed);
 }
 
 // Where today's ride started (km): today's log entry, otherwise the current position.
@@ -945,26 +961,167 @@ function todayStartKm() {
   return Math.min(e ? e.start : S.startKm, S.startKm);
 }
 
-// Days already ridden (before today), plus unlogged parts of the route behind you.
+// Days already ridden (before today, or today once it is ended), plus unlogged parts behind you.
 function completedDays() {
   const T = S.track;
   if (!T) return [];
   const today = todayStr();
-  const endKm = S.date === today ? todayStartKm() : S.startKm;
-  const logged = Object.keys(S.days).filter((d) => d < today).sort()
-    .map((d) => ({ date: d, a: S.days[d].start * 1000, b: Math.min(S.days[d].end, endKm) * 1000 }))
-    .filter((r) => r.b - r.a > 50);
+  const closed = todayClosed();
+  const endKm = closed || S.date !== today ? S.startKm : todayStartKm();
+  const logged = Object.keys(S.days).filter((d) => d < today || (d === today && closed)).sort()
+    .map((d) => ({ date: d, a: S.days[d].start * 1000, b: Math.min(S.days[d].end, Math.max(endKm, S.days[d].end)) * 1000 }))
+    .filter((r) => r.b - r.a > 50 || S.days[r.date].closed);
   const out = [];
   let covered = 0;
   for (const r of logged) {
     if (r.a - covered > 100) out.push({ date: null, a: covered, b: r.a });
-    const a = Math.max(r.a, covered);
-    if (r.b - a > 50) out.push({ date: r.date, a, b: r.b });
+    const a = Math.min(Math.max(r.a, covered), Math.max(r.b, covered));
+    if (r.b - a > 50 || S.days[r.date].closed) out.push({ date: r.date, a, b: Math.max(r.b, a) });
     covered = Math.max(covered, r.b);
   }
   if (endKm * 1000 - covered > 100) out.push({ date: null, a: covered, b: endKm * 1000 });
   let n = 0;
-  return out.map((r) => ({ ...rangeStats(r.a, r.b), date: r.date, no: r.date ? ++n : null }));
+  return out.map((r) => ({
+    ...rangeStats(r.a, r.b), date: r.date, no: r.date ? ++n : null,
+    rec: r.date && S.days[r.date].rec ? S.days[r.date].rec : null,
+  }));
+}
+
+/* Your pace from the completed days (recent ones count): km per day and travel speed incl. breaks. */
+function rideHistory() {
+  const days = completedDays().filter((d) => d.no && d.km >= 5).slice(-7);
+  if (!days.length) return null;
+  const timed = days.filter((d) => d.rec && d.rec.elapsedH > 0.3);
+  const hours = sum(timed.map((d) => d.rec.elapsedH));
+  return {
+    days: days.length,
+    perDay: sum(days.map((d) => d.km)) / days.length,
+    timedDays: timed.length,
+    speed: hours ? sum(timed.map((d) => d.km)) / hours : null,                         // route km per hour on the road
+    movingSpeed: timed.length ? sum(timed.map((d) => d.rec.km)) / sum(timed.map((d) => d.rec.movingH || d.rec.elapsedH)) : null,
+  };
+}
+
+// Distance per day and speed used for planning: your history (if switched on and available) or the settings.
+function planPerDay() {
+  const h = S.useHistory ? rideHistory() : null;
+  return h ? Math.max(5, Math.round(h.perDay)) : S.perDay;
+}
+
+function planSpeed() {
+  const h = S.useHistory ? rideHistory() : null;
+  return h && h.speed ? Math.max(3, Math.round(h.speed * 10) / 10) : S.speed;
+}
+
+function endToday() {
+  if (!S.track) return;
+  const d = todayStr();
+  const prev = S.days[d] || {};
+  S.days[d] = { ...prev, start: prev.start ?? S.startKm, end: S.startKm, closed: true };
+  setStatus(`Today ended at km ${fmt(S.startKm, 1)}. The next stage starts tomorrow from here.`);
+  recompute({ weatherDelay: 300 });
+}
+
+function reopenToday() {
+  const e = S.days[todayStr()];
+  if (!e) return;
+  delete e.closed;
+  if (!e.rec) S.days[todayStr()].end = S.startKm;
+  setStatus("Today is open again.");
+  recompute({ weatherDelay: 300 });
+}
+
+/* ---------- Upload the recorded track of a day ---------- */
+
+function parseRide(text) {
+  const xml = new DOMParser().parseFromString(text, "application/xml");
+  if (xml.getElementsByTagName("parsererror").length) throw new Error("This file is not valid GPX.");
+  let nodes = [...xml.getElementsByTagNameNS("*", "trkpt")];
+  if (!nodes.length) nodes = [...xml.getElementsByTagNameNS("*", "rtept")];
+  const pts = [];
+  for (const n of nodes) {
+    const lat = parseFloat(n.getAttribute("lat")), lon = parseFloat(n.getAttribute("lon"));
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+    const e = n.getElementsByTagNameNS("*", "ele")[0], t = n.getElementsByTagNameNS("*", "time")[0];
+    const ele = e ? parseFloat(e.textContent) : NaN;
+    const time = t ? Date.parse(t.textContent.trim()) : NaN;
+    pts.push({ lat, lon, ele: Number.isFinite(ele) ? ele : null, t: Number.isFinite(time) ? time : null });
+  }
+  if (pts.length < 2) throw new Error("No track points found in this GPX.");
+
+  let km = 0, moving = 0, up = 0, down = 0, refEle = null;
+  for (let i = 1; i < pts.length; i++) {
+    const d = haversine(pts[i - 1], pts[i]) / 1000;
+    km += d;
+    const dt = pts[i].t != null && pts[i - 1].t != null ? (pts[i].t - pts[i - 1].t) / 3600000 : null;
+    if (dt != null && dt > 0 && dt < 0.1 && d / dt > 2) moving += dt;    // count only time actually moving
+  }
+  for (const p of pts) {                                                // climb with a 3 m dead band against GPS noise
+    if (p.ele == null) continue;
+    if (refEle == null) refEle = p.ele;
+    else if (p.ele - refEle >= 3) { up += p.ele - refEle; refEle = p.ele; }
+    else if (refEle - p.ele >= 3) { down += refEle - p.ele; refEle = p.ele; }
+  }
+  const times = pts.map((p) => p.t).filter((t) => t != null);
+  const t0 = times.length ? Math.min(...times) : null, t1 = times.length ? Math.max(...times) : null;
+  const every = Math.max(1, Math.ceil(pts.length / 1500));
+  return {
+    pts,
+    rec: {
+      km, up, down,
+      elapsedH: t0 != null ? (t1 - t0) / 3600000 : null,
+      movingH: moving || null,
+      startTime: t0, endTime: t1,
+      line: pts.filter((_, i) => i % every === 0 || i === pts.length - 1).map((p) => [+p.lat.toFixed(5), +p.lon.toFixed(5)]),
+    },
+  };
+}
+
+function localDate(t) {
+  const d = new Date(t);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+async function uploadRide(file) {
+  if (!S.track) { setStatus("Please load the tour GPX first."); return; }
+  try {
+    const { pts, rec } = parseRide(await file.text());
+    // Where on the route was this ride? Map a sample of points onto the route and take the covered range.
+    const step = Math.max(1, Math.floor(pts.length / 60));
+    const hits = [];
+    for (let i = 0; i < pts.length; i += step) hits.push(nearestKm(S.track, pts[i].lat, pts[i].lon));
+    hits.push(nearestKm(S.track, pts[pts.length - 1].lat, pts[pts.length - 1].lon));
+    const onRoute = hits.filter((h) => h.offset < 3000);
+    if (onRoute.length < Math.max(2, hits.length * 0.3)) throw new Error("This ride doesn't follow the route of the current tour.");
+    const kms = onRoute.map((h) => h.km).sort((a, b) => a - b);
+    const start = kms[0], end = kms[kms.length - 1];
+
+    let date = rec.startTime != null ? localDate(rec.startTime) : null;
+    if (!date) {
+      date = prompt("This GPX has no time stamps. Which day was this ride? (YYYY-MM-DD)", todayStr());
+      if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+    }
+    if (date > todayStr()) throw new Error("This ride is dated in the future.");
+    // Merge with what is already known about that day (e.g. a position update before the recording started).
+    const prev = S.days[date];
+    S.days[date] = {
+      start: prev ? Math.min(prev.start, start) : start,
+      end: prev ? Math.max(prev.end, end) : end,
+      closed: true, rec,
+    };
+    if (end > S.startKm) {
+      S.startKm = Math.round(end * 10) / 10;   // you are at least where this ride ended
+      $("startKm").value = S.startKm;
+      $("startKmNum").value = S.startKm;
+      $("startKmOut").textContent = fmt(S.startKm, 1);
+    }
+    setStatus(`Ride of ${fmtDate(date)} added: ${fmt(rec.km, 1)} km recorded` +
+      (rec.elapsedH ? ` in ${fmtDuration(rec.elapsedH)}` : "") + `, route km ${fmt(start, 0)}–${fmt(end, 0)}.`);
+    recompute({ weatherDelay: 300 });
+  } catch (e) {
+    console.error(e);
+    setStatus("The ride could not be added: " + e.message);
+  }
 }
 
 function buildStages() {
@@ -972,10 +1129,13 @@ function buildStages() {
   if (!T) return [];
   const today = todayStr();
   const pos = Math.min(S.startKm * 1000, T.total);
-  const per = S.perDay * 1000;
+  const per = planPerDay() * 1000;
+  const speed = planSpeed();
+  const closed = todayClosed();
   // When the first stage is today, it starts where you set off this morning, so updating
-  // your position during the ride doesn't move today's goal.
-  const isToday = S.date === today;
+  // your position during the ride doesn't move today's goal. An ended day moves the plan to tomorrow.
+  const isToday = S.date === today && !closed;
+  const planDate = S.date === today && closed ? addDays(today, 1) : S.date;
   const first = isToday ? Math.min(todayStartKm() * 1000, pos) : pos;
   const offset = completedDays().filter((d) => d.no).length;
 
@@ -993,10 +1153,10 @@ function buildStages() {
   const depMin = h * 60 + m;
   return ranges.map(([ra, rb], i) => {
     const r = rangeStats(ra, rb);
-    const hours = r.km / S.speed;
-    const date = addDays(S.date, i);
+    const hours = r.km / speed;
+    const date = addDays(planDate, i);
     return {
-      ...r, i, no: offset + i + 1, date, hours,
+      ...r, i, no: offset + i + 1, date, hours, speed,
       done: Math.max(0, Math.min(rb, pos) - ra) / 1000,       // km of this stage already ridden
       dayOffset: dayDiff(today, date),
       dep: depMin, arr: depMin + hours * 60,
@@ -1477,7 +1637,14 @@ function render() {
   if (!S.track) { $("content").classList.add("hidden"); return; }
   $("content").classList.remove("hidden");
   $("settingsSummary").textContent =
-    `· ${S.perDay} km/day · ${fmt(S.speed, S.speed % 1 ? 1 : 0)} km/h · ${S.dep} · ${S.models.size} models`;
+    `· ${planPerDay()} km/day · ${fmt(planSpeed(), planSpeed() % 1 ? 1 : 0)} km/h · ${S.dep} · ${S.models.size} models`;
+  const hist = rideHistory();
+  $("perDayNote").textContent = S.useHistory && hist
+    ? `Planning uses your average of ${planPerDay()} km/day${hist.speed ? ` and ${fmt(planSpeed(), 1)} km/h` : ""} (see "Your pace" below).` : "";
+  $("historyInfo").textContent = !hist ? "No completed days yet – using the distance and speed set above."
+    : `Your last ${hist.days} day${hist.days > 1 ? "s" : ""}: ${fmt(hist.perDay, 0)} km/day` +
+      (hist.speed ? `, ${fmt(hist.speed, 1)} km/h incl. breaks (from ${hist.timedDays} recorded ride${hist.timedDays > 1 ? "s" : ""})` : ", speed from the setting above (upload recorded rides to measure it)") +
+      (S.useHistory ? "." : " – not used for planning.");
   let weather = [];
   try { weather = S.stages.map(stageWeather); } catch (e) { console.error(e); }
   // Each part renders on its own, so a failure in one (e.g. a CDN library missing) never hides the route.
@@ -1522,11 +1689,14 @@ function renderTotals(weather) {
   const tiles = [
     ["Remaining", fmt(rest, rest < 100 ? 1 : 0, " km"), `from km ${fmt(S.startKm, 1)}`],
     ["Climb", fmt(up, 0, " m"), `descent ${fmt(down, 0, " m")}`],
-    ["Stages", String(st.length), `about ${S.perDay} km each`],
+    ["Stages", String(st.length), `about ${planPerDay()} km each`],
     ["Arrival", end ? fmtDate(end, { weekday: "short", day: "numeric", month: "short", year: "numeric" }) : "–",
       st.length ? `around ${fmtMinutes(st[st.length - 1].arr)}` : ""],
     ["Rainy days", known ? `${rainDays} / ${known}` : "–", known ? "stages with ≥ 1 mm (median)" : "no weather data yet"],
   ];
+  const hist = rideHistory();
+  if (hist) tiles.push(["Your pace", `${fmt(hist.perDay, 0)} km/day`,
+    `${hist.speed ? fmt(hist.speed, 1) + " km/h incl. breaks · " : ""}last ${hist.days} day${hist.days > 1 ? "s" : ""}${S.useHistory ? ", used for planning" : ""}`]);
   $("totals").innerHTML = tiles.map(([k, v, s]) =>
     `<div class="tile"><div class="k">${k}</div><div class="v num">${v}</div><div class="s">${s}</div></div>`).join("");
 }
@@ -1591,6 +1761,11 @@ function renderMap() {
       : L.circleMarker(ll(st.endPt), { radius: 4, color: css("--ink"), weight: 1.5, fillColor: css("--surface"), fillOpacity: 1 });
     pin.bindTooltip(`End of stage ${st.no}: ${placeName(st.endPt) || "km " + fmt(st.b / 1000, 0)}`).addTo(mapLayers);
   });
+  for (const [date, e] of Object.entries(S.days)) {
+    if (!e.rec || !e.rec.line) continue;
+    L.polyline(e.rec.line, { color: css("--m5"), weight: 3, opacity: 0.9 })
+      .bindTooltip(`Your ride on ${fmtDate(date)} · ${fmt(e.rec.km, 1)} km`, { sticky: true }).addTo(mapLayers);
+  }
   renderCampMarkers(mapLayers);
   L.marker(ll(T.pts[startI]), {
     icon: L.divIcon({ className: "pos-pin", html: "<span></span>", iconSize: [18, 18], iconAnchor: [9, 9] }),
@@ -1928,7 +2103,7 @@ function stageCard(st, k, w, compact) {
     : [m.head.med < 0 ? "Avg. tailwind" : "Avg. headwind", fmt(Math.abs(m.head.med), 0, " km/h"),
        Math.abs(m.head.med) < 3 ? "hardly noticeable" : m.head.med < 0 ? "pushing from behind" : "slowing you down"];
   const rv = clean(m.rain.vals);
-  const label = compact ? (st.dayOffset === 0 ? "Today · " : "Next · ") : "";
+  const label = compact ? (st.dayOffset === 0 ? "Today · " : st.dayOffset === 1 ? "Tomorrow · " : "Next · ") : "";
 
   return `<section class="card ${compact ? "next-card" : ""}" ${compact ? "" : `id="stage-${k}"`}>
     <div class="stage-head">
@@ -1948,7 +2123,7 @@ function stageCard(st, k, w, compact) {
     <div class="tiles" style="margin-top:12px">
       <div class="tile"><div class="k">Distance</div><div class="v num">${fmt(st.km, 1, " km")}</div><div class="s">km ${fmt(st.a / 1000, 0)}–${fmt(st.b / 1000, 0)}</div></div>
       <div class="tile"><div class="k">Climb</div><div class="v num">↑ ${fmt(st.up, 0, " m")}</div><div class="s">descent ↓ ${fmt(st.down, 0, " m")}</div></div>
-      <div class="tile"><div class="k">Riding time</div><div class="v num">${fmtDuration(st.hours)}</div><div class="s">at ${fmt(S.speed, 1)} km/h</div></div>
+      <div class="tile"><div class="k">Riding time</div><div class="v num">${fmtDuration(st.hours)}</div><div class="s">at ${fmt(st.speed, 1)} km/h</div></div>
       <div class="tile"><div class="k">Rain (median)</div><div class="v num">${fmt(m.rain.med, 1, " mm")}</div><div class="s">${rv.length > 1 ? `range ${fmt(Math.min(...rv), 1)}–${fmt(Math.max(...rv), 1)} mm` : ""}</div></div>
       <div class="tile"><div class="k">${headTile[0]}</div><div class="v num">${headTile[1]}</div><div class="s">${headTile[2]}</div></div>
     </div>
@@ -1966,6 +2141,12 @@ function stageCard(st, k, w, compact) {
       <div id="hourly-${k}"></div>
     </details>` : ""}
     ${campSection(st, k)}
+    ${compact && st.dayOffset === 0 ? `<div class="btn-row">
+      <button type="button" data-end-day>🏁 End today here (km ${fmt(S.startKm, 1)})</button>
+      <label class="button" for="rideFile">📤 Upload today's ride (GPX)</label>
+    </div>` : ""}
+    ${compact && st.dayOffset === 1 && todayClosed() ? `<div class="small muted" style="margin-top:10px">Today ended at km ${fmt(S.startKm, 1)}.
+      <button type="button" data-reopen style="min-height:32px;padding:4px 10px">Undo</button></div>` : ""}
     <div class="btn-row">
       ${compact ? `<button type="button" data-goto="${k}">Details, models and hourly charts ↓</button>` : ""}
       <button type="button" data-gpx="${k}">⬇ GPX of this stage</button>
@@ -1992,18 +2173,24 @@ function renderDone() {
     const dated = days.filter((d) => d.no).length;
     const rows = days.map((d, i) => `<tr>
       <td>${d.no ? `<b>${d.no}</b>` : ""}</td>
-      <td>${d.date ? fmtDate(d.date) : `<span class="muted">earlier</span>`}</td>
+      <td>${d.date ? fmtDate(d.date) : `<span class="muted">not logged</span>`}</td>
       <td class="opt">${stageTitle(d)}</td>
-      <td class="r num">${fmt(d.km, 1)}</td>
+      <td class="r num" ${d.rec ? `title="recorded: ${fmt(d.rec.km, 1)} km"` : ""}>${fmt(d.km, 1)}</td>
       <td class="r num">${fmt(d.up, 0)}</td>
       <td class="r num opt">${fmt(d.down, 0)}</td>
-      <td class="r"><button type="button" data-done-gpx="${i}" title="Download the GPX of this part">⬇ GPX</button></td>
+      <td class="r num">${d.rec && d.rec.elapsedH ? fmtDuration(d.rec.elapsedH) : d.km < 0.05 ? "rest day" : "–"}</td>
+      <td class="r num opt">${d.rec && d.rec.elapsedH ? fmt(d.km / d.rec.elapsedH, 1) : "–"}</td>
+      <td class="r">${d.km >= 0.05 ? `<button type="button" data-done-gpx="${i}" title="Download the GPX of this part">⬇ GPX</button>` : ""}</td>
     </tr>`).join("");
     host.innerHTML = `<details class="card done" ${doneOpen ? "open" : ""}>
       <summary>✓ <b>Completed</b> <span class="muted small">· ${dated ? `${dated} day${dated > 1 ? "s" : ""} · ` : ""}${fmt(km, 0)} km · ↑ ${fmt(up, 0)} m</span></summary>
       <div class="table-wrap"><table>
-        <thead><tr><th>#</th><th>Date</th><th class="opt">Route</th><th class="r">km</th><th class="r">↑ m</th><th class="r opt">↓ m</th><th></th></tr></thead>
-        <tbody>${rows}</tbody></table></div>
+        <thead><tr><th>#</th><th>Date</th><th class="opt">Route</th><th class="r">km</th><th class="r">↑ m</th><th class="r opt">↓ m</th>
+          <th class="r" title="time on the road (recorded rides)">Time</th><th class="r opt">km/h</th><th></th></tr></thead>
+        <tbody>${rows}</tbody></table>
+        <div class="small muted" style="margin-top:8px">km and climb along the planned route. Time and speed come from rides you uploaded
+          (first to last point, incl. breaks).</div>
+        <div class="btn-row"><label class="button" for="rideFile">📤 Add a ridden day (GPX of your ride)</label></div></div>
     </details>`;
     host.querySelector("details").addEventListener("toggle", (e) => {
       if (e.target.open === doneOpen) return;
@@ -2448,9 +2635,9 @@ async function downloadPdf() {
     // Title and summary
     write(`GPX Weather – ${T.name || "Tour"}`, 18, "bold");
     write(`Created ${new Date().toLocaleString(LOCALE)} · ${weatherStatusText() || "no weather data"}`, 9, "normal", grey);
-    write(`From km ${fmt(S.startKm, 1)}: ${fmt(rest, 0)} km left, ${fmt(up, 0)} m climbing, ${st0.length} stages of about ${S.perDay} km` +
+    write(`From km ${fmt(S.startKm, 1)}: ${fmt(rest, 0)} km left, ${fmt(up, 0)} m climbing, ${st0.length} stages of about ${planPerDay()} km` +
       (st0.length ? `, arrival ${fmtDate(st0[st0.length - 1].date, { weekday: "short", day: "numeric", month: "short", year: "numeric" })}` : "") +
-      `. Departure ${S.dep}, ${fmt(S.speed, 1)} km/h incl. breaks. Models: ${activeModels().map((m) => m.name).join(", ")}.`, 10);
+      `. Departure ${S.dep}, ${fmt(planSpeed(), 1)} km/h incl. breaks. Models: ${activeModels().map((m) => m.name).join(", ")}.`, 10);
     y += 2;
     const ph = await image("profile", 1600, 360, M, W - 2 * M);
     y += ph ? ph + 4 : 0;
@@ -2481,9 +2668,11 @@ async function downloadPdf() {
       write(`Completed: ${fmt(sum(done.map((d) => d.km)), 0)} km`, 11, "bold");
       table({
         startY: y,
-        head: [["#", "Date", "Route", "km", "Up m", "Down m"]],
-        body: done.map((d) => [d.no || "", d.date ? fmtDate(d.date) : "earlier", pdfSafe(plainStageTitle(d)),
-          fmt(d.km, 1), fmt(d.up, 0), fmt(d.down, 0)]),
+        head: [["#", "Date", "Route", "km", "Up m", "Down m", "Time", "km/h"]],
+        body: done.map((d) => [d.no || "", d.date ? fmtDate(d.date) : "not logged", pdfSafe(plainStageTitle(d)),
+          fmt(d.km, 1), fmt(d.up, 0), fmt(d.down, 0),
+          d.rec && d.rec.elapsedH ? fmtDuration(d.rec.elapsedH) : d.km < 0.05 ? "rest day" : "-",
+          d.rec && d.rec.elapsedH ? fmt(d.km / d.rec.elapsedH, 1) : "-"]),
         columnStyles: { 2: { cellWidth: 110 } },
       });
       y = doc.lastAutoTable.finalY + 6;
@@ -2586,7 +2775,7 @@ function recompute({ weatherDelay = 800 } = {}) {
 }
 
 function saveGlobalSettings() {
-  store("settings", { models: [...S.models], autoGps: S.autoGps });
+  store("settings", { models: [...S.models], autoGps: S.autoGps, useHistory: S.useHistory });
 }
 
 function syncInputs() {
@@ -2598,6 +2787,7 @@ function syncInputs() {
   $("dep").value = S.dep;
   $("speed").value = S.speed;
   $("autoGps").checked = S.autoGps;
+  $("useHistory").checked = S.useHistory;
 }
 
 function setStartKm(km, force = false, log = true) {
@@ -2648,6 +2838,7 @@ function initControls() {
   if (saved) {
     if (Array.isArray(saved.models)) S.models = new Set(saved.models.filter((id) => MODELS.some((m) => m.id === id)));
     S.autoGps = !!saved.autoGps;
+    if (saved.useHistory === false) S.useHistory = false;
   }
   syncInputs();
   const open = restore("settingsOpen");
@@ -2678,12 +2869,16 @@ function initControls() {
     recompute({ weatherDelay: 300 });
   });
   $("autoGps").addEventListener("change", (e) => { S.autoGps = e.target.checked; saveGlobalSettings(); });
+  $("useHistory").addEventListener("change", (e) => { S.useHistory = e.target.checked; saveGlobalSettings(); recompute({ weatherDelay: 300 }); });
+  $("rideFile").addEventListener("change", (e) => { if (e.target.files[0]) uploadRide(e.target.files[0]); e.target.value = ""; });
   $("refresh").addEventListener("click", () => loadWeather(true));
   $("locate").addEventListener("click", () => locate());
   $("deleteTour").addEventListener("click", deleteTour);
   document.addEventListener("click", (e) => {
     const gpx = e.target.closest("[data-gpx]");
     if (gpx) downloadStage(Number(gpx.dataset.gpx));
+    if (e.target.closest("[data-end-day]")) endToday();
+    if (e.target.closest("[data-reopen]")) reopenToday();
     const doneGpx = e.target.closest("[data-done-gpx]");
     if (doneGpx) downloadDone(Number(doneGpx.dataset.doneGpx));
     const search = e.target.closest("[data-camp-search]");
