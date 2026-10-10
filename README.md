@@ -60,7 +60,7 @@ Get the GPX file of your route, for example from Komoot, Strava, Ride with GPS,
 Garmin or a tour website. On the iPhone, save it to the **Files** app first
 (*Share → Save to Files*).
 
-In GPX Weather tap **＋ Load GPX** and pick the file. The route, map and stages
+In GPX Weather tap **＋ GPX** and pick the file. The route, map and stages
 appear right away; the weather follows a few seconds later. The tour is saved
 on your phone, so you only do this once.
 
@@ -68,7 +68,9 @@ on your phone, so you only do this once.
 
 Open **Settings** and choose:
 
-- **Distance per day** – how many km you want to ride
+- **Plan each day by** distance (**km per day**) or by **hours on the road per
+  day** – with hours, each stage ends where your time is up, so hilly, gravel
+  or headwind days get shorter and easy days longer
 - **First stage on** – the day you start (today by default)
 - **Daily departure** – when you usually set off
 - **Your speed on flat asphalt** (without wind and breaks), your **breaks** in
@@ -146,8 +148,21 @@ breaks – so a slow day in the hills is not mistaken for being slow in general.
 
 ### 4. Read the forecast
 
-- The green box at the top shows **today's stage**.
-- **Stages at a glance** lists all days; tap a row to jump to its details.
+The start page only shows what you need for a quick check:
+
+- **Tour progress** – how much of the whole route you have ridden, what is
+  left, the number of days to go and the expected arrival.
+- **Today's stage** (green box) – distance, time on the road, weather and wind,
+  your progress today and any warnings. **More about this stage** opens the
+  details: surface, elevation, time estimate, weather and night, campsites and
+  the GPX.
+- **The map**, zoomed to today's route; switch to **Whole tour** for the
+  overview.
+
+Everything else is folded away and opens with a tap: **Upcoming stages** (table
+and all day cards), **Completed**, **Weather models compared**, **Elevation
+profile** and **Route details**.
+
 - In each stage, tap **Model comparison and hour-by-hour** to see every
   weather model side by side and hourly charts along the route.
 - **⬇ GPX of this stage** saves that day's route, or opens it directly in your

@@ -81,7 +81,12 @@
 
   /* Tour bar & controls */
   .tour-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-  .tour-row select { flex: 1 1 220px; min-width: 0; }
+  .tour-row select { flex: 1 1 0; min-width: 0; }
+  .tour-row { flex-wrap: nowrap; }
+  .btn-row.quick > :first-child { flex: 3 1 auto; }
+  .btn-row.quick > :last-child { flex: 1 1 auto; }
+  details.more { margin-top: 12px; border-top: 1px solid var(--grid); }
+  details.more > summary { margin-top: 10px; }
   select, .ctl input[type=number], .ctl input[type=date], .ctl input[type=time] {
     width: 100%; min-height: 44px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--axis);
     background: var(--surface); color: var(--ink); font: inherit; }
@@ -157,6 +162,25 @@
   .cmp td:first-child { color: var(--ink-2); }
   .cmp td.med { font-weight: 650; }
   .wx { font-size: 1.6rem; line-height: 1; }
+  details.section { padding: 0; }
+  details.section > summary { margin: 0; padding: 14px 16px; font-weight: 650; font-size: 1.02rem; }
+  details.section[open] > summary { border-bottom: 1px solid var(--grid); }
+  details.section > :not(summary) { margin-left: 16px; margin-right: 16px; }
+  details.section > :last-child { margin-bottom: 16px; }
+  details.section .card { box-shadow: none; }
+  .map-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .seg { display: inline-flex; border: 1px solid var(--axis); border-radius: 10px; overflow: hidden; }
+  .seg button, .seg label { border: none; border-radius: 0; min-height: 36px; padding: 6px 12px; font-size: 0.9rem; margin: 0;
+                            display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 400; }
+  .seg .on, .seg label:has(input:checked) { background: var(--accent); color: #fff; }
+  .seg input { position: absolute; opacity: 0; pointer-events: none; }
+  .prog-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .prog-head .pct { font-size: 1.6rem; font-weight: 700; }
+  .progress.big { height: 14px; border-radius: 7px; position: relative; margin-top: 8px; }
+  .progress-today { position: absolute; top: 0; bottom: 0; background: var(--accent); opacity: 0.3; }
+  .prog-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 6px 14px; margin-top: 12px; }
+  .prog-stats .k { font-size: 0.78rem; color: var(--ink-2); }
+  .prog-stats .v { font-weight: 650; font-variant-numeric: tabular-nums; }
   details.done { padding: 0; }
   details.done > summary { margin: 0; padding: 12px 16px; list-style-position: inside; }
   details.done[open] > summary { border-bottom: 1px solid var(--grid); }
@@ -188,7 +212,9 @@
   @media (max-width: 700px) {
     main { padding: 10px; }
     header { padding: 14px 16px; }
-    header h1 { font-size: 1.25rem; }
+    header { padding: 10px 14px; border-radius: 12px; }
+    header h1 { font-size: 1.15rem; margin: 0; }
+    header p { display: none; }
     .card { padding: 12px; border-radius: 12px; }
     #map { height: 340px; }
     .opt { display: none; }
@@ -210,7 +236,7 @@
 <div class="card">
   <div class="tour-row">
     <select id="tourSelect" aria-label="Saved tours"></select>
-    <label class="button" for="file">＋ Load GPX</label>
+    <label class="button" for="file" title="Load a GPX file as a new tour">＋ GPX</label>
     <button type="button" id="deleteTour" title="Remove this tour from this device" aria-label="Remove this tour">🗑</button>
   </div>
   <input type="file" id="file" class="file-input">
@@ -220,9 +246,9 @@
     <span class="muted small">The file stays on your device. Nothing is uploaded.</span>
   </label>
 
-  <div class="btn-row">
-    <button type="button" class="primary" id="locate">📍 Update my position</button>
-    <button type="button" id="refresh">↻ Refresh weather</button>
+  <div class="btn-row quick">
+    <button type="button" class="primary" id="locate">📍 Update position</button>
+    <button type="button" id="refresh" title="Refresh weather" aria-label="Refresh weather">↻ Weather</button>
   </div>
   <div id="status" class="small muted" role="status"></div>
 
@@ -230,6 +256,21 @@
     <summary>Settings <span class="muted small" id="settingsSummary"></span></summary>
     <div class="controls">
       <div class="ctl">
+        <label>Plan each day by</label>
+        <div class="seg" role="radiogroup">
+          <label><input type="radio" name="planMode" value="km"> distance</label>
+          <label><input type="radio" name="planMode" value="hours"> hours on the road</label>
+        </div>
+      </div>
+      <div class="ctl" id="ctl-hours">
+        <label for="hoursPerDay">Hours on the road per day (incl. breaks): <span id="hoursOut" class="num">6</span> h</label>
+        <div class="range-row">
+          <input type="range" id="hoursPerDay" min="1" max="12" step="0.5" value="6">
+          <input type="number" id="hoursNum" min="1" max="16" step="0.5" value="6" inputmode="decimal" aria-label="Hours per day">
+        </div>
+        <div class="muted small">Each stage ends where the riding-time model says this time is up – shorter on hilly or gravel days.</div>
+      </div>
+      <div class="ctl" id="ctl-km">
         <label for="perDay">Distance per day: <span id="perDayOut" class="num">80</span> km</label>
         <div class="range-row">
           <input type="range" id="perDay" min="10" max="250" step="5" value="80">
@@ -285,57 +326,64 @@
 </div>
 
 <div id="content" class="hidden">
+  <div class="card" id="progress"></div>
   <div id="next"></div>
 
-  <h2 class="part">Route</h2>
   <div class="card">
-    <div class="tiles" id="preview"></div>
-    <div id="gap-note" class="small muted" style="margin-top:10px"></div>
-  </div>
-
-  <h2 class="part">What's ahead</h2>
-  <div class="card"><div class="tiles" id="totals"></div></div>
-
-  <h2 class="part">Map</h2>
-  <div class="card">
+    <div class="map-head">
+      <b id="mapTitle">Today's route</b>
+      <div class="seg" role="group" aria-label="Map view">
+        <button type="button" data-mapview="today">Today</button>
+        <button type="button" data-mapview="all">Whole tour</button>
+      </div>
+    </div>
     <div id="map"></div>
     <div class="small muted" style="margin-top:8px">
       <span class="badge"><span class="swatch" style="background:var(--route-a)"></span>/<span class="swatch" style="background:var(--route-b)"></span> stages</span> ·
-      <span class="badge"><span class="swatch" style="background:var(--ridden)"></span> already ridden</span> ·
-      <span class="badge"><span class="swatch" style="background:var(--m5)"></span> your recorded rides</span> ·
-      <span class="badge">┄ gap in the GPX (straight line)</span> ·
-      <span class="badge"><span class="dot" style="background:var(--critical)"></span> your position</span>
+      <span class="badge"><span class="swatch" style="background:var(--ridden)"></span> ridden</span> ·
+      <span class="badge"><span class="swatch" style="background:var(--m5)"></span> your recordings</span> ·
+      <span class="badge">┄ gap in the GPX</span> ·
+      <span class="badge"><span class="dot" style="background:var(--critical)"></span> you</span>
     </div>
   </div>
 
-  <h2 class="part">Elevation profile</h2>
-  <div class="card"><div id="profile" class="chart"></div></div>
+  <details class="card section" id="sec-stages">
+    <summary>📅 Upcoming stages <span class="muted small" id="sum-stages"></span></summary>
+    <div class="table-wrap"><table id="overview"></table></div>
+    <div id="stages"></div>
+  </details>
 
-  <h2 class="part">Stages at a glance</h2>
-  <div id="done-glance"></div>
-  <div class="card table-wrap"><table id="overview"></table></div>
+  <details class="card section" id="sec-done">
+    <summary>✓ Completed <span class="muted small" id="sum-done"></span></summary>
+    <div id="done-list"></div>
+  </details>
 
-  <h2 class="part">Model comparison per stage</h2>
-  <div class="card">
-    <p class="small muted" style="margin-top:0">Each dot is one weather model, the bar is the median.
+  <details class="card section" id="sec-models">
+    <summary>🌦️ Weather models compared</summary>
+    <p class="small muted">Each dot is one weather model, the bar is the median.
       Dots far apart mean the models disagree and the forecast is uncertain.</p>
     <div id="cmp-legend" class="models small"></div>
-    <div id="cmp-empty" class="muted small hidden" style="padding:12px 0">No weather data yet. The route and stages are still shown above and below.</div>
+    <div id="cmp-empty" class="muted small hidden" style="padding:12px 0">No weather data yet.</div>
     <div id="cmp-temp" class="chart"></div>
     <div id="cmp-rain" class="chart"></div>
     <div id="cmp-head" class="chart"></div>
     <div id="cmp-gust" class="chart"></div>
-  </div>
+  </details>
 
-  <h2 class="part">Daily stages</h2>
-  <div id="done-stages"></div>
-  <div id="stages"></div>
+  <details class="card section" id="sec-profile">
+    <summary>⛰️ Elevation profile</summary>
+    <div id="profile" class="chart"></div>
+  </details>
 
-  <h2 class="part">Download</h2>
+  <details class="card section" id="sec-route">
+    <summary>ℹ️ Route details <span class="muted small" id="sum-route"></span></summary>
+    <div class="tiles" id="preview"></div>
+    <div id="gap-note" class="small muted" style="margin-top:10px"></div>
+    <div class="tiles" id="totals" style="margin-top:10px"></div>
+  </details>
+
   <div class="card">
-    <button type="button" class="primary" id="pdfBtn" style="width:100%">📄 Download the whole forecast as PDF</button>
-    <div class="small muted" style="margin-top:8px">All stages with distances, weather, model comparison, warnings
-      and the campsites you searched for – handy for offline reading or printing.</div>
+    <button type="button" id="pdfBtn" style="width:100%">📄 Download the whole forecast as PDF</button>
   </div>
 </div>
 
@@ -592,7 +640,7 @@ function wxInfo(code) {
 
 /* ---------- State ---------- */
 
-const DEFAULTS = { perDay: 80, dep: "09:00", flatSpeed: 20, breaks: 25, mass: 100 };
+const DEFAULTS = { perDay: 80, dep: "09:00", flatSpeed: 20, breaks: 25, mass: 100, planMode: "km", hoursPerDay: 6 };
 
 const S = {
   tourId: null,
@@ -601,6 +649,8 @@ const S = {
   perDay: DEFAULTS.perDay,
   date: todayStr(),
   dep: DEFAULTS.dep,
+  planMode: DEFAULTS.planMode,     // "km" or "hours"
+  hoursPerDay: DEFAULTS.hoursPerDay,
   flatSpeed: DEFAULTS.flatSpeed,   // km/h on flat asphalt without wind (sets the riding power)
   breaks: DEFAULTS.breaks,         // % on top of the riding time
   mass: DEFAULTS.mass,             // kg, rider + bike + luggage
@@ -838,7 +888,7 @@ function unpackTrack(t) {
 }
 
 function tourSettings() {
-  return { startKm: S.startKm, perDay: S.perDay, date: S.date, dep: S.dep, flatSpeed: S.flatSpeed, breaks: S.breaks, mass: S.mass, days: S.days, savedAt: Date.now() };
+  return { startKm: S.startKm, perDay: S.perDay, date: S.date, dep: S.dep, planMode: S.planMode, hoursPerDay: S.hoursPerDay, flatSpeed: S.flatSpeed, breaks: S.breaks, mass: S.mass, days: S.days, savedAt: Date.now() };
 }
 
 let saveTimer = null;
@@ -892,6 +942,8 @@ async function openTour(id) {
   store("current", id);
   S.perDay = settings.perDay || DEFAULTS.perDay;
   S.dep = settings.dep || DEFAULTS.dep;
+  S.planMode = settings.planMode === "hours" ? "hours" : "km";
+  S.hoursPerDay = settings.hoursPerDay || DEFAULTS.hoursPerDay;
   S.flatSpeed = settings.flatSpeed || DEFAULTS.flatSpeed;
   S.breaks = settings.breaks ?? DEFAULTS.breaks;
   S.mass = settings.mass || DEFAULTS.mass;
@@ -1244,6 +1296,41 @@ function modelParams() {
   };
 }
 
+// Forecast headwind (m/s, median of the models) at a place and time, from the cached forecasts.
+function windLookup(date) {
+  const lookups = activeModels().map((m) => makeLookup(m));
+  return (d, minutes) => {
+    const key = timeKey(date, Math.floor(minutes / 60) * 60);
+    const brg = travelBearing(S.track, d);
+    const heads = [];
+    for (const lk of lookups) {
+      const e = lk(d);
+      const sp = valueAt(e, "wind_speed_10m", key), dir = valueAt(e, "wind_direction_10m", key);
+      if (sp != null && dir != null) heads.push(sp * Math.cos((dir - brg) * rad));
+    }
+    return heads.length ? median(heads) / 3.6 : 0;
+  };
+}
+
+// How far you get from `a` (m) in the given hours on the road (incl. breaks), with the forecast wind if known.
+function distanceForTime(a, hours, params, date = null, dep = 0) {
+  const T = S.track;
+  const target = (hours / params.breaks) * 3600;
+  const wind = date ? windLookup(date) : null;
+  let t = 0;
+  for (let i = Math.max(1, Math.floor(a / T.step) + 1); i < T.pts.length; i++) {
+    const s0 = Math.max(a, T.pts[i - 1].d), s1 = T.pts[i].d;
+    if (s1 <= s0) continue;
+    const gap = T.pts[i].gap;
+    const head = wind && !gap ? wind(s0, dep + (t * params.breaks) / 60) : 0;
+    const v = speedFor(params.P, gap ? 0 : segGrade(i), gap ? 0 : segSurface(i), params.mass, airDensity(T.pts[i].sm), head);
+    const dt = (s1 - s0) / v;
+    if (t + dt >= target) return s0 + (target - t) * v;
+    t += dt;
+  }
+  return T.total;
+}
+
 // Distance/time profile of a stage: cumulative metres and moving seconds. headAt(minutes) gives the headwind in m/s.
 function stageProfile(st, params, headAt = null, opts = { grade: true, surface: true }) {
   const T = S.track;
@@ -1251,7 +1338,7 @@ function stageProfile(st, params, headAt = null, opts = { grade: true, surface: 
   let tm = 0;
   forSegments(st.a, st.b, (len, i) => {
     const gap = T.pts[i].gap;   // a gap in the GPX (e.g. a ferry): no road data, counted at flat speed
-    const head = headAt && !gap ? headAt(st.dep + (tm * params.breaks) / 60) : 0;
+    const head = headAt && !gap ? headAt(st.a + d[d.length - 1], st.dep + (tm * params.breaks) / 60) : 0;
     const v = speedFor(params.P, opts.grade ? segGrade(i) : 0, opts.surface && !gap ? segSurface(i) : 0,
       params.mass, airDensity(T.pts[i].sm), head);
     tm += len / v;
@@ -1281,25 +1368,12 @@ function posAt(st, minutes) {
   return st.a + p.d[lo] + (p.d[hi] - p.d[lo]) * f;
 }
 
-// Second pass: include the forecast head-/tailwind (median of the models, hour by hour).
+// Second pass: include the forecast head-/tailwind at every part of the stage at the time you pass it.
 function applyWind(st, w) {
   if (!w.ok.length) return false;
-  const byHour = new Map();
-  for (const m of w.ok) for (const h of w.per[m.id].hours) {
-    if (h.head == null) continue;
-    if (!byHour.has(h.t)) byHour.set(h.t, []);
-    byHour.get(h.t).push(h.head);
-  }
-  if (!byHour.size) return false;
-  const hours = [...byHour.keys()].sort((x, y) => x - y);
-  const headAt = (min) => {
-    let t = Math.floor(min / 60) * 60;
-    if (!byHour.has(t)) t = min < hours[0] ? hours[0] : hours[hours.length - 1];
-    return median(byHour.get(t)) / 3.6;
-  };
   const params = modelParams();
   if (st.movingNoWind == null) st.movingNoWind = st.moving;
-  setProfile(st, stageProfile(st, params, headAt), params);
+  setProfile(st, stageProfile(st, params, windLookup(st.date)), params);
   st.windH = st.moving - st.movingNoWind;
   return true;
 }
@@ -1461,18 +1535,20 @@ function buildStages() {
   const first = isToday ? Math.min(todayStartKm() * 1000, pos) : pos;
   const offset = completedDays().filter((d) => d.no).length;
 
+  const [h, m] = S.dep.split(":").map(Number);
+  const depMin = h * 60 + m;
+  const byHours = S.planMode === "hours";
   const ranges = [];
   let a = first;
   while (T.total - a >= 100) {
-    let b = Math.min(T.total, a + per);
+    let b = byHours ? Math.max(a + 1000, distanceForTime(a, S.hoursPerDay, params, addDays(planDate, ranges.length), depMin)) : a + per;
+    b = Math.min(T.total, b);
     if (ranges.length === 0 && isToday && b < pos) b = pos;      // already rode further than planned
-    if (T.total - b < 0.15 * per) b = T.total;                    // fold a tiny remainder into the last day
+    if (T.total - b < 0.15 * (b - a)) b = T.total;                // fold a tiny remainder into the last day
     ranges.push([a, b]);
     a = b;
   }
 
-  const [h, m] = S.dep.split(":").map(Number);
-  const depMin = h * 60 + m;
   return ranges.map(([ra, rb], i) => {
     const date = addDays(planDate, i);
     const st = {
@@ -1955,16 +2031,18 @@ function verdict(w) {
 /* ---------- Rendering ---------- */
 
 let map = null, mapLayers = null, fittedFor = null;
+let fittedKey = null;
+let mapView = restore("mapView") === "all" ? "all" : "today";
 
 function render() {
   renderTourSelect();
   if (!S.track) { $("content").classList.add("hidden"); return; }
   $("content").classList.remove("hidden");
   $("settingsSummary").textContent =
-    `· ${planPerDay()} km/day · ${S.dep} · ${S.models.size} models`;
+    `· ${S.planMode === "hours" ? `${fmt(S.hoursPerDay, S.hoursPerDay % 1 ? 1 : 0)} h/day` : `${planPerDay()} km/day`} · ${S.dep} · ${S.models.size} models`;
   const mp = modelParams();
   const hist = rideHistory();
-  $("perDayNote").textContent = S.useHistory && hist
+  $("perDayNote").textContent = S.useHistory && hist && S.planMode === "km"
     ? `Planning uses your average of ${planPerDay()} km/day (see "Your pace" below).` : "";
   $("historyInfo").textContent = !hist ? "No completed days yet – using the distance and speed set above."
     : `Your last ${hist.days} day${hist.days > 1 ? "s" : ""}: ${fmt(hist.perDay, 0)} km/day` +
@@ -1979,13 +2057,50 @@ function render() {
     });
   } catch (e) { console.error(e); }
   // Each part renders on its own, so a failure in one (e.g. a CDN library missing) never hides the route.
+  // Charts in closed sections are drawn when the section is opened.
   const parts = [
-    () => renderNext(weather), () => renderPreview(), () => renderTotals(weather), () => renderMap(),
-    () => renderProfile(), () => renderDone(), () => renderOverview(weather), () => renderComparison(weather), () => renderStages(weather),
+    () => renderProgress(), () => renderNext(weather), () => renderMap(), () => renderSummaries(),
+    () => renderPreview(), () => renderTotals(weather), () => renderDone(), () => renderOverview(weather), () => renderStages(weather),
+    () => { if ($("sec-profile").open) renderProfile(); }, () => { if ($("sec-models").open) renderComparison(weather); },
   ];
   for (const part of parts) {
     try { part(); } catch (e) { console.error(e); }
   }
+}
+
+// The landing view: how much of the whole tour is done.
+function renderProgress() {
+  const T = S.track, total = T.total / 1000, done = Math.min(S.startKm, total);
+  const pct = total ? (100 * done) / total : 0;
+  const days = completedDays().filter((d) => d.no).length;
+  const st = S.stages, cur = st.find((x) => x.dayOffset >= 0);
+  const last = st[st.length - 1];
+  const upLeft = T.cumUp[T.pts.length - 1] - T.cumUp[idxAt(T, S.startKm * 1000)];
+  const todayBar = cur ? `<div class="progress-today" title="${cur.dayOffset === 0 ? "today" : "next stage"}"
+      style="left:${((100 * cur.a) / T.total).toFixed(2)}%;width:${((100 * (cur.b - cur.a)) / T.total).toFixed(2)}%"></div>` : "";
+  const stat = (k, v) => `<div><div class="k">${k}</div><div class="v">${v}</div></div>`;
+  $("progress").innerHTML = `
+    <div class="prog-head"><b>${esc(T.name || "Tour")}</b><span class="pct">${fmt(pct, pct < 10 ? 1 : 0)} %</span></div>
+    <div class="progress big" role="progressbar" aria-valuenow="${pct.toFixed(0)}" aria-valuemin="0" aria-valuemax="100">
+      <div class="progress-bar" style="width:${pct.toFixed(2)}%"></div>${todayBar}</div>
+    <div class="prog-stats">
+      ${stat("Ridden", `${numFmt(Math.round(done))} of ${numFmt(Math.round(total))} km`)}
+      ${stat("To go", `${numFmt(Math.round(total - done))} km <span class="small muted">↑ ${numFmt(Math.round(upLeft))} m</span>`)}
+      ${stat("Days", `${days ? `${days} ridden · ` : ""}${st.length} to go`)}
+      ${stat("Arrival", last ? fmtDate(last.date, { weekday: "short", day: "numeric", month: "short" }) : "🎉 arrived")}
+    </div>`;
+}
+
+function renderSummaries() {
+  const st = S.stages, T = S.track;
+  const last = st[st.length - 1];
+  $("sum-stages").textContent = st.length ? `· ${st.length} · arrival ${fmtDate(last.date)}` : "· none left";
+  const done = completedDays();
+  $("sec-done").classList.toggle("hidden", !done.length);
+  const dated = done.filter((d) => d.no).length;
+  $("sum-done").textContent = done.length
+    ? `· ${dated ? `${dated} day${dated > 1 ? "s" : ""} · ` : ""}${fmt(sum(done.map((d) => d.km)), 0)} km` : "";
+  $("sum-route").textContent = `· ${fmt(T.total / 1000, 0)} km · ↑ ${fmt(T.cumUp[T.cumUp.length - 1], 0)} m`;
 }
 
 function renderPreview() {
@@ -2020,7 +2135,7 @@ function renderTotals(weather) {
   const tiles = [
     ["Remaining", fmt(rest, rest < 100 ? 1 : 0, " km"), `from km ${fmt(S.startKm, 1)}`],
     ["Climb", fmt(up, 0, " m"), `descent ${fmt(down, 0, " m")}`],
-    ["Stages", String(st.length), `about ${planPerDay()} km each`],
+    ["Stages", String(st.length), S.planMode === "hours" ? `about ${fmt(S.hoursPerDay, 1)} h on the road each` : `about ${planPerDay()} km each`],
     ["Arrival", end ? fmtDate(end, { weekday: "short", day: "numeric", month: "short", year: "numeric" }) : "–",
       st.length ? `around ${fmtMinutes(st[st.length - 1].arr)}` : ""],
     ["Rainy days", known ? `${rainDays} / ${known}` : "–", known ? "stages with ≥ 1 mm (median)" : "no weather data yet"],
@@ -2105,9 +2220,17 @@ function renderMap() {
     zIndexOffset: 1000,
   }).bindTooltip(`Your position · km ${fmt(S.startKm, 1)}`).addTo(mapLayers);
 
-  if (fittedFor !== T) {
-    map.fitBounds(L.latLngBounds(T.pts.map(ll)), { padding: [20, 20] });
+  // Zoom to today's (or the next) stage, or to the whole tour – only when that view changes, not while you pan.
+  const cur = S.stages.find((x) => x.dayOffset >= 0);
+  const viewKey = mapView === "today" && cur ? `today|${Math.round(cur.a)}|${Math.round(cur.b)}` : "all";
+  $("mapTitle").textContent = mapView === "all" || !cur ? "Whole tour"
+    : cur.dayOffset === 0 ? "Today's route" : cur.dayOffset === 1 ? "Tomorrow's route" : "Next stage";
+  document.querySelectorAll("[data-mapview]").forEach((b) => b.classList.toggle("on", b.dataset.mapview === mapView));
+  if (fittedFor !== T || fittedKey !== viewKey) {
+    const pts = viewKey === "all" ? T.pts : T.pts.slice(Math.min(idxAt(T, cur.a), startI), idxAt(T, cur.b) + 1);
+    map.fitBounds(L.latLngBounds(pts.map(ll)), { padding: [20, 20] });
     fittedFor = T;
+    fittedKey = viewKey;
   }
   setTimeout(() => map.invalidateSize(), 0);
 }
@@ -2295,6 +2418,7 @@ function renderOverview(weather) {
 }
 
 function openStage(k) {
+  $("sec-stages").open = true;
   openCards.add(k);
   const el = $("stage-" + k);
   if (!el) return;
@@ -2516,50 +2640,104 @@ function stageCard(st, k, w, compact) {
   </section>`;
 }
 
+// The landing card for today (or the next stage): only what you need at a glance; the rest is one tap away.
+function todayCard(st, k, w) {
+  const m = w.metrics;
+  const v = w.ok.length ? verdict(w) : null;
+  const sun = stageSun(st, w);
+  const warnings = stageWarnings(st, w, sun);
+  const codes = w.ok.map((mm) => w.per[mm.id].code);
+  const [icon, text] = wxInfo(codes.length ? Math.round(median(codes)) : null);
+  const { day: daySummary, night: nightSummary } = stageSummaries(st, w);
+  const label = st.dayOffset === 0 ? "Today" : st.dayOffset === 1 ? "Tomorrow" : fmtDate(st.date);
+  const tile = (k2, v2, s2) => `<div class="tile"><div class="k">${k2}</div><div class="v num">${v2}</div><div class="s">${s2}</div></div>`;
+  const windTile = m.head.med == null ? tile("Wind", "–", "no forecast yet")
+    : tile("Wind", `${fmt(m.speed.med, 0)} km/h ${compass(m.dir.med)}`, Math.abs(m.head.med) < 3 ? "hardly head- or tailwind"
+      : m.head.med > 0 ? `${fmt(m.head.med, 0)} km/h headwind` : `${fmt(-m.head.med, 0)} km/h tailwind`);
+  const weatherTile = w.ok.length
+    ? tile("Weather", `${icon} ${fmt(m.tmin.med, 0)}–${fmt(m.tmax.med, 0)}°`, `${text} · rain ${fmt(m.rain.med, 1)} mm${m.prob.med != null ? `, ${fmt(m.prob.med, 0)} %` : ""}`)
+    : tile("Weather", "–", pdfSafe(cellStatus(w)));
+  return `<section class="card next-card">
+    <div class="stage-head">
+      <div>
+        <h3>${label} · Stage ${st.no}: ${stageTitle(st)}</h3>
+        <p>${fmtMinutes(st.dep)} → about ${fmtMinutes(st.arr)}${sun ? ` · sunset ${fmtMinutes(sun.set)}` : ""}</p>
+      </div>
+      <div class="stage-badges">
+        ${v ? `<span class="badge ${v[0]}"><span class="dot"></span>${v[1]}</span>` : ""}
+        ${w.ok.length ? badge(w.overall, true) : ""}
+      </div>
+    </div>
+    <div class="tiles" style="margin-top:12px">
+      ${tile("Distance", fmt(st.km, 1, " km"), `↑ ${fmt(st.up, 0)} m · ↓ ${fmt(st.down, 0)} m`)}
+      ${tile("On the road", fmtDuration(st.hours), `${fmtDuration(st.moving)} riding + breaks`)}
+      ${weatherTile}
+      ${windTile}
+    </div>
+    ${st.done > 0.05 && st.dayOffset === 0 ? `<div class="progress" title="ridden today">
+        <div class="progress-bar" style="width:${Math.min(100, (100 * st.done) / (st.km || 1)).toFixed(1)}%"></div></div>
+      <div class="small">Ridden today: <b>${fmt(st.done, 1)} km</b> · ${fmt(Math.max(0, st.km - st.done), 1)} km to go</div>` : ""}
+    ${warnings.map((t) => `<div class="warn-line">${t}</div>`).join("")}
+    ${st.dayOffset === 0 ? `<div class="btn-row">
+      <button type="button" data-end-day>🏁 End today here</button>
+      <label class="button" for="rideFile">📤 Upload ride</label>
+    </div>` : ""}
+    ${st.dayOffset === 1 && todayClosed() ? `<div class="small muted" style="margin-top:10px">Today ended at km ${fmt(S.startKm, 1)}.
+      <button type="button" data-reopen style="min-height:32px;padding:4px 10px">Undo</button></div>` : ""}
+    <details class="more">
+      <summary>More about this stage</summary>
+      <div class="tiles" style="margin-top:10px">${surfaceTile(st)}
+        ${tile("Elevation", `${fmt(st.lo, 0)}–${fmt(st.hi, 0)} m`, `${fmt(st.startEle, 0)} m → ${fmt(st.endEle, 0)} m`)}</div>
+      ${sparkline(st)}
+      <div class="small muted" style="margin-top:6px">${timeText(st)}</div>
+      <div class="summary-box day-summary">${daySummary}</div>
+      ${nightSummary ? `<div class="summary-box night-summary">${nightSummary}</div>` : ""}
+      ${st.section ? `<div class="small muted" style="margin-top:8px">GPX section: ${esc(st.section)}</div>` : ""}
+      ${campSection(st, k)}
+      <div class="btn-row">
+        <button type="button" data-goto="${k}">Model comparison & hourly ↓</button>
+        <button type="button" data-gpx="${k}">⬇ GPX of this stage</button>
+      </div>
+    </details>
+  </section>`;
+}
+
+let nextMoreOpen = false;
 function renderNext(weather) {
   const k = S.stages.findIndex((st) => st.dayOffset >= 0);
   if (k < 0) { $("next").innerHTML = ""; return; }
-  $("next").innerHTML = stageCard(S.stages[k], k, weather[k], true);
+  const prev = $("next").querySelector("details.more");
+  if (prev) nextMoreOpen = prev.open;
+  $("next").innerHTML = todayCard(S.stages[k], k, weather[k]);
+  const more = $("next").querySelector("details.more");
+  more.open = nextMoreOpen;
   const btn = $("next").querySelector("[data-goto]");
   if (btn) btn.addEventListener("click", () => openStage(k));
 }
 
 // Collapsed list of the days already ridden (shown above the overview and above the stage cards).
-let doneOpen = false;
 function renderDone() {
   const days = completedDays();
-  for (const id of ["done-glance", "done-stages"]) {
-    const host = $(id);
-    if (!days.length) { host.innerHTML = ""; continue; }
-    const km = sum(days.map((d) => d.km)), up = sum(days.map((d) => d.up));
-    const dated = days.filter((d) => d.no).length;
-    const rows = days.map((d, i) => `<tr>
-      <td>${d.no ? `<b>${d.no}</b>` : ""}</td>
-      <td>${d.date ? fmtDate(d.date) : `<span class="muted">not logged</span>`}</td>
-      <td class="opt">${stageTitle(d)}</td>
-      <td class="r num" ${d.rec ? `title="recorded: ${fmt(d.rec.km, 1)} km"` : ""}>${fmt(d.km, 1)}</td>
-      <td class="r num">${fmt(d.up, 0)}</td>
-      <td class="r num opt">${fmt(d.down, 0)}</td>
-      <td class="r num">${d.rec && d.rec.elapsedH ? fmtDuration(d.rec.elapsedH) : d.km < 0.05 ? "rest day" : "–"}</td>
-      <td class="r num opt">${d.rec && d.rec.elapsedH ? fmt(d.km / d.rec.elapsedH, 1) : "–"}</td>
-      <td class="r">${d.km >= 0.05 ? `<button type="button" data-done-gpx="${i}" title="Download the GPX of this part">⬇ GPX</button>` : ""}</td>
-    </tr>`).join("");
-    host.innerHTML = `<details class="card done" ${doneOpen ? "open" : ""}>
-      <summary>✓ <b>Completed</b> <span class="muted small">· ${dated ? `${dated} day${dated > 1 ? "s" : ""} · ` : ""}${fmt(km, 0)} km · ↑ ${fmt(up, 0)} m</span></summary>
-      <div class="table-wrap"><table>
-        <thead><tr><th>#</th><th>Date</th><th class="opt">Route</th><th class="r">km</th><th class="r">↑ m</th><th class="r opt">↓ m</th>
-          <th class="r" title="time on the road (recorded rides)">Time</th><th class="r opt">km/h</th><th></th></tr></thead>
-        <tbody>${rows}</tbody></table>
-        <div class="small muted" style="margin-top:8px">km and climb along the planned route. Time and speed come from rides you uploaded
-          (first to last point, incl. breaks).</div>
-        <div class="btn-row"><label class="button" for="rideFile">📤 Add a ridden day (GPX of your ride)</label></div></div>
-    </details>`;
-    host.querySelector("details").addEventListener("toggle", (e) => {
-      if (e.target.open === doneOpen) return;
-      doneOpen = e.target.open;
-      renderDone();
-    });
-  }
+  const host = $("done-list");
+  if (!days.length) { host.innerHTML = ""; return; }
+  const rows = days.map((d, i) => `<tr>
+    <td>${d.no ? `<b>${d.no}</b>` : ""}</td>
+    <td>${d.date ? fmtDate(d.date) : `<span class="muted">not logged</span>`}</td>
+    <td class="opt">${stageTitle(d)}</td>
+    <td class="r num" ${d.rec ? `title="recorded: ${fmt(d.rec.km, 1)} km"` : ""}>${fmt(d.km, 1)}</td>
+    <td class="r num">${fmt(d.up, 0)}</td>
+    <td class="r num opt">${fmt(d.down, 0)}</td>
+    <td class="r num">${d.rec && d.rec.elapsedH ? fmtDuration(d.rec.elapsedH) : d.km < 0.05 ? "rest day" : "–"}</td>
+    <td class="r num opt">${d.rec && d.rec.elapsedH ? fmt(d.km / d.rec.elapsedH, 1) : "–"}</td>
+    <td class="r">${d.km >= 0.05 ? `<button type="button" data-done-gpx="${i}" title="Download the GPX of this part" style="min-height:32px;padding:4px 10px;font-size:.85rem">⬇ GPX</button>` : ""}</td>
+  </tr>`).join("");
+  host.innerHTML = `<div class="table-wrap"><table>
+      <thead><tr><th>#</th><th>Date</th><th class="opt">Route</th><th class="r">km</th><th class="r">↑ m</th><th class="r opt">↓ m</th>
+        <th class="r" title="time on the road (recorded rides)">Time</th><th class="r opt">km/h</th><th></th></tr></thead>
+      <tbody>${rows}</tbody></table></div>
+    <div class="small muted" style="margin-top:8px">km and climb along the planned route. Time and speed come from rides you uploaded
+      (first to last point, incl. breaks).</div>
+    <div class="btn-row"><label class="button" for="rideFile">📤 Add a ridden day (GPX of your ride)</label></div>`;
 }
 
 async function downloadDone(i) {
@@ -2989,6 +3167,8 @@ async function downloadPdf() {
 
     const T = S.track, st0 = S.stages;
     const weather = st0.map(stageWeather);
+    // Charts of closed sections haven't been drawn yet.
+    try { renderProfile(); renderComparison(weather); } catch (e) { /* the PDF works without charts */ }
     const startI = idxAt(T, S.startKm * 1000);
     const rest = (T.total - S.startKm * 1000) / 1000;
     const up = T.cumUp[T.pts.length - 1] - T.cumUp[startI];
@@ -3150,6 +3330,12 @@ function syncInputs() {
   $("date").min = todayStr();
   $("dep").value = S.dep;
   $("flatSpeed").value = S.flatSpeed;
+  for (const r of document.querySelectorAll('input[name="planMode"]')) r.checked = r.value === S.planMode;
+  $("ctl-hours").classList.toggle("hidden", S.planMode !== "hours");
+  $("ctl-km").classList.toggle("hidden", S.planMode === "hours");
+  $("hoursPerDay").value = Math.min(12, S.hoursPerDay);
+  $("hoursNum").value = S.hoursPerDay;
+  $("hoursOut").textContent = fmt(S.hoursPerDay, S.hoursPerDay % 1 ? 1 : 0);
   $("breaks").value = S.breaks;
   $("mass").value = S.mass;
   $("autoGps").checked = S.autoGps;
@@ -3207,9 +3393,7 @@ function initControls() {
     if (saved.useHistory === false) S.useHistory = false;
   }
   syncInputs();
-  const open = restore("settingsOpen");
-  $("settings").open = open == null ? !isPhone() : open;
-  $("settings").addEventListener("toggle", () => store("settingsOpen", $("settings").open));
+  $("settings").open = false;
 
   $("models").innerHTML = MODELS.map((m) =>
     `<label><input type="checkbox" value="${m.id}" ${S.models.has(m.id) ? "checked" : ""}>
@@ -3237,6 +3421,20 @@ function initControls() {
     recompute({ weatherDelay: 300 });
   });
   num("flatSpeed", "flatSpeed", 8, 40);
+  document.querySelectorAll('input[name="planMode"]').forEach((r) => r.addEventListener("change", () => {
+    S.planMode = r.value;
+    syncInputs();
+    recompute({ weatherDelay: 300 });
+  }));
+  const setHours = (v) => {
+    const h = Math.max(1, Math.min(16, Math.round((Number(v) || DEFAULTS.hoursPerDay) * 2) / 2));
+    if (h === S.hoursPerDay) return;
+    S.hoursPerDay = h;
+    syncInputs();
+    recompute();
+  };
+  $("hoursPerDay").addEventListener("input", (e) => setHours(e.target.value));
+  $("hoursNum").addEventListener("change", (e) => setHours(e.target.value));
   num("breaks", "breaks", 0, 150);
   num("mass", "mass", 50, 250);
   $("autoGps").addEventListener("change", (e) => { S.autoGps = e.target.checked; saveGlobalSettings(); });
@@ -3275,6 +3473,14 @@ function initControls() {
     else render();
   }, true);
   $("pdfBtn").addEventListener("click", downloadPdf);
+  document.querySelectorAll("[data-mapview]").forEach((b) => b.addEventListener("click", () => {
+    mapView = b.dataset.mapview;
+    store("mapView", mapView);
+    renderMap();
+  }));
+  for (const id of ["sec-profile", "sec-models"]) {
+    $(id).addEventListener("toggle", (e) => { if (e.target.open) setTimeout(render, 0); });
+  }
   $("tourSelect").addEventListener("change", async (e) => {
     if (e.target.value && e.target.value !== S.tourId) {
       await saveTourSettings();
