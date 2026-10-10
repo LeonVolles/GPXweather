@@ -171,8 +171,19 @@ The start page only shows what you need for a quick check:
   tonight's stop, **🏁 End day** and **📤 Upload ride**. **More about this stage** opens the
   details: surface, elevation, time estimate, weather and night, campsites and
   the GPX.
+- **Hour by hour** – a small strip on today's card: for every hour where you
+  will be (km), the weather there, rain and head-/tailwind (↓ headwind,
+  ↑ tailwind).
+- **💡 Rain advice** – only when rain is expected on your way: when and where,
+  and whether starting earlier/later, taking a break or riding a bit faster or
+  slower would keep you dry.
 - **The map**, zoomed to today's route; switch to **Whole tour** for the
-  overview.
+  overview. Two optional overlays:
+  - **🌧️ Radar** – live rain radar (RainViewer) with a time slider; for each
+    radar time a 🚴 shows where you will be.
+  - **🛒 Supplies** – 💧 drinking water, 🛒 supermarkets, 🥖 bakeries, 🔧 bike
+    shops and repair stations, 🚻 toilets along today's route, within the
+    detour you choose (0.5–5 km).
 
 Everything else is folded away and opens with a tap: **Upcoming stages** (table
 and all day cards), **Completed**, **Weather models compared**, **Elevation
@@ -182,6 +193,11 @@ profile** and **Route details**.
   weather model side by side and hourly charts along the route.
 - **⬇ GPX of this stage** saves that day's route, or opens it directly in your
   navigation app.
+
+### Rest days
+
+Not riding today? Open **More about this stage** and tap **😴 Rest day** – the
+plan simply continues tomorrow.
 
 ### 5. Find a campsite for the night
 
@@ -205,6 +221,12 @@ for. On the iPhone you can save it to Files or send it on.
 
 Every GPX you load is kept. Switch between tours in the list at the top; 🗑
 removes the selected tour from your phone.
+
+## Backup
+
+**⚙️ Settings → 💾 Backup** saves all your tours, positions, ride logs and
+settings to one file (on the iPhone: *Save to Files*, e.g. iCloud Drive).
+**📥 Restore** loads it again – on the same or a new phone.
 
 ## Good to know
 
@@ -231,6 +253,6 @@ removes the selected tour from your phone.
 
 Weather data by [Open-Meteo.com](https://open-meteo.com/) (CC BY 4.0), based on
 models from ECMWF, DWD, NOAA, Météo-France and the UK Met Office. Elevation
-data: Copernicus DEM via Open-Meteo. Routing: BRouter. Place names: BigDataCloud. Campsites:
-OpenStreetMap via the Overpass API. Map:
+data: Copernicus DEM via Open-Meteo. Routing: BRouter. Place names: BigDataCloud. Campsites and
+supplies: OpenStreetMap via the Overpass API. Rain radar: RainViewer. Map:
 [CyclOSM](https://www.cyclosm.org/), map data © OpenStreetMap contributors.

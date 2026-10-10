@@ -172,6 +172,16 @@
   details.section > :last-child { margin-bottom: 16px; }
   details.section .card { box-shadow: none; }
   .map-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .chip.on { background: var(--accent); color: #fff; border-color: transparent; }
+  button.chip { min-height: 34px; padding: 4px 12px; }
+  .overlay-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+  .overlay-bar input[type=range] { flex: 1 1 160px; accent-color: var(--accent); }
+  .overlay-bar select { width: auto; min-height: 34px; padding: 4px 8px; }
+  .hstrip { display: flex; gap: 6px; overflow-x: auto; margin-top: 10px; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+  .hcell { flex: 0 0 auto; min-width: 56px; text-align: center; background: var(--surface-2); border-radius: 10px; padding: 6px 4px; line-height: 1.25; }
+  .hcell .hico { font-size: 1.3rem; }
+  .rainy { color: var(--m1); font-weight: 650; }
+  .advice { margin-top: 10px; padding: 8px 12px; border-radius: 10px; background: var(--night-bg); font-size: 0.92rem; }
   .opts { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
   .chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--axis); border-radius: 999px;
           padding: 4px 10px; font-size: 0.85rem; cursor: pointer; min-height: 34px; font-weight: 400; }
@@ -328,6 +338,14 @@
         <div class="muted small" id="historyInfo"></div>
       </div>
       <div class="ctl">
+        <label>Backup</label>
+        <div class="btn-row" style="margin-top:0">
+          <button type="button" id="backupBtn" title="Save all tours, positions and ride logs to a file">💾 Backup</button>
+          <label class="button" for="restoreFile" title="Restore tours from a backup file">📥 Restore</label>
+        </div>
+        <input type="file" id="restoreFile" class="file-input" accept=".json,application/json">
+      </div>
+      <div class="ctl">
         <label>When the app opens</label>
         <label class="check"><input type="checkbox" id="autoGps"> Update my position from GPS</label>
       </div>
@@ -376,6 +394,19 @@
         <button type="button" data-mapview="today">Today</button>
         <button type="button" data-mapview="all">Whole tour</button>
       </div>
+    </div>
+    <div class="opts">
+      <button type="button" class="chip" data-overlay="radar" title="Rain radar with your expected position">🌧️ Radar</button>
+      <button type="button" class="chip" data-overlay="supplies" title="Water, shops, bike repair and toilets near today's route">🛒 Supplies</button>
+    </div>
+    <div id="radarBar" class="overlay-bar hidden">
+      <input type="range" id="radarSlider" min="0" max="0" value="0" aria-label="Radar time">
+      <div class="small" id="radarTime"></div>
+    </div>
+    <div id="suppliesBar" class="overlay-bar hidden">
+      <label class="small">Max. detour
+        <select id="supplyRadius"><option value="0.5">0.5 km</option><option value="1">1 km</option><option value="2">2 km</option><option value="5">5 km</option></select></label>
+      <span class="small muted" id="suppliesInfo"></span>
     </div>
     <div id="map"></div>
     <div class="small muted" style="margin-top:8px">
@@ -2271,6 +2302,7 @@ function renderMap() {
       .bindTooltip(`Your ride on ${fmtDate(date)} · ${fmt(e.rec.km, 1)} km`, { sticky: true }).addTo(mapLayers);
   }
   renderCampMarkers(mapLayers);
+  if (supplies.on) loadSupplies();
   L.marker(ll(T.pts[startI]), {
     icon: L.divIcon({ className: "pos-pin", html: "<span></span>", iconSize: [18, 18], iconAnchor: [9, 9] }),
     zIndexOffset: 1000,
@@ -2562,8 +2594,8 @@ function sparkline(st) {
 function stageWarnings(st, w, sun) {
   const m = w.metrics;
   const warnings = [];
-  if (sun && st.arr > sun.set) warnings.push(`🌇 Arrival at ${fmtMinutes(st.arr)} is after sunset (${fmtMinutes(sun.set)}) – bring lights.`);
-  if (sun && st.dep < sun.rise) warnings.push(`🌅 Departure before sunrise (${fmtMinutes(sun.rise)}).`);
+  if (sun && st.arr > sun.set) warnings.push(`🌙 About ${fmtDuration((st.arr - sun.set) / 60)} of riding after sunset (${fmtMinutes(sun.set)}).`);
+  if (sun && st.dep < sun.rise) warnings.push(`🌅 Start before sunrise (${fmtMinutes(sun.rise)}).`);
   if (st.gapKm > 0.5) warnings.push(`┄ ${fmt(st.gapKm, 0)} km of this stage are missing in the GPX (counted as a straight line, e.g. a ferry).`);
   if ((m.gust.med ?? 0) >= 50) warnings.push(`💨 Strong gusts up to ${fmt(m.gust.med, 0)} km/h.`);
   if ((m.head.med ?? 0) >= 15) warnings.push(`🌬️ Strong headwind (avg. ${fmt(m.head.med, 0)} km/h) – plan extra time.`);
@@ -2733,6 +2765,8 @@ function todayCard(st, k, w) {
     ${st.done > 0.05 && st.dayOffset === 0 ? `<div class="progress" title="ridden today">
         <div class="progress-bar" style="width:${Math.min(100, (100 * st.done) / (st.km || 1)).toFixed(1)}%"></div></div>
       <div class="small">Ridden today: <b>${fmt(st.done, 1)} km</b> · ${fmt(Math.max(0, st.km - st.done), 1)} km to go</div>` : ""}
+    ${w.ok.length ? hourStrip(st) : ""}
+    ${(() => { const a = w.ok.length ? rainAdvice(st) : null; return a ? `<div class="advice">${a}</div>` : ""; })()}
     ${warnings.map((t) => `<div class="warn-line">${t}</div>`).join("")}
     <div class="btn-row icons">
       <button type="button" data-gpx="${k}" title="Send this stage's GPX to your navigation app (e.g. Bergfex Touren)">📲<span>To nav app</span></button>
@@ -2754,6 +2788,7 @@ function todayCard(st, k, w) {
       ${st.section ? `<div class="small muted" style="margin-top:8px">GPX section: ${esc(st.section)}</div>` : ""}
       <div class="btn-row">
         <button type="button" data-goto="${k}">📊 Models & hourly</button>
+        ${st.dayOffset === 0 ? `<button type="button" data-rest-day title="Stay here today – the plan continues tomorrow">😴 Rest day</button>` : ""}
       </div>
     </details>
   </section>`;
@@ -3192,6 +3227,324 @@ function initPlanner() {
   });
   $("planUse").addEventListener("click", usePlanAsTour);
   $("planGpx").addEventListener("click", downloadPlanGpx);
+}
+
+/* ---------- Timeline of today's ride: where you are when, and what the weather does there ---------- */
+
+const nowMinutes = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
+
+// Forecast values (median of the models) at a place along the track and a time of day on `date`.
+function forecastLookup(date) {
+  const lookups = activeModels().map((m) => makeLookup(m));
+  const med = (d, minutes, key, nextHour = false) => {
+    const t = timeKey(date, Math.floor(minutes / 60) * 60 + (nextHour ? 60 : 0));
+    return median(lookups.map((lk) => valueAt(lk(d), key, t)));
+  };
+  return {
+    rain: (d, m) => med(d, m, "precipitation", true),          // mm in that hour
+    temp: (d, m) => med(d, m, "temperature_2m"),
+    code: (d, m) => med(d, m, "weather_code"),
+    prob: (d, m) => med(d, m, "precipitation_probability"),
+  };
+}
+
+// Moving seconds from the stage start to distance x (m, measured from st.a).
+function profTimeAt(st, x) {
+  const p = st.prof;
+  let lo = 0, hi = p.d.length - 1;
+  if (x <= 0) return 0;
+  if (x >= p.d[hi]) return p.t[hi];
+  while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (p.d[mid] <= x) lo = mid; else hi = mid; }
+  return p.t[lo] + (p.t[hi] - p.t[lo]) * ((x - p.d[lo]) / (p.d[hi] - p.d[lo] || 1));
+}
+
+function profDistAt(st, tm) {
+  const p = st.prof;
+  let lo = 0, hi = p.t.length - 1;
+  if (tm >= p.t[hi]) return p.d[hi];
+  while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (p.t[mid] <= tm) lo = mid; else hi = mid; }
+  return p.d[lo] + (p.d[hi] - p.d[lo]) * ((tm - p.t[lo]) / (p.t[hi] - p.t[lo] || 1));
+}
+
+// The rest of a stage as a timeline: starting at `startMin` at track distance `startD`, riding `factor` × as fast.
+function rideTimeline(st, startMin, startD, factor = 1) {
+  const t0 = profTimeAt(st, startD - st.a);
+  const total = st.prof.t[st.prof.t.length - 1];
+  const endMin = startMin + ((total - t0) / factor) * st.breaks / 60;
+  return {
+    startMin, endMin,
+    posAt: (m) => st.a + profDistAt(st, t0 + Math.max(0, (m - startMin) * 60 / st.breaks) * factor),
+  };
+}
+
+// The timeline you are on right now: before the start the planned departure, while riding from where you are.
+function currentTimeline(st) {
+  if (!st.prof) return null;
+  const pos = S.startKm * 1000;
+  if (st.dayOffset === 0 && nowMinutes() > st.dep && pos >= st.a && pos < st.b) return rideTimeline(st, nowMinutes(), pos);
+  return rideTimeline(st, st.dep, st.a);
+}
+
+function rainOnTimeline(st, tl, fc) {
+  let mm = 0, known = false;
+  const spells = [];
+  for (let m = tl.startMin; m < tl.endMin; m += 10) {
+    const d = tl.posAt(m + 5);
+    const r = fc.rain(d, m + 5);
+    if (r == null) continue;
+    known = true;
+    mm += (r * Math.min(10, tl.endMin - m)) / 60;
+    if (r >= 0.3) {
+      const last = spells[spells.length - 1];
+      if (last && last.to >= m) { last.to = m + 10; last.d1 = d; }
+      else spells.push({ from: m, to: m + 10, d0: d, d1: d });
+    }
+  }
+  return known ? { mm, spells } : null;
+}
+
+// One line of advice when rain is expected: leave earlier/later, wait, or ride faster/slower.
+function rainAdvice(st) {
+  if (!st.prof || st.dayOffset > 1) return null;
+  const fc = forecastLookup(st.date);
+  const base = currentTimeline(st);
+  const baseRain = base && rainOnTimeline(st, base, fc);
+  if (!baseRain || baseRain.mm < 0.5) return null;
+  const riding = base.startMin !== st.dep;
+  const startD = riding ? S.startKm * 1000 : st.a;
+  let best = { mm: baseRain.mm, shift: 0, factor: 1 };
+  const shifts = riding ? [0, 30, 60, 90, 120] : [-180, -120, -90, -60, -30, 0, 30, 60, 90, 120, 180];
+  for (const shift of shifts) {
+    for (const factor of [0.85, 1, 1.15]) {
+      if (!shift && factor === 1) continue;
+      const startMin = base.startMin + shift;
+      if (riding && startMin < nowMinutes()) continue;
+      const r = rainOnTimeline(st, rideTimeline(st, startMin, startD, factor), fc);
+      if (!r) continue;
+      // prefer small changes: a candidate must save clearly more than the current best
+      const cost = Math.abs(shift) / 600 + Math.abs(factor - 1);
+      if (r.mm + cost < best.mm + (Math.abs(best.shift) / 600 + Math.abs(best.factor - 1)) - 0.2) best = { mm: r.mm, shift, factor };
+    }
+  }
+  const first = baseRain.spells[0];
+  const when = first ? `${fmtMinutes(first.from)}–${fmtMinutes(first.to)} around km ${fmt(first.d0 / 1000, 0)}${first.d1 - first.d0 > 3000 ? `–${fmt(first.d1 / 1000, 0)}` : ""}` : "";
+  let tip;
+  if (best.mm < baseRain.mm * 0.6 && baseRain.mm - best.mm >= 0.4) {
+    const parts = [];
+    if (best.shift) parts.push(riding ? `take a ${best.shift} min break` : `start at ${fmtMinutes(st.dep + best.shift)}`);
+    if (best.factor > 1) parts.push("ride ~15 % faster");
+    if (best.factor < 1) parts.push("take it ~15 % slower");
+    tip = `💡 ${parts.join(" and ").replace(/^./, (c) => c.toUpperCase())} → about ${fmt(best.mm, 1)} mm instead of ${fmt(baseRain.mm, 1)} mm.`;
+  } else {
+    tip = "Hard to avoid by timing – pack the rain gear.";
+  }
+  return `🌧️ Rain ${when} (≈ ${fmt(baseRain.mm, 1)} mm on your way). ${tip}`;
+}
+
+// Hour-by-hour strip: where you'll be and what the weather is there.
+function hourStrip(st) {
+  const tl = currentTimeline(st);
+  if (!tl) return "";
+  const fc = forecastLookup(st.date);
+  const wind = windLookup(st.date);
+  const cells = [];
+  for (let h = Math.floor(tl.startMin / 60) * 60; h < tl.endMin; h += 60) {
+    const mid = Math.min(Math.max(h + 30, tl.startMin), tl.endMin);
+    const d = tl.posAt(mid);
+    const temp = fc.temp(d, mid), rain = fc.rain(d, mid), code = fc.code(d, mid);
+    if (temp == null) continue;
+    const head = wind(d, mid) * 3.6;
+    cells.push(`<div class="hcell" title="${fmtMinutes(h).slice(0, 5)} · km ${fmt(d / 1000, 0)}">
+      <div class="small muted">${pad(Math.floor((h / 60) % 24))}h</div>
+      <div class="hico">${wxInfo(code == null ? null : Math.round(code))[0]}</div>
+      <div><b>${fmt(temp, 0)}°</b></div>
+      <div class="small ${rain >= 0.1 ? "rainy" : "muted"}">${rain >= 0.1 ? "☔" + fmt(rain, 1) : "–"}</div>
+      <div class="small muted" title="${head > 0 ? "headwind" : "tailwind"}">${Math.abs(head) < 3 ? "·" : head > 0 ? "↓" + fmt(head, 0) : "↑" + fmt(-head, 0)}</div>
+      <div class="small muted">km ${fmt(d / 1000, 0)}</div></div>`);
+  }
+  return cells.length > 1 ? `<div class="hstrip" aria-label="Hour by hour along the route">${cells.join("")}</div>` : "";
+}
+
+/* ---------- Rain radar on the map (RainViewer) ---------- */
+
+const radar = { on: false, frames: [], idx: 0, host: "", layer: null, rider: null, loadedAt: 0 };
+
+async function loadRadarFrames() {
+  if (Date.now() - radar.loadedAt < 5 * 60000 && radar.frames.length) return;
+  const j = await fetchJson("https://api.rainviewer.com/public/weather-maps.json");
+  radar.host = j.host;
+  radar.frames = [...((j.radar && j.radar.past) || []), ...((j.radar && j.radar.nowcast) || [])];
+  radar.nowIdx = ((j.radar && j.radar.past) || []).length - 1;
+  radar.idx = radar.nowIdx;
+  radar.loadedAt = Date.now();
+}
+
+async function toggleRadar() {
+  radar.on = !radar.on;
+  $("radarBar").classList.toggle("hidden", !radar.on);
+  document.querySelector('[data-overlay="radar"]').classList.toggle("on", radar.on);
+  if (!radar.on) { if (radar.layer) map.removeLayer(radar.layer); if (radar.rider) map.removeLayer(radar.rider); return; }
+  try {
+    $("radarTime").textContent = "loading …";
+    await loadRadarFrames();
+    $("radarSlider").max = radar.frames.length - 1;
+    $("radarSlider").value = radar.idx;
+    showRadarFrame();
+  } catch (e) {
+    $("radarTime").textContent = "Rain radar not available right now.";
+  }
+}
+
+function showRadarFrame() {
+  const f = radar.frames[radar.idx];
+  if (!f || !map) return;
+  if (radar.layer) map.removeLayer(radar.layer);
+  radar.layer = L.tileLayer(`${radar.host}${f.path}/256/{z}/{x}/{y}/2/1_1.png`, {
+    opacity: 0.65, maxNativeZoom: 7, maxZoom: 20, zIndex: 5,
+    attribution: 'Radar <a href="https://www.rainviewer.com/">RainViewer</a>',
+  }).addTo(map);
+  const t = new Date(f.time * 1000);
+  const mins = Math.round((f.time * 1000 - Date.now()) / 60000);
+  const rel = Math.abs(mins) < 5 ? "now" : mins > 0 ? `in ${mins} min (forecast)` : `${-mins} min ago`;
+  // Where you'll be at that moment (today's stage, from the riding-time model).
+  if (radar.rider) { map.removeLayer(radar.rider); radar.rider = null; }
+  const st = S.stages.find((x) => x.dayOffset === 0);
+  let where = "";
+  if (st && st.prof) {
+    const m = t.getHours() * 60 + t.getMinutes();
+    const tl = currentTimeline(st);
+    if (tl && m >= tl.startMin - 30 && m <= tl.endMin) {
+      const p = pointAt(S.track, tl.posAt(Math.max(m, tl.startMin)));
+      radar.rider = L.marker([p.lat, p.lon], {
+        icon: L.divIcon({ className: "camp-pin", html: "🚴", iconSize: [26, 26], iconAnchor: [13, 13] }), zIndexOffset: 2000,
+      }).bindTooltip(`You at ${fmtClock(t)} (expected)`).addTo(map);
+      where = ` · 🚴 you: km ${fmt(p.d / 1000, 0)}`;
+    }
+  }
+  $("radarTime").textContent = `${fmtClock(t)} · ${rel}${where}`;
+}
+
+/* ---------- Supplies near today's route (OpenStreetMap) ---------- */
+
+const SUPPLY_TYPES = [
+  { icon: "💧", label: "drinking water", q: '["amenity"="drinking_water"]', test: (t) => t.amenity === "drinking_water" },
+  { icon: "🛒", label: "supermarket", q: '["shop"~"^(supermarket|convenience)$"]', test: (t) => t.shop === "supermarket" || t.shop === "convenience" },
+  { icon: "🥖", label: "bakery", q: '["shop"="bakery"]', test: (t) => t.shop === "bakery" },
+  { icon: "🔧", label: "bike shop / repair", q: '["shop"="bicycle"]', test: (t) => t.shop === "bicycle" || t.amenity === "bicycle_repair_station" },
+  { icon: "🔧", label: "bike repair station", q: '["amenity"="bicycle_repair_station"]', test: () => false },
+  { icon: "🚻", label: "toilets", q: '["amenity"="toilets"]', test: (t) => t.amenity === "toilets" },
+];
+const supplies = { on: false, radius: restore("supplyRadius") || 1, layer: null, cache: new Map(), busy: false };
+
+function supplyStage() {
+  return S.stages.find((x) => x.dayOffset >= 0);
+}
+
+async function toggleSupplies() {
+  supplies.on = !supplies.on;
+  $("suppliesBar").classList.toggle("hidden", !supplies.on);
+  document.querySelector('[data-overlay="supplies"]').classList.toggle("on", supplies.on);
+  if (!supplies.on) { if (supplies.layer) supplies.layer.clearLayers(); return; }
+  await loadSupplies();
+}
+
+async function loadSupplies() {
+  const st = supplyStage();
+  if (!st || !map || supplies.busy) return;
+  if (!supplies.layer) supplies.layer = L.layerGroup().addTo(map);
+  const T = S.track;
+  const a = Math.max(st.a, S.startKm * 1000), b = st.b;
+  const key = `${Math.round(a / 100)}|${Math.round(b / 100)}|${supplies.radius}`;
+  let list = supplies.cache.get(key);
+  if (!list) {
+    supplies.busy = true;
+    $("suppliesInfo").textContent = "searching …";
+    try {
+      const every = Math.max(1, Math.round(400 / T.step));
+      const coords = [];
+      for (let i = idxAt(T, a); i <= idxAt(T, b); i += every) if (!T.pts[i].gap) coords.push(`${T.pts[i].lat.toFixed(5)},${T.pts[i].lon.toFixed(5)}`);
+      const r = Math.round(supplies.radius * 1000);
+      const query = `[out:json][timeout:40];(${SUPPLY_TYPES.map((s) => `nwr${s.q}(around:${r},${coords.join(",")});`).join("")});out center tags 400;`;
+      const res = await fetch("https://overpass-api.de/api/interpreter", {
+        method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: "data=" + encodeURIComponent(query),
+      });
+      if (!res.ok) throw new Error(res.status === 429 || res.status === 504 ? "busy – try again in a minute" : "HTTP " + res.status);
+      const json = await res.json();
+      list = (json.elements || []).map((el) => {
+        const t = el.tags || {};
+        const lat = el.lat ?? (el.center && el.center.lat), lon = el.lon ?? (el.center && el.center.lon);
+        const type = SUPPLY_TYPES.find((s) => s.test(t));
+        if (lat == null || !type) return null;
+        const near = nearestKm(T, lat, lon);
+        return { lat, lon, icon: type.icon, label: type.label, name: t.name || "", hours: t.opening_hours || "", km: near.km, off: near.offset };
+      }).filter(Boolean).sort((x, y) => x.km - y.km);
+      supplies.cache.set(key, list);
+    } catch (e) {
+      $("suppliesInfo").textContent = "Supplies not available: " + e.message;
+      supplies.busy = false;
+      return;
+    }
+    supplies.busy = false;
+  }
+  if (!supplies.on) return;
+  supplies.layer.clearLayers();
+  for (const s of list) {
+    L.marker([s.lat, s.lon], { icon: L.divIcon({ className: "camp-pin", html: s.icon, iconSize: [22, 22], iconAnchor: [11, 11] }) })
+      .bindPopup(`<b>${s.icon} ${esc(s.name || s.label)}</b><br>${esc(s.label)} · km ${fmt(s.km, 1)} · ${fmt(s.off, 0)} m off the route` +
+        (s.hours ? `<br>${esc(s.hours)}` : "") + `<br><a href="${esc(directionsUrl(s))}" target="_blank" rel="noopener">Directions</a>`)
+      .addTo(supplies.layer);
+  }
+  const count = (icon) => list.filter((s) => s.icon === icon).length;
+  $("suppliesInfo").textContent = list.length
+    ? `${count("💧")} 💧 · ${count("🛒")} 🛒 · ${count("🥖")} 🥖 · ${count("🔧")} 🔧 · ${count("🚻")} 🚻 on the next stage`
+    : "Nothing found within that distance.";
+}
+
+/* ---------- Rest day ---------- */
+
+function restDay() {
+  const d = todayStr();
+  S.days[d] = { start: S.startKm, end: S.startKm, closed: true, rest: true };
+  setStatus("😴 Rest day – the plan continues tomorrow.");
+  recompute({ weatherDelay: 300 });
+}
+
+/* ---------- Backup and restore ---------- */
+
+const BACKUP_LOCAL_KEYS = ["settings", "current", "places", "camps", "basemap", "mapView", "brouterProfile", "brouterOpts", "campRadius", "supplyRadius"];
+
+async function exportBackup() {
+  const plain = (v) => (ArrayBuffer.isView(v) ? Array.from(v) : v);
+  const data = { app: "gpxweather", version: 1, exported: new Date().toISOString(), idb: {}, local: {} };
+  for (const prefix of ["tour|", "set|", "surf|"]) {
+    const keys = await idb.keys(prefix);
+    const values = await idb.values(prefix);
+    keys.forEach((k, i) => { data.idb[k] = values[i]; });
+  }
+  for (const k of BACKUP_LOCAL_KEYS) { const v = restore(k); if (v != null) data.local[k] = v; }
+  const json = JSON.stringify(data, (k, v) => plain(v));
+  await saveFile(new File([json], `gpxweather-backup-${todayStr()}.json`, { type: "application/json" }));
+  setStatus(`💾 Backup with ${Object.keys(data.idb).filter((k) => k.startsWith("tour|")).length} tour(s) created.`);
+}
+
+async function importBackup(file) {
+  try {
+    const data = JSON.parse(await file.text());
+    if (!data || data.app !== "gpxweather" || !data.idb) throw new Error("This is not a GPX Weather backup.");
+    const tours = Object.keys(data.idb).filter((k) => k.startsWith("tour|")).length;
+    if (!confirm(`Restore ${tours} tour(s) with their positions and ride logs? Tours with the same id are replaced.`)) return;
+    for (const [k, v] of Object.entries(data.idb)) {
+      if (/^(tour|set|surf)\|/.test(k)) await idb.set(k, v);
+    }
+    for (const [k, v] of Object.entries(data.local || {})) if (BACKUP_LOCAL_KEYS.includes(k)) store(k, v);
+    await refreshTourList();
+    const id = restore("current");
+    if (id && S.tours.some((t) => t.id === id)) await openTour(id);
+    else if (S.tours.length) await openTour(S.tours[0].id);
+    setStatus(`📥 Restored ${tours} tour(s).`);
+  } catch (e) {
+    setStatus("Restore failed: " + e.message);
+  }
 }
 
 /* ---------- Saving files (GPX, PDF) ---------- */
@@ -3745,6 +4098,7 @@ function initControls() {
     const gpx = e.target.closest("[data-gpx]");
     if (gpx) downloadStage(Number(gpx.dataset.gpx));
     if (e.target.closest("[data-end-day]")) endToday();
+    if (e.target.closest("[data-rest-day]")) restDay();
     if (e.target.closest("[data-reopen]")) reopenToday();
     const doneGpx = e.target.closest("[data-done-gpx]");
     if (doneGpx) downloadDone(Number(doneGpx.dataset.doneGpx));
@@ -3776,6 +4130,17 @@ function initControls() {
     else render();
   }, true);
   $("pdfBtn").addEventListener("click", downloadPdf);
+  $("backupBtn").addEventListener("click", exportBackup);
+  $("restoreFile").addEventListener("change", (e) => { if (e.target.files[0]) importBackup(e.target.files[0]); e.target.value = ""; });
+  document.querySelector('[data-overlay="radar"]').addEventListener("click", () => map && toggleRadar());
+  document.querySelector('[data-overlay="supplies"]').addEventListener("click", () => map && toggleSupplies());
+  $("radarSlider").addEventListener("input", (e) => { radar.idx = Number(e.target.value); showRadarFrame(); });
+  $("supplyRadius").value = String(supplies.radius);
+  $("supplyRadius").addEventListener("change", (e) => {
+    supplies.radius = Number(e.target.value) || 1;
+    store("supplyRadius", supplies.radius);
+    loadSupplies();
+  });
   document.querySelectorAll("[data-mapview]").forEach((b) => b.addEventListener("click", () => {
     mapView = b.dataset.mapview;
     store("mapView", mapView);
