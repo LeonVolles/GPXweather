@@ -157,6 +157,13 @@
   .cmp td:first-child { color: var(--ink-2); }
   .cmp td.med { font-weight: 650; }
   .wx { font-size: 1.6rem; line-height: 1; }
+  details.done { padding: 0; }
+  details.done > summary { margin: 0; padding: 12px 16px; list-style-position: inside; }
+  details.done[open] > summary { border-bottom: 1px solid var(--grid); }
+  details.done .table-wrap { padding: 4px 12px 12px; }
+  details.done button { min-height: 32px; padding: 4px 10px; font-size: 0.85rem; }
+  .progress { height: 8px; border-radius: 4px; background: var(--grid); margin-top: 12px; overflow: hidden; }
+  .progress-bar { height: 100%; background: var(--accent); }
   details.camp { margin-top: 12px; border-top: 1px solid var(--grid); }
   details.camp > summary { margin-top: 10px; }
   .camp-controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
@@ -288,6 +295,7 @@
   <div class="card"><div id="profile" class="chart"></div></div>
 
   <h2 class="part">Stages at a glance</h2>
+  <div id="done-glance"></div>
   <div class="card table-wrap"><table id="overview"></table></div>
 
   <h2 class="part">Model comparison per stage</h2>
@@ -303,6 +311,7 @@
   </div>
 
   <h2 class="part">Daily stages</h2>
+  <div id="done-stages"></div>
   <div id="stages"></div>
 
   <h2 class="part">Download</h2>
@@ -578,6 +587,7 @@ const S = {
   speed: DEFAULTS.speed,
   models: new Set(MODELS.filter((m) => m.on).map((m) => m.id)),
   autoGps: false,
+  days: {},               // ride log: "YYYY-MM-DD" -> { start, end } in km
   stages: [],
   tours: [],              // [{ id, name, total }]
 };
@@ -808,7 +818,7 @@ function unpackTrack(t) {
 }
 
 function tourSettings() {
-  return { startKm: S.startKm, perDay: S.perDay, date: S.date, dep: S.dep, speed: S.speed, savedAt: Date.now() };
+  return { startKm: S.startKm, perDay: S.perDay, date: S.date, dep: S.dep, speed: S.speed, days: S.days, savedAt: Date.now() };
 }
 
 let saveTimer = null;
@@ -865,6 +875,7 @@ async function openTour(id) {
   S.speed = settings.speed || DEFAULTS.speed;
   // A planned future start date is kept; otherwise the first stage is today.
   S.date = settings.date && settings.date > todayStr() ? settings.date : todayStr();
+  S.days = settings.days && typeof settings.days === "object" ? settings.days : {};
   syncInputs();
   setTrack(unpackTrack(t), settings.startKm || 0);
   renderTourSelect();
@@ -902,44 +913,95 @@ async function migrateLegacy() {
 
 /* ---------- Stages ---------- */
 
+// Distances (m) along the track with climb, descent, elevation range and end points.
+function rangeStats(a, b) {
+  const T = S.track;
+  const ia = idxAt(T, a), ib = idxAt(T, b);
+  let lo = Infinity, hi = -Infinity;
+  for (let k = ia; k <= ib; k++) { lo = Math.min(lo, T.pts[k].sm); hi = Math.max(hi, T.pts[k].sm); }
+  return {
+    a, b, km: (b - a) / 1000,
+    up: T.cumUp[ib] - T.cumUp[ia],
+    down: T.cumDown[ib] - T.cumDown[ia],
+    gapKm: (T.cumGap[ib] - T.cumGap[ia]) / 1000,
+    lo, hi,
+    startEle: T.pts[ia].sm, endEle: T.pts[ib].sm,
+    startPt: T.pts[ia], endPt: T.pts[ib],
+    section: segmentAt(T, (a + b) / 2),
+  };
+}
+
+/* Ride log: for every day the position where it started and where it ended (km). */
+
+function logPosition(prevKm, nextKm) {
+  const d = todayStr();
+  if (S.days[d]) S.days[d].end = nextKm;
+  else S.days[d] = { start: prevKm, end: nextKm };
+}
+
+// Where today's ride started (km): today's log entry, otherwise the current position.
+function todayStartKm() {
+  const e = S.days[todayStr()];
+  return Math.min(e ? e.start : S.startKm, S.startKm);
+}
+
+// Days already ridden (before today), plus unlogged parts of the route behind you.
+function completedDays() {
+  const T = S.track;
+  if (!T) return [];
+  const today = todayStr();
+  const endKm = S.date === today ? todayStartKm() : S.startKm;
+  const logged = Object.keys(S.days).filter((d) => d < today).sort()
+    .map((d) => ({ date: d, a: S.days[d].start * 1000, b: Math.min(S.days[d].end, endKm) * 1000 }))
+    .filter((r) => r.b - r.a > 50);
+  const out = [];
+  let covered = 0;
+  for (const r of logged) {
+    if (r.a - covered > 100) out.push({ date: null, a: covered, b: r.a });
+    const a = Math.max(r.a, covered);
+    if (r.b - a > 50) out.push({ date: r.date, a, b: r.b });
+    covered = Math.max(covered, r.b);
+  }
+  if (endKm * 1000 - covered > 100) out.push({ date: null, a: covered, b: endKm * 1000 });
+  let n = 0;
+  return out.map((r) => ({ ...rangeStats(r.a, r.b), date: r.date, no: r.date ? ++n : null }));
+}
+
 function buildStages() {
   const T = S.track;
   if (!T) return [];
-  const start = Math.min(S.startKm * 1000, T.total);
+  const today = todayStr();
+  const pos = Math.min(S.startKm * 1000, T.total);
   const per = S.perDay * 1000;
-  const rest = T.total - start;
-  if (rest < 100) return [];
+  // When the first stage is today, it starts where you set off this morning, so updating
+  // your position during the ride doesn't move today's goal.
+  const isToday = S.date === today;
+  const first = isToday ? Math.min(todayStartKm() * 1000, pos) : pos;
+  const offset = completedDays().filter((d) => d.no).length;
 
-  let n = Math.max(1, Math.ceil(rest / per));
-  if (n > 1 && rest - (n - 1) * per < 0.15 * per) n--;   // fold a tiny remainder into the last day
+  const ranges = [];
+  let a = first;
+  while (T.total - a >= 100) {
+    let b = Math.min(T.total, a + per);
+    if (ranges.length === 0 && isToday && b < pos) b = pos;      // already rode further than planned
+    if (T.total - b < 0.15 * per) b = T.total;                    // fold a tiny remainder into the last day
+    ranges.push([a, b]);
+    a = b;
+  }
 
   const [h, m] = S.dep.split(":").map(Number);
   const depMin = h * 60 + m;
-  const today = todayStr();
-  const stages = [];
-  for (let i = 0; i < n; i++) {
-    const a = start + i * per;
-    const b = i === n - 1 ? T.total : start + (i + 1) * per;
-    const ia = idxAt(T, a), ib = idxAt(T, b);
-    let lo = Infinity, hi = -Infinity;
-    for (let k = ia; k <= ib; k++) { lo = Math.min(lo, T.pts[k].sm); hi = Math.max(hi, T.pts[k].sm); }
-    const km = (b - a) / 1000;
-    const hours = km / S.speed;
+  return ranges.map(([ra, rb], i) => {
+    const r = rangeStats(ra, rb);
+    const hours = r.km / S.speed;
     const date = addDays(S.date, i);
-    stages.push({
-      i, a, b, km, date, hours,
+    return {
+      ...r, i, no: offset + i + 1, date, hours,
+      done: Math.max(0, Math.min(rb, pos) - ra) / 1000,       // km of this stage already ridden
       dayOffset: dayDiff(today, date),
       dep: depMin, arr: depMin + hours * 60,
-      up: T.cumUp[ib] - T.cumUp[ia],
-      down: T.cumDown[ib] - T.cumDown[ia],
-      gapKm: (T.cumGap[ib] - T.cumGap[ia]) / 1000,
-      lo, hi,
-      startEle: T.pts[ia].sm, endEle: T.pts[ib].sm,
-      startPt: T.pts[ia], endPt: T.pts[ib],
-      section: segmentAt(T, (a + b) / 2),
-    });
-  }
-  return stages;
+    };
+  });
 }
 
 /* ---------- Weather: grid points, cache, fetching ---------- */
@@ -1421,7 +1483,7 @@ function render() {
   // Each part renders on its own, so a failure in one (e.g. a CDN library missing) never hides the route.
   const parts = [
     () => renderNext(weather), () => renderPreview(), () => renderTotals(weather), () => renderMap(),
-    () => renderProfile(), () => renderOverview(weather), () => renderComparison(weather), () => renderStages(weather),
+    () => renderProfile(), () => renderDone(), () => renderOverview(weather), () => renderComparison(weather), () => renderStages(weather),
   ];
   for (const part of parts) {
     try { part(); } catch (e) { console.error(e); }
@@ -1516,18 +1578,18 @@ function renderMap() {
     }
   }
   S.stages.forEach((st, k) => {
-    const tip = `Stage ${k + 1} · ${fmtDate(st.date)} · ${fmt(st.km, 0, " km")}`;
-    for (const r of runs(T, idxAt(T, st.a), idxAt(T, st.b))) {
+    const tip = `Stage ${st.no} · ${fmtDate(st.date)} · ${fmt(st.km, 0, " km")}`;
+    for (const r of runs(T, Math.max(idxAt(T, st.a), startI), idxAt(T, st.b))) {
       L.polyline(r.pts.map(ll), r.gap ? gapStyle : { color: stageColor(k), weight: 5, opacity: 0.9 })
         .bindTooltip(r.gap ? "Gap in the GPX (straight line)" : tip, { sticky: true }).addTo(mapLayers);
     }
     // Numbered pins for short trips; small dots for long ones so they don't cover the route.
     const pin = S.stages.length <= 12
       ? L.marker(ll(st.endPt), {
-          icon: L.divIcon({ className: "stage-pin", html: `<span>${k + 1}</span>`, iconSize: [18, 18], iconAnchor: [9, 9] }),
+          icon: L.divIcon({ className: "stage-pin", html: `<span>${st.no}</span>`, iconSize: [18, 18], iconAnchor: [9, 9] }),
         })
       : L.circleMarker(ll(st.endPt), { radius: 4, color: css("--ink"), weight: 1.5, fillColor: css("--surface"), fillOpacity: 1 });
-    pin.bindTooltip(`End of stage ${k + 1}: ${placeName(st.endPt) || "km " + fmt(st.b / 1000, 0)}`).addTo(mapLayers);
+    pin.bindTooltip(`End of stage ${st.no}: ${placeName(st.endPt) || "km " + fmt(st.b / 1000, 0)}`).addTo(mapLayers);
   });
   renderCampMarkers(mapLayers);
   L.marker(ll(T.pts[startI]), {
@@ -1573,10 +1635,10 @@ function renderSvgMap() {
     svg += `<path d="${path(thin(r))}" fill="none" stroke="${css("--ridden")}" stroke-width="${r.gap ? 1.5 : 3}" ${r.gap ? 'stroke-dasharray="4 6"' : ""}/>`;
   }
   S.stages.forEach((st, k) => {
-    for (const r of runs(T, idxAt(T, st.a), idxAt(T, st.b))) {
-      svg += `<path d="${path(thin(r))}" fill="none" stroke="${r.gap ? css("--ridden") : stageColor(k)}" stroke-width="${r.gap ? 1.5 : 3.5}" ${r.gap ? 'stroke-dasharray="4 6"' : ""}><title>Stage ${k + 1}</title></path>`;
+    for (const r of runs(T, Math.max(idxAt(T, st.a), startI), idxAt(T, st.b))) {
+      svg += `<path d="${path(thin(r))}" fill="none" stroke="${r.gap ? css("--ridden") : stageColor(k)}" stroke-width="${r.gap ? 1.5 : 3.5}" ${r.gap ? 'stroke-dasharray="4 6"' : ""}><title>Stage ${st.no}</title></path>`;
     }
-    svg += `<circle cx="${x(st.endPt)}" cy="${y(st.endPt)}" r="5" fill="${css("--surface")}" stroke="${css("--ink")}" stroke-width="1.5"><title>End of stage ${k + 1}</title></circle>`;
+    svg += `<circle cx="${x(st.endPt)}" cy="${y(st.endPt)}" r="5" fill="${css("--surface")}" stroke="${css("--ink")}" stroke-width="1.5"><title>End of stage ${st.no}</title></circle>`;
   });
   const pos = T.pts[startI];
   svg += `<circle cx="${x(pos)}" cy="${y(pos)}" r="8" fill="${css("--critical")}" stroke="#fff" stroke-width="3"/>`;
@@ -1633,7 +1695,7 @@ function renderProfile() {
     line: { color: css("--m1"), width: 2 }, fill: "tozeroy", fillcolor: css("--m1") + "26",
     customdata: ahead.map((p) => {
       const k = stageOf(p.d);
-      return (k < 0 ? "" : `stage ${k + 1}`) + (p.gap ? " · gap in the GPX" : "");
+      return (k < 0 ? "" : `stage ${S.stages[k].no}`) + (p.gap ? " · gap in the GPX" : "");
     }),
     hovertemplate: "km %{x:.1f} · %{y:.0f} m · %{customdata}<extra></extra>",
   });
@@ -1647,7 +1709,7 @@ function renderProfile() {
   const labelEvery = Math.max(1, Math.ceil(S.stages.length / (isPhone() ? 8 : 25)));
   const annotations = S.stages.filter((_, k) => k % labelEvery === 0).map((st) => ({
     x: (st.a + st.b) / 2000, y: 1, yref: "paper", yanchor: "bottom", showarrow: false,
-    text: `${st.i + 1}`, font: { size: 11, color: css("--ink-2") },
+    text: `${st.no}`, font: { size: 11, color: css("--ink-2") },
   }));
 
   Plotly.react("profile", traces, plotTheme({
@@ -1701,8 +1763,8 @@ function renderOverview(weather) {
     const rainRange = rv.length > 1 ? ` <span class="muted opt">(${fmt(Math.min(...rv), 1)}–${fmt(Math.max(...rv), 1)})</span>` : "";
     const ht = m.head.med == null ? "–" : Math.abs(m.head.med) < 3 ? "±0" : m.head.med > 0 ? `↓ ${fmt(m.head.med, 0)}` : `↑ ${fmt(-m.head.med, 0)}`;
     return `<tr class="click" data-stage="${k}">
-      <td><b>${k + 1}</b></td>
-      <td>${fmtDate(st.date)}</td>
+      <td><b>${st.no}</b></td>
+      <td>${st.dayOffset === 0 ? "<b>Today</b>" : fmtDate(st.date)}</td>
       <td class="opt">${stageTitle(st)}${st.gapKm > 0.5 ? ` <span class="muted small" title="gap in the GPX">(┄ ${fmt(st.gapKm, 0)} km)</span>` : ""}</td>
       <td class="r num">${fmt(st.km, 0)}</td>
       <td class="r num">${fmt(st.up, 0)}</td>
@@ -1755,7 +1817,7 @@ function renderComparison(weather) {
     `<span class="badge"><span class="swatch" style="background:${css("--ink")};height:3px"></span>median</span>`;
   // Only stages that have weather data – the rest would just be empty columns.
   const shown = weather.map((w, k) => [w, S.stages[k]]).filter(([w]) => w.ok.length);
-  const x = shown.map(([, st]) => isPhone() ? `${st.i + 1}` : `${st.i + 1} · ${fmtDate(st.date)}`);
+  const x = shown.map(([, st]) => isPhone() ? `${st.no}` : `${st.no} · ${fmtDate(st.date)}`);
 
   const panel = (id, key, title, unit, d, zero) => {
     const traces = models.map((m) => ({
@@ -1801,7 +1863,7 @@ function sparkline(st) {
   const ys = (p) => H - 4 - ((p.sm - lo) / (hi - lo)) * (H - 10);
   const line = pts.map((p, k) => `${k ? "L" : "M"}${xs(p).toFixed(1)},${ys(p).toFixed(1)}`).join("");
   return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img"
-      aria-label="Elevation profile of stage ${st.i + 1}: ${fmt(st.lo, 0)} to ${fmt(st.hi, 0)} m">
+      aria-label="Elevation profile of stage ${st.no}: ${fmt(st.lo, 0)} to ${fmt(st.hi, 0)} m">
     <path d="${line}L${W},${H}L0,${H}Z" fill="${css("--m1")}" fill-opacity="0.15"/>
     <path d="${line}" fill="none" stroke="${css("--m1")}" stroke-width="2" vector-effect="non-scaling-stroke"/>
   </svg>
@@ -1871,7 +1933,7 @@ function stageCard(st, k, w, compact) {
   return `<section class="card ${compact ? "next-card" : ""}" ${compact ? "" : `id="stage-${k}"`}>
     <div class="stage-head">
       <div>
-        <h3>${label}Stage ${k + 1}: ${stageTitle(st)}</h3>
+        <h3>${label}Stage ${st.no}: ${stageTitle(st)}</h3>
         <p>${fmtDate(st.date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })} ·
            ${fmtMinutes(st.dep)} → about ${fmtMinutes(st.arr)}
            ${sun ? ` · sun ${fmtMinutes(sun.rise)}–${fmtMinutes(sun.set)}` : ""}
@@ -1890,6 +1952,9 @@ function stageCard(st, k, w, compact) {
       <div class="tile"><div class="k">Rain (median)</div><div class="v num">${fmt(m.rain.med, 1, " mm")}</div><div class="s">${rv.length > 1 ? `range ${fmt(Math.min(...rv), 1)}–${fmt(Math.max(...rv), 1)} mm` : ""}</div></div>
       <div class="tile"><div class="k">${headTile[0]}</div><div class="v num">${headTile[1]}</div><div class="s">${headTile[2]}</div></div>
     </div>
+    ${st.done > 0.05 && st.dayOffset === 0 ? `<div class="progress" title="ridden today">
+        <div class="progress-bar" style="width:${Math.min(100, (100 * st.done) / (st.km || 1)).toFixed(1)}%"></div></div>
+      <div class="small">Ridden today: <b>${fmt(st.done, 1)} km</b> · ${fmt(Math.max(0, st.km - st.done), 1)} km to go</div>` : ""}
     ${sparkline(st)}
     <div class="summary-box day-summary">${daySummary}</div>
     ${nightSummary ? `<div class="summary-box night-summary">${nightSummary}</div>` : ""}
@@ -1914,6 +1979,45 @@ function renderNext(weather) {
   $("next").innerHTML = stageCard(S.stages[k], k, weather[k], true);
   const btn = $("next").querySelector("[data-goto]");
   if (btn) btn.addEventListener("click", () => openStage(k));
+}
+
+// Collapsed list of the days already ridden (shown above the overview and above the stage cards).
+let doneOpen = false;
+function renderDone() {
+  const days = completedDays();
+  for (const id of ["done-glance", "done-stages"]) {
+    const host = $(id);
+    if (!days.length) { host.innerHTML = ""; continue; }
+    const km = sum(days.map((d) => d.km)), up = sum(days.map((d) => d.up));
+    const dated = days.filter((d) => d.no).length;
+    const rows = days.map((d, i) => `<tr>
+      <td>${d.no ? `<b>${d.no}</b>` : ""}</td>
+      <td>${d.date ? fmtDate(d.date) : `<span class="muted">earlier</span>`}</td>
+      <td class="opt">${stageTitle(d)}</td>
+      <td class="r num">${fmt(d.km, 1)}</td>
+      <td class="r num">${fmt(d.up, 0)}</td>
+      <td class="r num opt">${fmt(d.down, 0)}</td>
+      <td class="r"><button type="button" data-done-gpx="${i}" title="Download the GPX of this part">⬇ GPX</button></td>
+    </tr>`).join("");
+    host.innerHTML = `<details class="card done" ${doneOpen ? "open" : ""}>
+      <summary>✓ <b>Completed</b> <span class="muted small">· ${dated ? `${dated} day${dated > 1 ? "s" : ""} · ` : ""}${fmt(km, 0)} km · ↑ ${fmt(up, 0)} m</span></summary>
+      <div class="table-wrap"><table>
+        <thead><tr><th>#</th><th>Date</th><th class="opt">Route</th><th class="r">km</th><th class="r">↑ m</th><th class="r opt">↓ m</th><th></th></tr></thead>
+        <tbody>${rows}</tbody></table></div>
+    </details>`;
+    host.querySelector("details").addEventListener("toggle", (e) => {
+      if (e.target.open === doneOpen) return;
+      doneOpen = e.target.open;
+      renderDone();
+    });
+  }
+}
+
+async function downloadDone(i) {
+  const d = completedDays()[i];
+  if (!d) return;
+  const name = `${slugify(S.track.name)}-${d.no ? `stage-${d.no}-${d.date}` : "ridden-earlier"}.gpx`;
+  await saveFile(new File([stageGpx(d, -1)], name, { type: "application/gpx+xml" }));
 }
 
 function renderStages(weather) {
@@ -2045,8 +2149,8 @@ function stageSegments(st) {
 
 function stageGpx(st, k) {
   const T = S.track;
-  const title = `${T.name || "Tour"} – Stage ${k + 1}: ${plainStageTitle(st)}`;
-  const desc = `${fmtDate(st.date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · ` +
+  const title = `${T.name || "Tour"} – ${st.no ? `Stage ${st.no}` : "Ridden earlier"}: ${plainStageTitle(st)}`;
+  const desc = `${st.date ? fmtDate(st.date, { weekday: "long", day: "numeric", month: "long", year: "numeric" }) + " · " : ""}` +
     `${fmt(st.km, 1)} km · ↑ ${fmt(st.up, 0)} m · ↓ ${fmt(st.down, 0)} m (km ${fmt(st.a / 1000, 1)}–${fmt(st.b / 1000, 1)} of the tour)`;
   const pt = ([lat, lon, ele]) =>
     `<trkpt lat="${lat.toFixed(6)}" lon="${lon.toFixed(6)}">${ele == null || Number.isNaN(ele) ? "" : `<ele>${ele.toFixed(1)}</ele>`}</trkpt>`;
@@ -2054,8 +2158,8 @@ function stageGpx(st, k) {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="GPX Weather" xmlns="http://www.topografix.com/GPX/1/1">
   <metadata><name>${xmlEsc(title)}</name><desc>${xmlEsc(desc)}</desc></metadata>
-  <wpt lat="${st.startPt.lat.toFixed(6)}" lon="${st.startPt.lon.toFixed(6)}"><name>${xmlEsc("Start stage " + (k + 1) + (placeName(st.startPt) ? ": " + placeName(st.startPt) : ""))}</name></wpt>
-  <wpt lat="${st.endPt.lat.toFixed(6)}" lon="${st.endPt.lon.toFixed(6)}"><name>${xmlEsc("End stage " + (k + 1) + (placeName(st.endPt) ? ": " + placeName(st.endPt) : ""))}</name></wpt>
+  <wpt lat="${st.startPt.lat.toFixed(6)}" lon="${st.startPt.lon.toFixed(6)}"><name>${xmlEsc("Start " + (st.no ? "stage " + st.no : "") + (placeName(st.startPt) ? ": " + placeName(st.startPt) : ""))}</name></wpt>
+  <wpt lat="${st.endPt.lat.toFixed(6)}" lon="${st.endPt.lon.toFixed(6)}"><name>${xmlEsc("End " + (st.no ? "stage " + st.no : "") + (placeName(st.endPt) ? ": " + placeName(st.endPt) : ""))}</name></wpt>
   <trk>
     <name>${xmlEsc(title)}</name>
     <desc>${xmlEsc(desc)}</desc>
@@ -2095,7 +2199,7 @@ async function saveFile(file) {
 async function downloadStage(k) {
   const st = S.stages[k];
   if (!st) return;
-  const name = `${slugify(S.track.name)}-stage-${k + 1}-${st.date}.gpx`;
+  const name = `${slugify(S.track.name)}-stage-${st.no}-${st.date || "done"}.gpx`;
   await saveFile(new File([stageGpx(st, k)], name, { type: "application/gpx+xml" }));
   if (!S.track.raw) setStatus("Note: this tour was saved by an older version, so the stage GPX uses the simplified track. Load the GPX again for full detail.");
 }
@@ -2245,7 +2349,7 @@ function renderCampMarkers(layer) {
       const web = c.web ? `<br><a href="${esc(c.web)}" target="_blank" rel="noopener noreferrer">Website</a>` : "";
       const marker = L.marker([c.lat, c.lon], {
         icon: L.divIcon({ className: "camp-pin", html: "⛺", iconSize: [24, 24], iconAnchor: [12, 12] }),
-      }).bindPopup(`<b>${esc(c.name || "Campsite (no name)")}</b><br>Stage ${k + 1} · ${esc(campFacts(c).join(" · "))}
+      }).bindPopup(`<b>${esc(c.name || "Campsite (no name)")}</b><br>Stage ${st.no} · ${esc(campFacts(c).join(" · "))}
         <br><a href="${esc(directionsUrl(c))}" target="_blank" rel="noopener">Directions</a>${web}`);
       marker.addTo(layer);
       campMarkers.set(`${c.lat},${c.lon}`, marker);
@@ -2360,7 +2464,7 @@ async function downloadPdf() {
         const codes = w.ok.map((mm) => w.per[mm.id].code);
         const rv = clean(m.rain.vals);
         const ht = m.head.med == null ? "-" : Math.abs(m.head.med) < 3 ? "neutral" : m.head.med > 0 ? `${fmt(m.head.med, 0)} head` : `${fmt(-m.head.med, 0)} tail`;
-        return [k + 1, fmtDate(st.date), pdfSafe(plainStageTitle(st)), fmt(st.km, 0), fmt(st.up, 0), fmt(st.down, 0), fmtDuration(st.hours),
+        return [st.no, fmtDate(st.date), pdfSafe(plainStageTitle(st)), fmt(st.km, 0), fmt(st.up, 0), fmt(st.down, 0), fmtDuration(st.hours),
           w.ok.length ? wxInfo(Math.round(median(codes)))[1] : pdfSafe(cellStatus(w)),
           m.tmin.med != null ? `${fmt(m.tmin.med, 0)}-${fmt(m.tmax.med, 0)}` : "-",
           m.rain.med != null ? `${fmt(m.rain.med, 1)}${rv.length > 1 ? ` (${fmt(Math.min(...rv), 1)}-${fmt(Math.max(...rv), 1)})` : ""}` : "-",
@@ -2370,6 +2474,20 @@ async function downloadPdf() {
       columnStyles: { 0: { cellWidth: 7 }, 2: { cellWidth: 52 } },
     });
     y = doc.lastAutoTable.finalY + 6;
+
+    const done = completedDays();
+    if (done.length) {
+      ensure(30);
+      write(`Completed: ${fmt(sum(done.map((d) => d.km)), 0)} km`, 11, "bold");
+      table({
+        startY: y,
+        head: [["#", "Date", "Route", "km", "Up m", "Down m"]],
+        body: done.map((d) => [d.no || "", d.date ? fmtDate(d.date) : "earlier", pdfSafe(plainStageTitle(d)),
+          fmt(d.km, 1), fmt(d.up, 0), fmt(d.down, 0)]),
+        columnStyles: { 2: { cellWidth: 110 } },
+      });
+      y = doc.lastAutoTable.finalY + 6;
+    }
 
     // Model comparison charts, two per row
     if (weather.some((w) => w.ok.length)) {
@@ -2391,7 +2509,7 @@ async function downloadPdf() {
       // Stages flow on; a stage only starts on a new page when its main part wouldn't fit.
       if (k === 0) { doc.addPage(); y = M; } else { y += 5; ensure(60); }
       if (y > M) { doc.setDrawColor(200, 200, 195); doc.line(M, y - 3, W - M, y - 3); }
-      write(`Stage ${k + 1}: ${plainStageTitle(st)}`, 14, "bold");
+      write(`Stage ${st.no}: ${plainStageTitle(st)}`, 14, "bold");
       write(`${fmtDate(st.date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · ${fmtMinutes(st.dep)} -> about ${fmtMinutes(st.arr)}` +
         (sun ? ` · sunrise ${fmtMinutes(sun.rise)}, sunset ${fmtMinutes(sun.set)}` : "") + (st.section ? ` · GPX section: ${st.section}` : ""), 9, "normal", grey);
       write(`Distance ${fmt(st.km, 1)} km (km ${fmt(st.a / 1000, 0)}-${fmt(st.b / 1000, 0)}) · climb ${fmt(st.up, 0)} m, descent ${fmt(st.down, 0)} m · ` +
@@ -2476,16 +2594,18 @@ function syncInputs() {
   $("perDayNum").value = S.perDay;
   $("perDayOut").textContent = S.perDay;
   $("date").value = S.date;
+  $("date").min = todayStr();
   $("dep").value = S.dep;
   $("speed").value = S.speed;
   $("autoGps").checked = S.autoGps;
 }
 
-function setStartKm(km, force = false) {
+function setStartKm(km, force = false, log = true) {
   const T = S.track;
   if (!T) return;
   const next = Math.max(0, Math.min(T.total / 1000, Math.round(km * 10) / 10));
   if (next === S.startKm && !force) return;
+  if (log) logPosition(S.startKm, next);
   S.startKm = next;
   $("startKm").value = S.startKm;
   $("startKmNum").value = S.startKm;
@@ -2564,6 +2684,8 @@ function initControls() {
   document.addEventListener("click", (e) => {
     const gpx = e.target.closest("[data-gpx]");
     if (gpx) downloadStage(Number(gpx.dataset.gpx));
+    const doneGpx = e.target.closest("[data-done-gpx]");
+    if (doneGpx) downloadDone(Number(doneGpx.dataset.doneGpx));
     const search = e.target.closest("[data-camp-search]");
     if (search) searchCamps(Number(search.dataset.campSearch));
     const show = e.target.closest("[data-camp-show]");
@@ -2626,6 +2748,7 @@ async function loadFile(file) {
     await saveTourSettings();
     S.tourId = null;
     S.date = todayStr();
+    S.days = {};
     syncInputs();
     setTrack(finishTrack(track), 0, !needsEle);
     if (needsEle) {
@@ -2655,7 +2778,7 @@ function setTrack(track, startKm, fetchWeather = true) {
   $("startKmNum").max = (track.total / 1000).toFixed(1);
   $("startKm").disabled = $("startKmNum").disabled = false;
   $("totalOut").textContent = fmt(track.total / 1000, 1);
-  setStartKm(startKm || 0, true);
+  setStartKm(startKm || 0, true, false);
   if (!fetchWeather) clearTimeout(fetchTimer);
 }
 

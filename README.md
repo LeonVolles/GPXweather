@@ -83,6 +83,13 @@ first time, your position is updated automatically whenever you open the app
 
 You can also tap the route on the map, or move the position slider.
 
+The app keeps a small ride log: the days you have already ridden move into a
+collapsed **✓ Completed** list (with date, km, climb and a GPX of each day),
+followed by **today** and the stages still to come. Today's stage is planned
+from where you set off in the morning, so updating your position during the
+ride shows your progress ("40 km ridden · 40 km to go") instead of moving
+today's goal.
+
 If you declined location access by mistake: iPhone **Settings → Privacy &
 Security → Location Services → Safari Websites → While Using the App**.
 
