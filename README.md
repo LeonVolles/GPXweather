@@ -29,9 +29,10 @@ No account, no sign-up, no ads. Your tours stay on your phone.
 - 🌅 Sunrise and sunset, with a warning if you would arrive after dark
 - ✅ Whether the weather models agree or disagree
 - ⬇️ The GPX of just that stage, to load into your navigation app
+- ⛺ Campsites around the end of the stage, listed and marked on the map
 
-You also get a map of the whole tour (bike map by CyclOSM), an elevation profile
-and an overview table of all stages.
+You also get a map of the whole tour (bike map by CyclOSM), an elevation profile,
+an overview table of all stages, and the whole forecast as a PDF.
 
 ## Install it on your iPhone
 
@@ -94,6 +95,24 @@ Security → Location Services → Safari Websites → While Using the App**.
 - **⬇ GPX of this stage** saves that day's route, or opens it directly in your
   navigation app.
 
+### 5. Find a campsite for the night
+
+At the end of each stage, open **⛺ Campsites near the end of this stage**.
+Choose how far you are willing to ride (2 to 30 km) and the app lists the
+campsites around the stage end, closest first: how far each is from the stage
+end and from your route, and – if known – website, phone and opening hours.
+They are also marked ⛺ on the map. **Directions** opens your maps app.
+
+The campsites come from OpenStreetMap, so small or new places may be missing.
+Check opening times before you go – many campsites close for the winter.
+
+### 6. Take the forecast with you as a PDF
+
+At the end of the page, tap **📄 Download the whole forecast as PDF**. The PDF
+contains the overview of all stages, the elevation profile, the model
+comparison and every stage in detail, including the campsites you searched
+for. On the iPhone you can save it to Files or send it on.
+
 ### Several tours
 
 Every GPX you load is kept. Switch between tours in the list at the top; 🗑
@@ -124,5 +143,6 @@ removes the selected tour from your phone.
 
 Weather data by [Open-Meteo.com](https://open-meteo.com/) (CC BY 4.0), based on
 models from ECMWF, DWD, NOAA, Météo-France and the UK Met Office. Elevation
-data: Copernicus DEM via Open-Meteo. Place names: BigDataCloud. Map:
+data: Copernicus DEM via Open-Meteo. Place names: BigDataCloud. Campsites:
+OpenStreetMap via the Overpass API. Map:
 [CyclOSM](https://www.cyclosm.org/), map data © OpenStreetMap contributors.

@@ -1,11 +1,13 @@
 // Offline support: keeps the app and its two libraries available without a connection.
-// Weather, elevation, place-name and map-tile requests are never cached here.
-const VERSION = "gpxweather-v1";
+// Weather, elevation, place-name, campsite and map-tile requests are never cached here.
+const VERSION = "gpxweather-v2";
 const APP = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 const LIBS = [
   "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css",
   "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js",
   "https://cdn.plot.ly/plotly-2.35.2.min.js",
+  "https://unpkg.com/jspdf@4.2.1/dist/jspdf.umd.min.js",
+  "https://unpkg.com/jspdf-autotable@5.0.8/dist/jspdf.plugin.autotable.min.js",
 ];
 
 self.addEventListener("install", (event) => {

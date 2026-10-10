@@ -157,6 +157,18 @@
   .cmp td:first-child { color: var(--ink-2); }
   .cmp td.med { font-weight: 650; }
   .wx { font-size: 1.6rem; line-height: 1; }
+  details.camp { margin-top: 12px; border-top: 1px solid var(--grid); }
+  details.camp > summary { margin-top: 10px; }
+  .camp-controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+  .camp-controls select { width: auto; min-width: 110px; }
+  .camp-list { list-style: none; padding: 0; margin: 10px 0 0; }
+  .camp-list li { padding: 10px 0; border-bottom: 1px solid var(--grid); }
+  .camp-list li:last-child { border-bottom: none; }
+  .camp-list .name { font-weight: 600; }
+  .camp-links { display: flex; gap: 6px 14px; flex-wrap: wrap; margin-top: 4px; font-size: 0.9rem; }
+  .camp-links button { min-height: 32px; padding: 4px 10px; font-size: 0.9rem; }
+  .leaflet-div-icon.camp-pin { background: none; border: none; font-size: 20px; line-height: 24px; text-align: center;
+                               filter: drop-shadow(0 1px 1px rgba(0,0,0,.5)); }
   footer { margin: 30px 0 10px; font-size: 0.82rem; color: var(--muted); }
   .hidden { display: none !important; }
   .leaflet-div-icon.stage-pin { background: none; border: none; }
@@ -292,11 +304,18 @@
 
   <h2 class="part">Daily stages</h2>
   <div id="stages"></div>
+
+  <h2 class="part">Download</h2>
+  <div class="card">
+    <button type="button" class="primary" id="pdfBtn" style="width:100%">📄 Download the whole forecast as PDF</button>
+    <div class="small muted" style="margin-top:8px">All stages with distances, weather, model comparison, warnings
+      and the campsites you searched for – handy for offline reading or printing.</div>
+  </div>
 </div>
 
 <footer>
   Weather: <a href="https://open-meteo.com/">Open-Meteo</a> (ECMWF, DWD ICON, NOAA GFS, Météo-France, UK Met Office).
-  Elevation if missing in the GPX: Open-Meteo Elevation API (Copernicus DEM). Place names: BigDataCloud.
+  Elevation if missing in the GPX: Open-Meteo Elevation API (Copernicus DEM). Place names: BigDataCloud. Campsites: OpenStreetMap via the Overpass API.
   Map: <a href="https://www.cyclosm.org/">CyclOSM</a>, data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors.
   The weather is read along the route at the time you are expected to be there.
   Headwind &gt; 0 means wind from the front, &lt; 0 tailwind. Not an official warning service.
@@ -1510,6 +1529,7 @@ function renderMap() {
       : L.circleMarker(ll(st.endPt), { radius: 4, color: css("--ink"), weight: 1.5, fillColor: css("--surface"), fillOpacity: 1 });
     pin.bindTooltip(`End of stage ${k + 1}: ${placeName(st.endPt) || "km " + fmt(st.b / 1000, 0)}`).addTo(mapLayers);
   });
+  renderCampMarkers(mapLayers);
   L.marker(ll(T.pts[startI]), {
     icon: L.divIcon({ className: "pos-pin", html: "<span></span>", iconSize: [18, 18], iconAnchor: [9, 9] }),
     zIndexOffset: 1000,
@@ -1788,13 +1808,9 @@ function sparkline(st) {
   <div class="small muted">Elevation ${fmt(st.startEle, 0)} m → ${fmt(st.endEle, 0)} m · lowest ${fmt(st.lo, 0)} m · highest ${fmt(st.hi, 0)} m</div>`;
 }
 
-// One stage card. `compact` is the highlighted "today / next stage" box at the top.
-function stageCard(st, k, w, compact) {
+// Warnings for one stage (also used for the PDF).
+function stageWarnings(st, w, sun) {
   const m = w.metrics;
-  const v = w.ok.length ? verdict(w) : null;
-  const browserOffset = -new Date().getTimezoneOffset() * 60;
-  const sun = sunTimes(st.endPt.lat, st.endPt.lon, st.date, w.offset ?? browserOffset);
-
   const warnings = [];
   if (sun && st.arr > sun.set) warnings.push(`🌇 Arrival at ${fmtMinutes(st.arr)} is after sunset (${fmtMinutes(sun.set)}) – bring lights.`);
   if (sun && st.dep < sun.rise) warnings.push(`🌅 Departure before sunrise (${fmtMinutes(sun.rise)}).`);
@@ -1807,7 +1823,18 @@ function stageCard(st, k, w, compact) {
   if (codes.some((c) => c >= 95)) warnings.push("⛈️ At least one model expects thunderstorms.");
   if (w.overall === 2) warnings.push("⚠ The models disagree a lot – check the forecast again shortly before.");
   if (w.fetched && Date.now() - w.fetched > 12 * 3600 * 1000) warnings.push(`🕓 This weather data was loaded ${fmtAge(Date.now() - w.fetched)}.`);
+  return warnings;
+}
 
+function stageSun(st, w) {
+  const browserOffset = -new Date().getTimezoneOffset() * 60;
+  return sunTimes(st.endPt.lat, st.endPt.lon, st.date, w.offset ?? browserOffset);
+}
+
+// Day and night weather text for a stage (HTML; the PDF strips the tags).
+function stageSummaries(st, w) {
+  const m = w.metrics;
+  const codes = w.ok.map((mm) => w.per[mm.id].code);
   let daySummary, nightSummary = "";
   if (w.ok.length) {
     const [icon, text] = wxInfo(Math.round(median(codes)));
@@ -1821,6 +1848,19 @@ function stageCard(st, k, w, compact) {
   } else {
     daySummary = cellStatus(w);
   }
+  return { day: daySummary, night: nightSummary };
+}
+
+// One stage card. `compact` is the highlighted "today / next stage" box at the top.
+function stageCard(st, k, w, compact) {
+  const m = w.metrics;
+  const v = w.ok.length ? verdict(w) : null;
+  const sun = stageSun(st, w);
+
+  const warnings = stageWarnings(st, w, sun);
+  const codes = w.ok.map((mm) => w.per[mm.id].code);
+
+  const { day: daySummary, night: nightSummary } = stageSummaries(st, w);
   const headTile = m.head.med == null
     ? ["Head-/tailwind", "–", "no weather data"]
     : [m.head.med < 0 ? "Avg. tailwind" : "Avg. headwind", fmt(Math.abs(m.head.med), 0, " km/h"),
@@ -1860,6 +1900,7 @@ function stageCard(st, k, w, compact) {
       ${comparisonTable(w)}
       <div id="hourly-${k}"></div>
     </details>` : ""}
+    ${campSection(st, k)}
     <div class="btn-row">
       ${compact ? `<button type="button" data-goto="${k}">Details, models and hourly charts ↓</button>` : ""}
       <button type="button" data-gpx="${k}">⬇ GPX of this stage</button>
@@ -1877,13 +1918,13 @@ function renderNext(weather) {
 
 function renderStages(weather) {
   // Keep whichever detail panels the user has open across re-renders.
-  $("stages").querySelectorAll("details").forEach((d) => {
+  $("stages").querySelectorAll("details[data-stage]").forEach((d) => {
     const k = Number(d.dataset.stage);
     if (d.open) openCards.add(k); else openCards.delete(k);
   });
   const html = S.stages.map((st, k) => stageCard(st, k, weather[k], false)).join("");
   $("stages").innerHTML = html || `<div class="card muted">You have arrived – no stages left. 🎉</div>`;
-  $("stages").querySelectorAll("details").forEach((d) => {
+  $("stages").querySelectorAll("details[data-stage]").forEach((d) => {
     const k = Number(d.dataset.stage);
     d.addEventListener("toggle", () => {
       if (d.open) { openCards.add(k); renderHourly(k, weather[k]); } else openCards.delete(k);
@@ -2024,18 +2065,17 @@ ${segs}
 `;
 }
 
-async function downloadStage(k) {
-  const st = S.stages[k];
-  if (!st) return;
-  const slug = (s) => String(s).normalize("NFKD").replace(/[^\w-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "tour";
-  const name = `${slug(S.track.name)}-stage-${k + 1}-${st.date}.gpx`;
-  const file = new File([stageGpx(st, k)], name, { type: "application/gpx+xml" });
-  // On phones the share sheet is the natural way: "Save to Files" or open it in a navigation app.
+/* ---------- Saving files (GPX, PDF) ---------- */
+
+const slugify = (s) => String(s).normalize("NFKD").replace(/[^\w-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "tour";
+
+// On phones the share sheet is the natural way ("Save to Files", open in another app); elsewhere a normal download.
+async function saveFile(file) {
   const touch = window.matchMedia("(pointer: coarse)").matches;
   if (touch && navigator.canShare && navigator.share) {
     try {
       if (navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: name });
+        await navigator.share({ files: [file], title: file.name });
         return;
       }
     } catch (e) {
@@ -2045,15 +2085,380 @@ async function downloadStage(k) {
   const url = URL.createObjectURL(file);
   const a = document.createElement("a");
   a.href = url;
-  a.download = name;
+  a.download = file.name;
   document.body.appendChild(a);
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 30000);
+}
+
+async function downloadStage(k) {
+  const st = S.stages[k];
+  if (!st) return;
+  const name = `${slugify(S.track.name)}-stage-${k + 1}-${st.date}.gpx`;
+  await saveFile(new File([stageGpx(st, k)], name, { type: "application/gpx+xml" }));
   if (!S.track.raw) setStatus("Note: this tour was saved by an older version, so the stage GPX uses the simplified track. Load the GPX again for full detail.");
 }
 
+/* ---------- Campsites near the stage end (OpenStreetMap via Overpass) ---------- */
+
+const CAMP_RADII = [2, 5, 10, 20, 30];
+const CAMP_TTL_MS = 7 * 86400 * 1000;
+const campOpen = new Set();       // stage numbers whose campsite section is expanded
+const campBusy = new Set();       // searches in progress (cache keys)
+const campErr = new Map();        // cache key -> error message
+let campCache = restore("camps") || {};   // cache key -> { t, list }
+let campRadius = restore("campRadius") || 5;
+const campMarkers = new Map();    // "lat,lon" -> Leaflet marker
+
+function campKey(p, r) { return `${p.lat.toFixed(3)},${p.lon.toFixed(3)}|${r}`; }
+
+function campResult(st) {
+  const e = campCache[campKey(st.endPt, campRadius)];
+  return e && Date.now() - e.t < CAMP_TTL_MS ? e : null;
+}
+
+// Only allow http(s) links from map data.
+function safeUrl(u) {
+  const s = String(u).trim();
+  const withScheme = /^https?:\/\//i.test(s) ? s : /^[\w.-]+\.[a-z]{2,}(\/|$)/i.test(s) ? "https://" + s : "";
+  try { return withScheme && /^https?:$/.test(new URL(withScheme).protocol) ? withScheme : ""; } catch (e) { return ""; }
+}
+
+function directionsUrl(c) {
+  const ios = /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent) && "ontouchend" in document;
+  return ios
+    ? `https://maps.apple.com/?daddr=${c.lat},${c.lon}&q=${encodeURIComponent(c.name || "Campsite")}`
+    : `https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lon}`;
+}
+
+async function searchCamps(k) {
+  const st = S.stages[k];
+  if (!st) return;
+  const key = campKey(st.endPt, campRadius);
+  if (campBusy.has(key)) return;
+  campBusy.add(key);
+  campErr.delete(key);
+  render();
+  const r = campRadius * 1000, lat = st.endPt.lat.toFixed(5), lon = st.endPt.lon.toFixed(5);
+  const query = `[out:json][timeout:25];(` +
+    `nwr["tourism"="camp_site"](around:${r},${lat},${lon});` +
+    `nwr["tourism"="caravan_site"]["tents"="yes"](around:${r},${lat},${lon});` +
+    `);out center tags 80;`;
+  try {
+    const res = await fetch("https://overpass-api.de/api/interpreter", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "data=" + encodeURIComponent(query),
+    });
+    if (!res.ok) {
+      throw new Error(res.status === 429 || res.status === 504
+        ? "The campsite search is busy right now – please try again in a minute."
+        : `The campsite search failed (HTTP ${res.status}).`);
+    }
+    const json = await res.json();
+    const list = (json.elements || []).map((el) => {
+      const t = el.tags || {};
+      const plat = el.lat ?? (el.center && el.center.lat);
+      const plon = el.lon ?? (el.center && el.center.lon);
+      if (plat == null || plon == null) return null;
+      const near = nearestKm(S.track, plat, plon);
+      return {
+        name: t.name || "", lat: plat, lon: plon,
+        dist: haversine(st.endPt, { lat: plat, lon: plon }), off: near.offset, km: near.km,
+        kind: t.tourism, camp: t.camp_site || "", backcountry: t.backcountry === "yes",
+        fee: t.fee || "", tents: t.tents || "", hours: t.opening_hours || "",
+        web: safeUrl(t.website || t["contact:website"] || t.url || ""),
+        phone: t.phone || t["contact:phone"] || "",
+      };
+    }).filter(Boolean).sort((a, b) => a.dist - b.dist);
+    campCache[key] = { t: Date.now(), list };
+    // Keep the cache small.
+    const keys = Object.keys(campCache).sort((a, b) => campCache[b].t - campCache[a].t);
+    for (const old of keys.slice(40)) delete campCache[old];
+    store("camps", campCache);
+  } catch (e) {
+    campErr.set(key, /^The campsite/.test(e.message) ? e.message : "The campsite search failed – check your connection.");
+  } finally {
+    campBusy.delete(key);
+    render();
+  }
+}
+
+function campFacts(c) {
+  const facts = [`${fmt(c.dist / 1000, 1)} km from the stage end`];
+  facts.push(c.off < 300 ? "right on the route" : `${fmt(c.off / 1000, 1)} km off the route (near km ${fmt(c.km, 0)})`);
+  if (c.backcountry || c.camp === "basic") facts.push("basic / wild camping");
+  if (c.kind === "caravan_site") facts.push("caravan site, tents allowed");
+  if (c.fee === "no") facts.push("free");
+  if (c.hours) facts.push(`open: ${c.hours}`);
+  return facts;
+}
+
+function campItem(c) {
+  const links = [
+    `<button type="button" data-camp-show="${c.lat},${c.lon}">Show on map</button>`,
+    `<a href="${esc(directionsUrl(c))}" target="_blank" rel="noopener">Directions</a>`,
+  ];
+  if (c.web) links.push(`<a href="${esc(c.web)}" target="_blank" rel="noopener noreferrer">Website</a>`);
+  if (c.phone) links.push(`<a href="tel:${esc(c.phone.replace(/[^+\d]/g, ""))}">${esc(c.phone)}</a>`);
+  return `<li><div class="name">⛺ ${esc(c.name || "Campsite (no name)")}</div>
+    <div class="small muted">${esc(campFacts(c).join(" · "))}</div>
+    <div class="camp-links">${links.join("")}</div></li>`;
+}
+
+function campSection(st, k) {
+  const key = campKey(st.endPt, campRadius);
+  const res = campResult(st);
+  let body;
+  if (campBusy.has(key)) body = `<p class="small muted">Searching for campsites …</p>`;
+  else if (campErr.has(key)) body = `<p class="small">${esc(campErr.get(key))}</p>`;
+  else if (!res) body = `<p class="small muted">Finds campsites from OpenStreetMap around the end of this stage. They are marked ⛺ on the map.</p>`;
+  else if (!res.list.length) body = `<p class="small muted">No campsites found within ${campRadius} km. Try a larger distance.</p>`;
+  else body = `<p class="small muted">${res.list.length} campsite${res.list.length > 1 ? "s" : ""} within ${campRadius} km, closest first:</p>
+    <ul class="camp-list">${res.list.slice(0, 30).map(campItem).join("")}</ul>`;
+  return `<details class="camp" data-camp="${k}" ${campOpen.has(k) ? "open" : ""}>
+    <summary>⛺ Campsites near the end of this stage${res ? ` <span class="muted small">(${res.list.length} within ${campRadius} km)</span>` : ""}</summary>
+    <div class="camp-controls">
+      <label class="small">Within
+        <select data-camp-radius aria-label="Search distance">${CAMP_RADII.map((r) =>
+          `<option value="${r}" ${r === campRadius ? "selected" : ""}>${r} km</option>`).join("")}</select>
+      </label>
+      <button type="button" data-camp-search="${k}">${res ? "Search again" : "Search"}</button>
+    </div>
+    ${body}
+  </details>`;
+}
+
+// Campsite markers and search circles on the map.
+function renderCampMarkers(layer) {
+  campMarkers.clear();
+  S.stages.forEach((st, k) => {
+    const res = campResult(st);
+    if (!res) return;
+    if (campOpen.has(k)) {
+      L.circle([st.endPt.lat, st.endPt.lon], {
+        radius: campRadius * 1000, color: css("--accent"), weight: 1, fillOpacity: 0.06, interactive: false,
+      }).addTo(layer);
+    }
+    for (const c of res.list) {
+      const web = c.web ? `<br><a href="${esc(c.web)}" target="_blank" rel="noopener noreferrer">Website</a>` : "";
+      const marker = L.marker([c.lat, c.lon], {
+        icon: L.divIcon({ className: "camp-pin", html: "⛺", iconSize: [24, 24], iconAnchor: [12, 12] }),
+      }).bindPopup(`<b>${esc(c.name || "Campsite (no name)")}</b><br>Stage ${k + 1} · ${esc(campFacts(c).join(" · "))}
+        <br><a href="${esc(directionsUrl(c))}" target="_blank" rel="noopener">Directions</a>${web}`);
+      marker.addTo(layer);
+      campMarkers.set(`${c.lat},${c.lon}`, marker);
+    }
+  });
+}
+
+function showCampOnMap(latlon) {
+  const marker = campMarkers.get(latlon);
+  if (!map || !marker) return;
+  $("map").scrollIntoView({ behavior: "smooth", block: "center" });
+  map.setView(marker.getLatLng(), 14);
+  marker.openPopup();
+}
+
+/* ---------- PDF of the whole forecast ---------- */
+
+const PDF_LIBS = [
+  "https://unpkg.com/jspdf@4.2.1/dist/jspdf.umd.min.js",
+  "https://unpkg.com/jspdf-autotable@5.0.8/dist/jspdf.plugin.autotable.min.js",
+];
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = () => reject(new Error("could not load the PDF library – are you online?"));
+    document.head.appendChild(s);
+  });
+}
+
+// The built-in PDF fonts only know Latin-1 characters.
+function pdfSafe(text) {
+  return String(text ?? "")
+    .replace(/<span style="display:inline-block;transform[^>]*>↑<\/span>/g, "")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    .replace(/→/g, "->").replace(/↑/g, "up ").replace(/↓/g, "down ").replace(/[–—]/g, "-").replace(/≈/g, "~")
+    .replace(/≥/g, ">=").replace(/≤/g, "<=").replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/…/g, "...")
+    .replace(/[^\x00-\xFF]/g, "").replace(/\s+/g, " ").trim();
+}
+
+async function chartImage(id, width, height) {
+  const gd = $(id);
+  if (typeof Plotly === "undefined" || !gd || !gd.data || gd.classList.contains("hidden")) return null;
+  const layout = {
+    ...gd.layout, paper_bgcolor: "#ffffff", plot_bgcolor: "#ffffff", width, height,
+    font: { ...(gd.layout.font || {}), color: "#333333" },
+    title: gd.layout.title ? { ...gd.layout.title, font: { size: 15, color: "#111111" } } : undefined,
+  };
+  try { return await Plotly.toImage({ data: gd.data, layout }, { format: "jpeg", width, height, scale: 1.5 }); } catch (e) { return null; }
+}
+
+async function downloadPdf() {
+  if (!S.track) return;
+  const btn = $("pdfBtn");
+  btn.disabled = true;
+  setStatus("Creating PDF …");
+  try {
+    if (!window.jspdf) await loadScript(PDF_LIBS[0]);
+    if (!window.autoTable) await loadScript(PDF_LIBS[1]);
+    const doc = new window.jspdf.jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    const table = (opts) => window.autoTable(doc, {
+      margin: { left: M, right: M, bottom: 14 }, styles: { fontSize: 7.5, cellPadding: 1.2, overflow: "linebreak" },
+      headStyles: { fillColor: [24, 65, 45] }, alternateRowStyles: { fillColor: [244, 246, 243] }, ...opts,
+    });
+    const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 12;
+    let y = M;
+    const ensure = (h) => { if (y + h > H - 14) { doc.addPage(); y = M; } };
+    const write = (str, size = 10, style = "normal", color = [25, 25, 25]) => {
+      doc.setFont("helvetica", style);
+      doc.setFontSize(size);
+      doc.setTextColor(...color);
+      const lines = doc.splitTextToSize(pdfSafe(str), W - 2 * M);
+      const lh = size * 0.42;
+      ensure(lines.length * lh + 1);
+      doc.text(lines, M, y + lh * 0.8);
+      y += lines.length * lh + 1.6;
+    };
+    const image = async (id, w, h, x, width) => {
+      const img = await chartImage(id, w, h);
+      if (!img) return 0;
+      const hh = (width * h) / w;
+      doc.addImage(img, "JPEG", x, y, width, hh, undefined, "FAST");
+      return hh;
+    };
+
+    const T = S.track, st0 = S.stages;
+    const weather = st0.map(stageWeather);
+    const startI = idxAt(T, S.startKm * 1000);
+    const rest = (T.total - S.startKm * 1000) / 1000;
+    const up = T.cumUp[T.pts.length - 1] - T.cumUp[startI];
+    const grey = [110, 110, 105];
+
+    // Title and summary
+    write(`GPX Weather – ${T.name || "Tour"}`, 18, "bold");
+    write(`Created ${new Date().toLocaleString(LOCALE)} · ${weatherStatusText() || "no weather data"}`, 9, "normal", grey);
+    write(`From km ${fmt(S.startKm, 1)}: ${fmt(rest, 0)} km left, ${fmt(up, 0)} m climbing, ${st0.length} stages of about ${S.perDay} km` +
+      (st0.length ? `, arrival ${fmtDate(st0[st0.length - 1].date, { weekday: "short", day: "numeric", month: "short", year: "numeric" })}` : "") +
+      `. Departure ${S.dep}, ${fmt(S.speed, 1)} km/h incl. breaks. Models: ${activeModels().map((m) => m.name).join(", ")}.`, 10);
+    y += 2;
+    const ph = await image("profile", 1600, 360, M, W - 2 * M);
+    y += ph ? ph + 4 : 0;
+
+    // Overview table
+    table({
+      startY: y,
+      head: [["#", "Date", "Route", "km", "Up m", "Down m", "Time", "Weather", "°C", "Rain mm", "Prob.", "Wind", "Head/tail", "Gusts", "Models"]],
+      body: st0.map((st, k) => {
+        const w = weather[k], m = w.metrics;
+        const codes = w.ok.map((mm) => w.per[mm.id].code);
+        const rv = clean(m.rain.vals);
+        const ht = m.head.med == null ? "-" : Math.abs(m.head.med) < 3 ? "neutral" : m.head.med > 0 ? `${fmt(m.head.med, 0)} head` : `${fmt(-m.head.med, 0)} tail`;
+        return [k + 1, fmtDate(st.date), pdfSafe(plainStageTitle(st)), fmt(st.km, 0), fmt(st.up, 0), fmt(st.down, 0), fmtDuration(st.hours),
+          w.ok.length ? wxInfo(Math.round(median(codes)))[1] : pdfSafe(cellStatus(w)),
+          m.tmin.med != null ? `${fmt(m.tmin.med, 0)}-${fmt(m.tmax.med, 0)}` : "-",
+          m.rain.med != null ? `${fmt(m.rain.med, 1)}${rv.length > 1 ? ` (${fmt(Math.min(...rv), 1)}-${fmt(Math.max(...rv), 1)})` : ""}` : "-",
+          fmt(m.prob.med, 0, " %"), m.speed.med != null ? `${fmt(m.speed.med, 0)} km/h ${compass(m.dir.med)}` : "-", ht,
+          fmt(m.gust.med, 0, " km/h"), w.overall == null ? "-" : LEVELS[w.overall][2]];
+      }),
+      columnStyles: { 0: { cellWidth: 7 }, 2: { cellWidth: 52 } },
+    });
+    y = doc.lastAutoTable.finalY + 6;
+
+    // Model comparison charts, two per row
+    if (weather.some((w) => w.ok.length)) {
+      ensure(70);
+      write("Model comparison per stage (each dot is a model, the bar is the median)", 11, "bold");
+      const cw = (W - 2 * M - 6) / 2;
+      for (const pair of [["cmp-temp", "cmp-rain"], ["cmp-head", "cmp-gust"]]) {
+        ensure(cw * 400 / 1000 + 2);
+        const h1 = await image(pair[0], 1000, 400, M, cw);
+        const h2 = await image(pair[1], 1000, 400, M + cw + 6, cw);
+        y += Math.max(h1, h2) + 3;
+      }
+    }
+
+    // One section per stage
+    for (const [k, st] of st0.entries()) {
+      const w = weather[k], m = w.metrics;
+      const sun = stageSun(st, w);
+      // Stages flow on; a stage only starts on a new page when its main part wouldn't fit.
+      if (k === 0) { doc.addPage(); y = M; } else { y += 5; ensure(60); }
+      if (y > M) { doc.setDrawColor(200, 200, 195); doc.line(M, y - 3, W - M, y - 3); }
+      write(`Stage ${k + 1}: ${plainStageTitle(st)}`, 14, "bold");
+      write(`${fmtDate(st.date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · ${fmtMinutes(st.dep)} -> about ${fmtMinutes(st.arr)}` +
+        (sun ? ` · sunrise ${fmtMinutes(sun.rise)}, sunset ${fmtMinutes(sun.set)}` : "") + (st.section ? ` · GPX section: ${st.section}` : ""), 9, "normal", grey);
+      write(`Distance ${fmt(st.km, 1)} km (km ${fmt(st.a / 1000, 0)}-${fmt(st.b / 1000, 0)}) · climb ${fmt(st.up, 0)} m, descent ${fmt(st.down, 0)} m · ` +
+        `elevation ${fmt(st.startEle, 0)} -> ${fmt(st.endEle, 0)} m (${fmt(st.lo, 0)}-${fmt(st.hi, 0)} m) · riding time ${fmtDuration(st.hours)}`, 10);
+      const sum = stageSummaries(st, w);
+      const v = w.ok.length ? verdict(w) : null;
+      if (v) write(`${v[1]}${w.overall == null ? "" : " · " + LEVELS[w.overall][2]} · ${w.ok.length}/${S.models.size} models`, 10, "bold");
+      write(sum.day, 10);
+      if (sum.night) write(sum.night, 10);
+      for (const t of stageWarnings(st, w, sun)) write("! " + t, 9.5, "normal", [140, 40, 30]);
+      if (w.ok.length) {
+        y += 1;
+        const models = activeModels();
+        table({
+          startY: y,
+          head: [["", ...models.map((mm) => mm.name), "Median", "Spread", "Agreement"]],
+          body: Object.entries(m).map(([key, metric]) => [
+            metric.label,
+            ...models.map((mm) => {
+              const p = w.per[mm.id];
+              if (!p || p.state !== "ok") return "-";
+              return metric.isDir ? compass(p[key]) : fmt(p[key], metric.d, metric.unit);
+            }),
+            metric.isDir ? compass(metric.med) : fmt(metric.med, metric.d, metric.unit),
+            metric.spread == null ? "-" : fmt(metric.spread, metric.d, metric.isDir ? " deg" : metric.unit),
+            metric.level == null ? "-" : LEVELS[metric.level][2].replace("models ", ""),
+          ].map(pdfSafe)),
+        });
+        y = doc.lastAutoTable.finalY + 4;
+      }
+      const camps = campResult(st);
+      if (camps && camps.list.length) {
+        write(`Campsites within ${campRadius} km of the stage end`, 11, "bold");
+        table({
+          startY: y,
+          head: [["Name", "Distance / location", "Website", "Phone"]],
+          body: camps.list.slice(0, 12).map((c) => [c.name || "Campsite (no name)", campFacts(c).join(" · "), c.web, c.phone].map(pdfSafe)),
+          columnStyles: { 0: { cellWidth: 60 }, 2: { cellWidth: 60 } },
+        });
+        y = doc.lastAutoTable.finalY + 4;
+      }
+    }
+
+    // Footer on every page
+    const pages = doc.getNumberOfPages();
+    for (let i = 1; i <= pages; i++) {
+      doc.setPage(i);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      doc.setTextColor(...grey);
+      doc.text("Weather data: Open-Meteo.com (CC BY 4.0) - ECMWF, DWD, NOAA, Meteo-France, UK Met Office. Campsites: OpenStreetMap contributors. Not an official warning service.", M, H - 6);
+      doc.text(`Page ${i} of ${pages}`, W - M, H - 6, { align: "right" });
+    }
+
+    const name = `${slugify(T.name)}-forecast-${todayStr()}.pdf`;
+    await saveFile(new File([doc.output("blob")], name, { type: "application/pdf" }));
+    setStatus("PDF created.");
+  } catch (e) {
+    console.error(e);
+    setStatus("The PDF could not be created: " + e.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 /* ---------- Inputs ---------- */
+
 
 function recompute({ weatherDelay = 800 } = {}) {
   S.stages = buildStages();
@@ -2157,9 +2562,31 @@ function initControls() {
   $("locate").addEventListener("click", () => locate());
   $("deleteTour").addEventListener("click", deleteTour);
   document.addEventListener("click", (e) => {
-    const btn = e.target.closest("[data-gpx]");
-    if (btn) downloadStage(Number(btn.dataset.gpx));
+    const gpx = e.target.closest("[data-gpx]");
+    if (gpx) downloadStage(Number(gpx.dataset.gpx));
+    const search = e.target.closest("[data-camp-search]");
+    if (search) searchCamps(Number(search.dataset.campSearch));
+    const show = e.target.closest("[data-camp-show]");
+    if (show) showCampOnMap(show.dataset.campShow);
   });
+  document.addEventListener("change", (e) => {
+    if (!e.target.matches("[data-camp-radius]")) return;
+    campRadius = Number(e.target.value) || 5;
+    store("campRadius", campRadius);
+    render();
+  });
+  // "toggle" doesn't bubble, so listen in the capture phase. Opening a campsite section searches right away.
+  document.addEventListener("toggle", (e) => {
+    const d = e.target;
+    if (!d.matches || !d.matches("details.camp")) return;
+    const k = Number(d.dataset.camp);
+    if (d.open === campOpen.has(k)) return;
+    if (d.open) campOpen.add(k); else campOpen.delete(k);
+    const st = S.stages[k];
+    if (d.open && st && !campResult(st)) searchCamps(k);
+    else render();
+  }, true);
+  $("pdfBtn").addEventListener("click", downloadPdf);
   $("tourSelect").addEventListener("change", async (e) => {
     if (e.target.value && e.target.value !== S.tourId) {
       await saveTourSettings();
