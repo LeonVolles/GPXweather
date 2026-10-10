@@ -26,6 +26,11 @@ Everything runs in your browser. There is no server, no account and no API key.
   Office) from [Open-Meteo](https://open-meteo.com/). Each stage shows the
   median, the spread between the models and a clear "models agree / disagree"
   rating.
+- **GPX per stage**: every stage has a "⬇ GPX of this stage" button. The file
+  contains the original track points of that stage (full detail), start and end
+  waypoints and the stage data in its description. On the iPhone it opens the
+  share sheet, so you can save it to Files or open it directly in a navigation
+  app (Komoot, OsmAnd, Garmin, …).
 - **Bike map**: [CyclOSM](https://www.cyclosm.org/) as the base map (switchable
   to the standard OpenStreetMap map).
 - **Saved tours**: every GPX you load is stored on your device. Several tours

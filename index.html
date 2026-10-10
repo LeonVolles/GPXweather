@@ -654,8 +654,18 @@ function resample(raw, segments) {
   pts.forEach((p) => { if (!segStart.has(p.seg)) segStart.set(p.seg, p.d); });
   const segs = segments.map((s, k) => ({ name: s.name, start: segStart.get(k) ?? null })).filter((s) => s.start != null);
 
+  // Original points (full detail) for exporting single stages as GPX.
+  const raw2 = {
+    lat: new Float64Array(pts.length), lon: new Float64Array(pts.length), ele: new Float32Array(pts.length),
+    d: new Float64Array(pts.length), gap: new Uint8Array(pts.length),
+  };
+  pts.forEach((p, i) => {
+    raw2.lat[i] = p.lat; raw2.lon[i] = p.lon; raw2.ele[i] = p.ele == null ? NaN : p.ele;
+    raw2.d[i] = p.d; raw2.gap[i] = p.gapBefore ? 1 : 0;
+  });
+
   return {
-    step, total, pts: out, segments: segs,
+    step, total, pts: out, segments: segs, raw: raw2,
     info: { rawPoints: raw.length, gapSum, gapCount, hadEle: raw.filter((p) => p.ele != null).length / raw.length },
   };
 }
@@ -763,6 +773,7 @@ function segmentAt(track, meters) {
 function packTrack(track) {
   return {
     name: track.name, step: track.step, total: track.total, segments: track.segments, info: track.info,
+    raw: track.raw || null,
     pts: track.pts.map((p) => p.gap
       ? [+p.lat.toFixed(5), +p.lon.toFixed(5), Math.round(p.ele * 10) / 10, 1]
       : [+p.lat.toFixed(5), +p.lon.toFixed(5), Math.round(p.ele * 10) / 10]),
@@ -772,6 +783,7 @@ function packTrack(track) {
 function unpackTrack(t) {
   return finishTrack({
     name: t.name, step: t.step, total: t.total, segments: t.segments || [], info: t.info || {},
+    raw: t.raw && t.raw.d ? t.raw : null,
     pts: t.pts.map(([lat, lon, ele, gap], i) => ({ lat, lon, ele, gap: !!gap, d: Math.min(i * t.step, t.total) })),
   });
 }
@@ -1848,7 +1860,10 @@ function stageCard(st, k, w, compact) {
       ${comparisonTable(w)}
       <div id="hourly-${k}"></div>
     </details>` : ""}
-    ${compact ? `<div class="btn-row"><button type="button" data-goto="${k}">Details, models and hourly charts ↓</button></div>` : ""}
+    <div class="btn-row">
+      ${compact ? `<button type="button" data-goto="${k}">Details, models and hourly charts ↓</button>` : ""}
+      <button type="button" data-gpx="${k}">⬇ GPX of this stage</button>
+    </div>
   </section>`;
 }
 
@@ -1935,6 +1950,107 @@ function renderHourly(k, w) {
   panel(`h-temp-${k}`, "temp", "Temperature", " °C", 0, "line");
   panel(`h-rain-${k}`, "rain", "Rain per hour", " mm", 1, "bar");
   panel(`h-head-${k}`, "head", "Headwind (negative = tailwind)", " km/h", 0, "line");
+}
+
+/* ---------- Export one stage as GPX ---------- */
+
+function xmlEsc(s) {
+  return String(s).replace(/[<>&"']/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&apos;" }[c]));
+}
+
+function plainStageTitle(st) {
+  const from = placeName(st.startPt) || `km ${fmt(st.a / 1000, 0)}`;
+  const to = placeName(st.endPt) || `km ${fmt(st.b / 1000, 0)}`;
+  return `${from} – ${to}`;
+}
+
+// Track segments ([[lat, lon, ele], ...]) between two distances; a new segment starts after each gap.
+function stageSegments(st) {
+  const T = S.track, R = T.raw;
+  const segs = [];
+  let cur = [];
+  const eleAt = (d, e) => (Number.isFinite(e) ? e : pointAt(T, d).ele);
+  const cut = () => { if (cur.length > 1) segs.push(cur); cur = []; };
+
+  if (R) {
+    const n = R.d.length;
+    let lo = 0, hi = n;   // first index with d >= a
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (R.d[mid] < st.a) lo = mid + 1; else hi = mid; }
+    let i = lo;
+    const interp = (j, d) => {
+      const t = (d - R.d[j - 1]) / (R.d[j] - R.d[j - 1] || 1);
+      const e0 = eleAt(R.d[j - 1], R.ele[j - 1]), e1 = eleAt(R.d[j], R.ele[j]);
+      return [R.lat[j - 1] + (R.lat[j] - R.lat[j - 1]) * t, R.lon[j - 1] + (R.lon[j] - R.lon[j - 1]) * t, e0 + (e1 - e0) * t];
+    };
+    // Start exactly at the stage start (unless it lies inside a gap).
+    if (i > 0 && i < n && R.d[i] > st.a && !R.gap[i]) cur.push(interp(i, st.a));
+    for (; i < n && R.d[i] <= st.b; i++) {
+      if (R.gap[i]) cut();
+      cur.push([R.lat[i], R.lon[i], eleAt(R.d[i], R.ele[i])]);
+    }
+    // End exactly at the stage end.
+    if (i > 0 && i < n && R.d[i - 1] < st.b && !R.gap[i]) cur.push(interp(i, st.b));
+  } else {
+    // Tours saved by an older version only have the simplified track.
+    for (let k = idxAt(T, st.a); k <= idxAt(T, st.b); k++) {
+      const p = T.pts[k];
+      if (p.gap) cut();
+      cur.push([p.lat, p.lon, p.ele]);
+    }
+  }
+  cut();
+  return segs;
+}
+
+function stageGpx(st, k) {
+  const T = S.track;
+  const title = `${T.name || "Tour"} – Stage ${k + 1}: ${plainStageTitle(st)}`;
+  const desc = `${fmtDate(st.date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · ` +
+    `${fmt(st.km, 1)} km · ↑ ${fmt(st.up, 0)} m · ↓ ${fmt(st.down, 0)} m (km ${fmt(st.a / 1000, 1)}–${fmt(st.b / 1000, 1)} of the tour)`;
+  const pt = ([lat, lon, ele]) =>
+    `<trkpt lat="${lat.toFixed(6)}" lon="${lon.toFixed(6)}">${ele == null || Number.isNaN(ele) ? "" : `<ele>${ele.toFixed(1)}</ele>`}</trkpt>`;
+  const segs = stageSegments(st).map((seg) => `    <trkseg>\n      ${seg.map(pt).join("\n      ")}\n    </trkseg>`).join("\n");
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="GPX Weather" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata><name>${xmlEsc(title)}</name><desc>${xmlEsc(desc)}</desc></metadata>
+  <wpt lat="${st.startPt.lat.toFixed(6)}" lon="${st.startPt.lon.toFixed(6)}"><name>${xmlEsc("Start stage " + (k + 1) + (placeName(st.startPt) ? ": " + placeName(st.startPt) : ""))}</name></wpt>
+  <wpt lat="${st.endPt.lat.toFixed(6)}" lon="${st.endPt.lon.toFixed(6)}"><name>${xmlEsc("End stage " + (k + 1) + (placeName(st.endPt) ? ": " + placeName(st.endPt) : ""))}</name></wpt>
+  <trk>
+    <name>${xmlEsc(title)}</name>
+    <desc>${xmlEsc(desc)}</desc>
+${segs}
+  </trk>
+</gpx>
+`;
+}
+
+async function downloadStage(k) {
+  const st = S.stages[k];
+  if (!st) return;
+  const slug = (s) => String(s).normalize("NFKD").replace(/[^\w-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "tour";
+  const name = `${slug(S.track.name)}-stage-${k + 1}-${st.date}.gpx`;
+  const file = new File([stageGpx(st, k)], name, { type: "application/gpx+xml" });
+  // On phones the share sheet is the natural way: "Save to Files" or open it in a navigation app.
+  const touch = window.matchMedia("(pointer: coarse)").matches;
+  if (touch && navigator.canShare && navigator.share) {
+    try {
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: name });
+        return;
+      }
+    } catch (e) {
+      if (e.name === "AbortError") return;
+    }
+  }
+  const url = URL.createObjectURL(file);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+  if (!S.track.raw) setStatus("Note: this tour was saved by an older version, so the stage GPX uses the simplified track. Load the GPX again for full detail.");
 }
 
 /* ---------- Inputs ---------- */
@@ -2040,6 +2156,10 @@ function initControls() {
   $("refresh").addEventListener("click", () => loadWeather(true));
   $("locate").addEventListener("click", () => locate());
   $("deleteTour").addEventListener("click", deleteTour);
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-gpx]");
+    if (btn) downloadStage(Number(btn.dataset.gpx));
+  });
   $("tourSelect").addEventListener("change", async (e) => {
     if (e.target.value && e.target.value !== S.tourId) {
       await saveTourSettings();
