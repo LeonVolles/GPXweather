@@ -1,0 +1,1487 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GPX Wetter</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f3f5f2;
+    --surface: #fcfcfb;
+    --surface-2: #f0f2ef;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --axis: #c3c2b7;
+    --border: rgba(11, 11, 11, 0.10);
+    --brand: #18412d;
+    --brand-ink: #ffffff;
+    --accent: #287a4b;
+    --m1: #2a78d6; --m2: #eb6834; --m3: #1baf7a; --m4: #eda100; --m5: #e87ba4;
+    --route-a: #2a78d6; --route-b: #eb6834; --ridden: #898781;
+    --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --critical: #d03b3b;
+    --day-bg: #fff8df; --day-line: #e7b928;
+    --night-bg: #edf2fa; --night-line: #496a9f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page: #0d0d0d; --surface: #1a1a19; --surface-2: #232321;
+      --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255, 255, 255, 0.10);
+      --brand: #143523; --accent: #3fa66a;
+      --m1: #3987e5; --m2: #d95926; --m3: #199e70; --m4: #c98500; --m5: #d55181;
+      --route-a: #3987e5; --route-b: #d95926;
+      --day-bg: #2b2614; --day-line: #c99b12;
+      --night-bg: #1a2230; --night-line: #6f8fc4;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --surface-2: #232321;
+    --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255, 255, 255, 0.10);
+    --brand: #143523; --accent: #3fa66a;
+    --m1: #3987e5; --m2: #d95926; --m3: #199e70; --m4: #c98500; --m5: #d55181;
+    --route-a: #3987e5; --route-b: #d95926;
+    --day-bg: #2b2614; --day-line: #c99b12;
+    --night-bg: #1a2230; --night-line: #6f8fc4;
+  }
+
+  * { box-sizing: border-box; }
+  body { font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+         background: var(--page); color: var(--ink); margin: 0; }
+  main { max-width: 1200px; margin: auto; padding: 16px; }
+  header { background: var(--brand); color: var(--brand-ink); padding: 18px 20px; border-radius: 16px; }
+  header h1 { margin: 0 0 4px; font-size: 1.5rem; }
+  header p { margin: 2px 0; opacity: 0.9; }
+  h2.part { font-size: 1.1rem; margin: 26px 0 8px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+          padding: 16px; margin: 12px 0; box-shadow: 0 2px 12px #0000000d; }
+  .muted { color: var(--muted); }
+  .small { font-size: 0.85rem; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* Controls */
+  .drop { display: block; border: 2px dashed var(--axis); border-radius: 12px; padding: 18px; text-align: center;
+          cursor: pointer; transition: background 0.15s; }
+  .drop.over { background: var(--surface-2); border-color: var(--accent); }
+  .drop input { display: none; }
+  .drop strong { display: block; font-size: 1.05rem; }
+  .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+              gap: 14px 20px; margin-top: 16px; }
+  .ctl label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 4px; }
+  .ctl input[type=number], .ctl input[type=date], .ctl input[type=time] {
+    width: 100%; padding: 7px 9px; border-radius: 8px; border: 1px solid var(--axis);
+    background: var(--surface); color: var(--ink); font: inherit; }
+  .ctl input[type=range] { width: 100%; accent-color: var(--accent); }
+  .range-row { display: flex; gap: 10px; align-items: center; }
+  .range-row input[type=number] { width: 92px; flex: none; }
+  .models { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+  .models label { font-weight: 400; display: inline-flex; align-items: center; gap: 6px; margin: 0; }
+  .swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; flex: none; }
+  button { font: inherit; border-radius: 8px; border: 1px solid var(--axis); background: var(--surface);
+           color: var(--ink); padding: 7px 12px; cursor: pointer; }
+  button:hover { background: var(--surface-2); }
+  button.primary { background: var(--accent); color: #fff; border-color: transparent; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  #status { margin-top: 10px; min-height: 1.4em; }
+
+  /* Tiles */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+  .tile { background: var(--surface-2); border-radius: 10px; padding: 10px 12px; }
+  .tile .k { font-size: 0.8rem; color: var(--ink-2); }
+  .tile .v { font-size: 1.35rem; font-weight: 650; }
+  .tile .s { font-size: 0.8rem; color: var(--muted); }
+
+  #map { height: 420px; border-radius: 12px; z-index: 0; }
+  .chart { width: 100%; }
+
+  /* Table */
+  .table-wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+  th, td { padding: 7px 8px; border-bottom: 1px solid var(--grid); text-align: left; white-space: nowrap; }
+  th { color: var(--ink-2); font-weight: 600; font-size: 0.8rem; }
+  td.r, th.r { text-align: right; }
+  tbody tr.click { cursor: pointer; }
+  tbody tr.click:hover { background: var(--surface-2); }
+
+  /* Status badges: icon + label, never colour alone */
+  .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; white-space: nowrap; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; }
+  .s0 .dot { background: var(--good); }
+  .s1 .dot { background: var(--warning); }
+  .s2 .dot { background: var(--critical); }
+  .sx .dot { background: var(--axis); }
+
+  /* Stage cards */
+  .stage-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+  .stage-head h3 { margin: 0; font-size: 1.15rem; }
+  .stage-head p { margin: 2px 0 0; color: var(--ink-2); font-size: 0.9rem; }
+  .summary-box { margin-top: 10px; padding: 10px 13px; border-radius: 10px; }
+  .day-summary { background: var(--day-bg); border-left: 4px solid var(--day-line); }
+  .night-summary { background: var(--night-bg); border-left: 4px solid var(--night-line); }
+  .warn-line { margin-top: 8px; font-size: 0.9rem; }
+  .spark { width: 100%; height: 70px; display: block; margin-top: 10px; }
+  details > summary { cursor: pointer; margin-top: 14px; font-weight: 600; }
+  .cmp td:first-child { color: var(--ink-2); }
+  .cmp td.med { font-weight: 650; }
+  .wx { font-size: 1.6rem; line-height: 1; }
+  footer { margin: 30px 0 10px; font-size: 0.82rem; color: var(--muted); }
+  .hidden { display: none !important; }
+  .leaflet-div-icon.stage-pin { background: none; border: none; }
+  .stage-pin span { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
+                    background: var(--surface); color: var(--ink); border: 2px solid var(--ink);
+                    font: 700 11px system-ui; }
+  .pos-pin span { display: block; width: 18px; height: 18px; border-radius: 50%;
+                  background: var(--critical); border: 3px solid #fff; box-shadow: 0 0 0 2px var(--critical); }
+  @media (max-width: 600px) {
+    main { padding: 10px; }
+    #map { height: 320px; }
+    header h1 { font-size: 1.25rem; }
+  }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>🚲 GPX Wetter</h1>
+  <p>GPX-Track laden, Tagesetappen festlegen und für jede Etappe das Wetter mehrerer Modelle vergleichen.</p>
+</header>
+
+<div class="card">
+  <label class="drop" id="drop">
+    <input type="file" id="file" accept=".gpx,application/gpx+xml,application/xml,text/xml">
+    <strong id="drop-title">GPX-Datei hier ablegen oder klicken</strong>
+    <span class="muted small" id="drop-sub">Die Datei bleibt in deinem Browser, sie wird nirgends hochgeladen.</span>
+  </label>
+
+  <div class="controls">
+    <div class="ctl">
+      <label for="perDay">Kilometer pro Tag: <span id="perDayOut" class="num">80</span> km</label>
+      <div class="range-row">
+        <input type="range" id="perDay" min="10" max="250" step="5" value="80">
+        <input type="number" id="perDayNum" min="5" max="400" step="1" value="80">
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="startKm">Aktuelle Position: km <span id="startKmOut" class="num">0</span> von <span id="totalOut" class="num">–</span></label>
+      <div class="range-row">
+        <input type="range" id="startKm" min="0" max="0" step="0.1" value="0" disabled>
+        <input type="number" id="startKmNum" min="0" step="0.1" value="0" disabled>
+      </div>
+      <div class="btn-row">
+        <button type="button" id="locate">📍 Mein Standort</button>
+        <button type="button" id="resetPos">Zum Start</button>
+      </div>
+      <div class="muted small">Oder auf die Karte klicken, um die Position zu setzen.</div>
+    </div>
+    <div class="ctl">
+      <label for="date">Erste Etappe am</label>
+      <input type="date" id="date">
+    </div>
+    <div class="ctl">
+      <label for="dep">Abfahrt täglich um</label>
+      <input type="time" id="dep" value="09:00" step="900">
+    </div>
+    <div class="ctl">
+      <label for="speed">Reisetempo inkl. Pausen (km/h)</label>
+      <input type="number" id="speed" min="5" max="40" step="0.5" value="16">
+    </div>
+    <div class="ctl">
+      <label>Wettermodelle</label>
+      <div class="models" id="models"></div>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button type="button" class="primary" id="refresh">↻ Wetter neu laden</button>
+    <button type="button" id="clear">Tour entfernen</button>
+  </div>
+  <div id="status" class="small muted"></div>
+</div>
+
+<div id="content" class="hidden">
+  <h2 class="part">Was noch vor dir liegt</h2>
+  <div class="card"><div class="tiles" id="totals"></div></div>
+
+  <h2 class="part">Karte</h2>
+  <div class="card"><div id="map"></div></div>
+
+  <h2 class="part">Höhenprofil</h2>
+  <div class="card"><div id="profile" class="chart"></div></div>
+
+  <h2 class="part">Etappen im Überblick</h2>
+  <div class="card table-wrap"><table id="overview"></table></div>
+
+  <h2 class="part">Modellvergleich je Etappe</h2>
+  <div class="card">
+    <p class="small muted" style="margin-top:0">Jeder Punkt ist ein Wettermodell, der Strich der Median.
+      Liegen die Punkte weit auseinander, sind sich die Modelle uneinig und die Vorhersage ist unsicher.</p>
+    <div id="cmp-legend" class="models small"></div>
+    <div id="cmp-temp" class="chart"></div>
+    <div id="cmp-rain" class="chart"></div>
+    <div id="cmp-head" class="chart"></div>
+    <div id="cmp-gust" class="chart"></div>
+  </div>
+
+  <h2 class="part">Tagesetappen</h2>
+  <div id="stages"></div>
+</div>
+
+<footer>
+  Wetterdaten: <a href="https://open-meteo.com/">Open-Meteo</a> (ECMWF, DWD ICON, NOAA GFS, Météo-France, UK Met Office),
+  Höhendaten falls im GPX fehlend: Open-Meteo Elevation API (Copernicus DEM), Ortsnamen: BigDataCloud, Karte: © OpenStreetMap-Mitwirkende.
+  Wetter wird entlang der Route zu der Uhrzeit ausgewertet, zu der du voraussichtlich dort bist.
+  Gegenwind &gt; 0 bedeutet Wind von vorn, &lt; 0 Rückenwind. Keine amtliche Warnanwendung.
+</footer>
+</main>
+
+<script>
+"use strict";
+
+/* ---------- Configuration ---------- */
+
+const MODELS = [
+  { id: "ecmwf_ifs025", name: "ECMWF", color: "--m1", on: true },
+  { id: "icon_seamless", name: "ICON", color: "--m2", on: true },
+  { id: "gfs_seamless", name: "GFS", color: "--m3", on: true },
+  { id: "meteofrance_seamless", name: "Météo-France", color: "--m4", on: true },
+  { id: "ukmo_seamless", name: "UK Met Office", color: "--m5", on: false },
+];
+
+const HOURLY = [
+  "temperature_2m", "apparent_temperature", "precipitation", "precipitation_probability",
+  "weather_code", "cloud_cover", "wind_speed_10m", "wind_direction_10m", "wind_gusts_10m",
+  "sunshine_duration",
+].join(",");
+
+const SAMPLE_FRACTIONS = [0, 0.25, 0.5, 0.75, 1];
+const MAX_FORECAST_DAY = 15;      // stage date may be at most today + 15 (API serves 16 days)
+const STORE = "gpxweather.v1.";
+
+/* ---------- Small helpers ---------- */
+
+const $ = (id) => document.getElementById(id);
+const pad = (n) => String(n).padStart(2, "0");
+const rad = Math.PI / 180;
+const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmt = (v, d = 0, unit = "") => (v == null || Number.isNaN(v) ? "–" : v.toFixed(d) + unit);
+const sum = (a) => a.reduce((s, v) => s + v, 0);
+const clean = (a) => a.filter((v) => v != null && !Number.isNaN(v));
+
+function median(values) {
+  const v = clean(values).sort((a, b) => a - b);
+  if (!v.length) return null;
+  const m = v.length >> 1;
+  return v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2;
+}
+
+function spread(values) {
+  const v = clean(values);
+  return v.length < 2 ? null : Math.max(...v) - Math.min(...v);
+}
+
+function meanDir(dirs, weights) {
+  let x = 0, y = 0;
+  dirs.forEach((d, i) => {
+    if (d == null) return;
+    const w = weights ? weights[i] : 1;
+    x += w * Math.sin(d * rad);
+    y += w * Math.cos(d * rad);
+  });
+  if (!x && !y) return null;
+  return (Math.atan2(x, y) / rad + 360) % 360;
+}
+
+function angleDiff(a, b) {
+  const d = Math.abs(a - b) % 360;
+  return d > 180 ? 360 - d : d;
+}
+
+function dirSpread(dirs) {
+  const v = clean(dirs);
+  let m = 0;
+  for (let i = 0; i < v.length; i++) for (let j = i + 1; j < v.length; j++) m = Math.max(m, angleDiff(v[i], v[j]));
+  return v.length < 2 ? null : m;
+}
+
+function compass(deg) {
+  if (deg == null) return "–";
+  const names = ["N", "NNO", "NO", "ONO", "O", "OSO", "SO", "SSO", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+  return names[Math.floor((deg + 11.25) / 22.5) % 16];
+}
+
+function arrow(deg) {
+  // Arrow points where the wind blows TO.
+  if (deg == null) return "";
+  return `<span style="display:inline-block;transform:rotate(${(deg + 180) % 360}deg)">↑</span>`;
+}
+
+function todayStr() {
+  const t = new Date();
+  return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`;
+}
+
+function addDays(dateStr, n) {
+  const d = new Date(dateStr + "T12:00:00Z");
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+function dayDiff(a, b) {
+  return Math.round((new Date(b + "T12:00:00Z") - new Date(a + "T12:00:00Z")) / 86400000);
+}
+
+function fmtDate(dateStr, opts = { weekday: "short", day: "2-digit", month: "2-digit" }) {
+  return new Date(dateStr + "T12:00:00Z").toLocaleDateString("de-DE", { ...opts, timeZone: "UTC" });
+}
+
+function fmtMinutes(min) {
+  // minutes after local midnight of the stage day -> "HH:MM" (+1 for next day)
+  const m = Math.round(min);
+  const day = Math.floor(m / 1440);
+  const r = ((m % 1440) + 1440) % 1440;
+  return `${pad(Math.floor(r / 60))}:${pad(r % 60)}${day > 0 ? " (+" + day + ")" : ""}`;
+}
+
+function fmtDuration(hours) {
+  const m = Math.round(hours * 60);
+  return `${Math.floor(m / 60)}:${pad(m % 60)} h`;
+}
+
+function haversine(a, b) {
+  const R = 6371000;
+  const dLat = (b.lat - a.lat) * rad, dLon = (b.lon - a.lon) * rad;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+function bearing(a, b) {
+  const y = Math.sin((b.lon - a.lon) * rad) * Math.cos(b.lat * rad);
+  const x = Math.cos(a.lat * rad) * Math.sin(b.lat * rad) -
+            Math.sin(a.lat * rad) * Math.cos(b.lat * rad) * Math.cos((b.lon - a.lon) * rad);
+  return (Math.atan2(y, x) / rad + 360) % 360;
+}
+
+function store(key, value) {
+  try { localStorage.setItem(STORE + key, JSON.stringify(value)); } catch (e) { /* storage unavailable */ }
+}
+
+function restore(key) {
+  try { return JSON.parse(localStorage.getItem(STORE + key)); } catch (e) { return null; }
+}
+
+function setStatus(text) { $("status").textContent = text; }
+
+/* Sunrise / sunset (NOAA approximation), minutes after local midnight. */
+function sunTimes(lat, lon, dateStr, offsetSec) {
+  const d = new Date(dateStr + "T12:00:00Z");
+  const start = Date.UTC(d.getUTCFullYear(), 0, 1);
+  const n = Math.floor((d - start) / 86400000) + 1;
+  const g = (2 * Math.PI / 365) * (n - 1 + 0.5);
+  const eq = 229.18 * (0.000075 + 0.001868 * Math.cos(g) - 0.032077 * Math.sin(g)
+                       - 0.014615 * Math.cos(2 * g) - 0.040849 * Math.sin(2 * g));
+  const decl = 0.006918 - 0.399912 * Math.cos(g) + 0.070257 * Math.sin(g) - 0.006758 * Math.cos(2 * g)
+             + 0.000907 * Math.sin(2 * g) - 0.002697 * Math.cos(3 * g) + 0.00148 * Math.sin(3 * g);
+  const cosHa = Math.cos(90.833 * rad) / (Math.cos(lat * rad) * Math.cos(decl)) - Math.tan(lat * rad) * Math.tan(decl);
+  if (cosHa > 1 || cosHa < -1) return null;
+  const ha = Math.acos(cosHa) / rad;
+  const off = offsetSec / 60;
+  return { rise: 720 - 4 * (lon + ha) - eq + off, set: 720 - 4 * (lon - ha) - eq + off };
+}
+
+/* WMO weather codes */
+function wxInfo(code) {
+  if (code == null) return ["❔", "unbekannt"];
+  if (code === 0) return ["☀️", "klar"];
+  if (code <= 2) return ["🌤️", "leicht bewölkt"];
+  if (code === 3) return ["☁️", "bedeckt"];
+  if (code <= 48) return ["🌫️", "Nebel"];
+  if (code <= 55) return ["🌦️", "Niesel"];
+  if (code <= 57) return ["🌧️", "gefrierender Niesel"];
+  if (code <= 63) return ["🌧️", "Regen"];
+  if (code <= 65) return ["🌧️", "starker Regen"];
+  if (code <= 67) return ["🌧️", "gefrierender Regen"];
+  if (code <= 77) return ["🌨️", "Schnee"];
+  if (code <= 81) return ["🌦️", "Regenschauer"];
+  if (code === 82) return ["⛈️", "heftige Schauer"];
+  if (code <= 86) return ["🌨️", "Schneeschauer"];
+  return ["⛈️", "Gewitter"];
+}
+
+/* ---------- State ---------- */
+
+const S = {
+  track: null,            // { name, step, pts: [{d, lat, lon, ele, sm}], total, cumUp, cumDown }
+  startKm: 0,
+  perDay: 80,
+  date: todayStr(),
+  dep: "09:00",
+  speed: 16,
+  models: new Set(MODELS.filter((m) => m.on).map((m) => m.id)),
+  stages: [],
+};
+
+const responses = new Map();   // url -> { state: "loading"|"ok"|"error", data, error }
+const places = new Map();      // "lat,lon" -> name
+const openCards = new Set();
+
+/* ---------- GPX parsing & track preparation ---------- */
+
+function parseGPX(text) {
+  const xml = new DOMParser().parseFromString(text, "application/xml");
+  if (xml.getElementsByTagName("parsererror").length) throw new Error("Die Datei ist kein gültiges GPX/XML.");
+  let nodes = [...xml.getElementsByTagNameNS("*", "trkpt")];
+  if (!nodes.length) nodes = [...xml.getElementsByTagNameNS("*", "rtept")];
+  if (!nodes.length) throw new Error("Keine Track- oder Routenpunkte (trkpt/rtept) im GPX gefunden.");
+
+  const nameNode = xml.getElementsByTagNameNS("*", "name")[0];
+  const raw = [];
+  for (const n of nodes) {
+    const lat = parseFloat(n.getAttribute("lat"));
+    const lon = parseFloat(n.getAttribute("lon"));
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+    const eleNode = n.getElementsByTagNameNS("*", "ele")[0];
+    const ele = eleNode ? parseFloat(eleNode.textContent) : NaN;
+    raw.push({ lat, lon, ele: Number.isFinite(ele) ? ele : null });
+  }
+  if (raw.length < 2) throw new Error("Der Track hat zu wenige Punkte.");
+  return { name: nameNode ? nameNode.textContent.trim() : "", raw };
+}
+
+function resample(raw) {
+  let d = 0;
+  const pts = [{ ...raw[0], d: 0 }];
+  for (let i = 1; i < raw.length; i++) {
+    const step = haversine(raw[i - 1], raw[i]);
+    if (step < 0.5) continue;
+    d += step;
+    pts.push({ ...raw[i], d });
+  }
+  const total = d;
+  if (total < 100) throw new Error("Der Track ist kürzer als 100 m.");
+
+  const step = Math.max(50, total / 8000);
+  const count = Math.floor(total / step);
+  const out = [];
+  let j = 0;
+  for (let i = 0; i <= count + 1; i++) {
+    const dist = Math.min(i * step, total);
+    while (j < pts.length - 2 && pts[j + 1].d < dist) j++;
+    const a = pts[j], b = pts[j + 1];
+    const t = b.d > a.d ? Math.min(1, Math.max(0, (dist - a.d) / (b.d - a.d))) : 0;
+    let ele = null;
+    if (a.ele != null && b.ele != null) ele = a.ele + (b.ele - a.ele) * t;
+    else ele = a.ele ?? b.ele;
+    out.push({ d: dist, lat: a.lat + (b.lat - a.lat) * t, lon: a.lon + (b.lon - a.lon) * t, ele });
+    if (dist >= total) break;
+  }
+  return { step, total, pts: out };
+}
+
+async function fillElevation(track) {
+  const pts = track.pts;
+  const known = pts.filter((p) => p.ele != null).length;
+  if (known / pts.length >= 0.8) return false;
+
+  const every = Math.max(1, Math.ceil(pts.length / 3000));
+  const idx = [];
+  for (let i = 0; i < pts.length; i += every) idx.push(i);
+  if (idx[idx.length - 1] !== pts.length - 1) idx.push(pts.length - 1);
+
+  const batches = [];
+  for (let i = 0; i < idx.length; i += 100) batches.push(idx.slice(i, i + 100));
+  let done = 0;
+  await runLimited(batches.map((batch) => async () => {
+    const lat = batch.map((i) => pts[i].lat.toFixed(5)).join(",");
+    const lon = batch.map((i) => pts[i].lon.toFixed(5)).join(",");
+    const res = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lon}`);
+    if (!res.ok) throw new Error("Höhendaten konnten nicht geladen werden (" + res.status + ").");
+    const json = await res.json();
+    batch.forEach((i, k) => { pts[i].ele = json.elevation[k]; });
+    done++;
+    setStatus(`Höhendaten werden geladen … ${done}/${batches.length}`);
+  }), 3);
+
+  // Interpolate the points between the fetched ones.
+  for (let k = 0; k < idx.length - 1; k++) {
+    const a = idx[k], b = idx[k + 1];
+    for (let i = a + 1; i < b; i++) {
+      const t = (i - a) / (b - a);
+      pts[i].ele = pts[a].ele + (pts[b].ele - pts[a].ele) * t;
+    }
+  }
+  return true;
+}
+
+function finishTrack(track) {
+  const pts = track.pts;
+  // Fill any remaining gaps by carrying neighbours.
+  let last = pts.find((p) => p.ele != null)?.ele ?? 0;
+  for (const p of pts) { if (p.ele == null) p.ele = last; else last = p.ele; }
+
+  // Smooth elevation (~200 m window) to avoid counting GPS noise as climbing.
+  const w = Math.max(1, Math.round(100 / track.step));
+  const prefix = [0];
+  pts.forEach((p, i) => prefix.push(prefix[i] + p.ele));
+  pts.forEach((p, i) => {
+    const a = Math.max(0, i - w), b = Math.min(pts.length - 1, i + w);
+    p.sm = (prefix[b + 1] - prefix[a]) / (b - a + 1);
+  });
+
+  track.cumUp = [0];
+  track.cumDown = [0];
+  for (let i = 1; i < pts.length; i++) {
+    const diff = pts[i].sm - pts[i - 1].sm;
+    track.cumUp.push(track.cumUp[i - 1] + Math.max(0, diff));
+    track.cumDown.push(track.cumDown[i - 1] + Math.max(0, -diff));
+  }
+  return track;
+}
+
+function idxAt(track, meters) {
+  return Math.max(0, Math.min(track.pts.length - 1, Math.round(meters / track.step)));
+}
+
+function pointAt(track, meters) {
+  return track.pts[idxAt(track, meters)];
+}
+
+function travelBearing(track, meters) {
+  const a = pointAt(track, Math.max(0, meters - 400));
+  const b = pointAt(track, Math.min(track.total, meters + 400));
+  return a === b ? 0 : bearing(a, b);
+}
+
+function nearestKm(track, lat, lon) {
+  const cos = Math.cos(lat * rad);
+  let best = 0, bestD = Infinity;
+  track.pts.forEach((p, i) => {
+    const dx = (p.lon - lon) * cos, dy = p.lat - lat;
+    const dd = dx * dx + dy * dy;
+    if (dd < bestD) { bestD = dd; best = i; }
+  });
+  const p = track.pts[best];
+  return { km: p.d / 1000, offset: haversine(p, { lat, lon }) };
+}
+
+/* ---------- Stages ---------- */
+
+function buildStages() {
+  const T = S.track;
+  if (!T) return [];
+  const start = Math.min(S.startKm * 1000, T.total);
+  const per = S.perDay * 1000;
+  const rest = T.total - start;
+  if (rest < 100) return [];
+
+  let n = Math.max(1, Math.ceil(rest / per));
+  if (n > 1 && rest - (n - 1) * per < 0.15 * per) n--;   // fold a tiny remainder into the last day
+
+  const [h, m] = S.dep.split(":").map(Number);
+  const depMin = h * 60 + m;
+  const stages = [];
+  for (let i = 0; i < n; i++) {
+    const a = start + i * per;
+    const b = i === n - 1 ? T.total : start + (i + 1) * per;
+    const ia = idxAt(T, a), ib = idxAt(T, b);
+    let lo = Infinity, hi = -Infinity;
+    for (let k = ia; k <= ib; k++) { lo = Math.min(lo, T.pts[k].sm); hi = Math.max(hi, T.pts[k].sm); }
+    const km = (b - a) / 1000;
+    const hours = km / S.speed;
+    const date = addDays(S.date, i);
+    const samples = SAMPLE_FRACTIONS.map((f) => {
+      const d = a + (b - a) * f;
+      const p = pointAt(T, d);
+      return { f, d, lat: p.lat, lon: p.lon, bearing: travelBearing(T, d) };
+    });
+    stages.push({
+      i, a, b, km, date, hours,
+      dep: depMin, arr: depMin + hours * 60,
+      up: T.cumUp[ib] - T.cumUp[ia],
+      down: T.cumDown[ib] - T.cumDown[ia],
+      lo, hi,
+      startEle: T.pts[ia].sm, endEle: T.pts[ib].sm,
+      startPt: T.pts[ia], endPt: T.pts[ib],
+      samples,
+      inRange: dayDiff(todayStr(), date) <= MAX_FORECAST_DAY && dayDiff(todayStr(), date) >= -60,
+    });
+  }
+  return stages;
+}
+
+/* ---------- Weather fetching ---------- */
+
+function weatherUrl(stage, modelId) {
+  const lat = stage.samples.map((s) => s.lat.toFixed(3)).join(",");
+  const lon = stage.samples.map((s) => s.lon.toFixed(3)).join(",");
+  const p = new URLSearchParams({
+    latitude: lat, longitude: lon, hourly: HOURLY, models: modelId,
+    timezone: "auto", start_date: stage.date, end_date: addDays(stage.date, 1),
+    wind_speed_unit: "kmh",
+  });
+  return "https://api.open-meteo.com/v1/forecast?" + p.toString();
+}
+
+async function runLimited(tasks, limit) {
+  const results = [];
+  let next = 0;
+  async function worker() {
+    while (next < tasks.length) {
+      const k = next++;
+      results[k] = await tasks[k]();
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, tasks.length) }, worker));
+  return results;
+}
+
+async function fetchJson(url) {
+  const res = await fetch(url);
+  const json = await res.json().catch(() => null);
+  if (!res.ok) throw new Error((json && json.reason) || "HTTP " + res.status);
+  return json;
+}
+
+let fetchTimer = null;
+function scheduleWeather(delay = 700) {
+  clearTimeout(fetchTimer);
+  fetchTimer = setTimeout(loadWeather, delay);
+}
+
+async function loadWeather(force = false) {
+  if (!S.track) return;
+  const jobs = [];
+  for (const st of S.stages) {
+    if (!st.inRange) continue;
+    for (const m of MODELS) {
+      if (!S.models.has(m.id)) continue;
+      const url = weatherUrl(st, m.id);
+      const known = responses.get(url);
+      if (known && !force && known.state !== "error") continue;
+      responses.set(url, { state: "loading" });
+      jobs.push(url);
+    }
+  }
+  loadPlaces();
+  if (!jobs.length) { render(); return; }
+
+  render();
+  let done = 0, failed = 0;
+  setStatus(`Wetterdaten werden geladen … 0/${jobs.length}`);
+  await runLimited(jobs.map((url) => async () => {
+    try {
+      let data = await fetchJson(url);
+      if (!Array.isArray(data)) data = [data];
+      data.forEach((loc) => {
+        loc.index = new Map(loc.hourly.time.map((t, k) => [t, k]));
+      });
+      responses.set(url, { state: "ok", data });
+    } catch (e) {
+      failed++;
+      responses.set(url, { state: "error", error: e.message });
+    }
+    done++;
+    setStatus(`Wetterdaten werden geladen … ${done}/${jobs.length}`);
+    scheduleRender();
+  }), 6);
+  setStatus(`Wetter aktualisiert um ${new Date().toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}` +
+            (failed ? ` · ${failed} Abfrage(n) fehlgeschlagen` : ""));
+  render();
+}
+
+let renderQueued = false;
+function scheduleRender() {
+  if (renderQueued) return;
+  renderQueued = true;
+  requestAnimationFrame(() => { renderQueued = false; render(); });
+}
+
+/* Place names for stage start/end points */
+function placeKey(p) { return `${p.lat.toFixed(2)},${p.lon.toFixed(2)}`; }
+
+function placeName(p) {
+  return places.get(placeKey(p)) || null;
+}
+
+async function loadPlaces() {
+  const saved = restore("places") || {};
+  const want = [];
+  for (const st of S.stages) {
+    for (const p of [st.startPt, st.endPt]) {
+      const key = placeKey(p);
+      if (places.has(key)) continue;
+      if (saved[key]) { places.set(key, saved[key]); continue; }
+      places.set(key, null);
+      want.push([key, p]);
+    }
+  }
+  if (!want.length) return;
+  await runLimited(want.map(([key, p]) => async () => {
+    try {
+      const j = await fetchJson(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${p.lat.toFixed(4)}&longitude=${p.lon.toFixed(4)}&localityLanguage=de`);
+      const name = j.city || j.locality || j.principalSubdivision || null;
+      if (name) {
+        places.set(key, name);
+        const all = restore("places") || {};
+        all[key] = name;
+        store("places", all);
+        scheduleRender();
+      }
+    } catch (e) { /* names are optional */ }
+  }), 4);
+}
+
+/* ---------- Weather analysis ---------- */
+
+function valueAt(loc, key, time) {
+  const k = loc.index.get(time);
+  if (k == null) return null;
+  const arr = loc.hourly[key];
+  return arr && arr[k] != null ? arr[k] : null;
+}
+
+function timeKey(date, minutes) {
+  const day = Math.floor(minutes / 1440);
+  const hr = Math.floor((minutes - day * 1440) / 60);
+  return `${addDays(date, day)}T${pad(hr)}:00`;
+}
+
+function analyze(stage, data) {
+  // Walk through the ride hour by hour and read the weather at the place you'll be at that time.
+  const hours = [];
+  const first = Math.floor(stage.dep / 60) * 60;
+  for (let t = first; t < stage.arr; t += 60) {
+    const from = Math.max(t, stage.dep), to = Math.min(t + 60, stage.arr);
+    const weight = (to - from) / 60;
+    if (weight <= 0) continue;
+    const mid = (from + to) / 2;
+    const frac = stage.arr > stage.dep ? (mid - stage.dep) / (stage.arr - stage.dep) : 0;
+    const si = Math.round(frac * (SAMPLE_FRACTIONS.length - 1));
+    const loc = data[si], sample = stage.samples[si];
+    const key = timeKey(stage.date, t), next = timeKey(stage.date, t + 60);
+    const speed = valueAt(loc, "wind_speed_10m", key);
+    const dir = valueAt(loc, "wind_direction_10m", key);
+    const head = speed != null && dir != null ? speed * Math.cos((dir - sample.bearing) * rad) : null;
+    const rain = valueAt(loc, "precipitation", next);
+    const sun = valueAt(loc, "sunshine_duration", next);
+    hours.push({
+      t, weight, km: (stage.a + (stage.b - stage.a) * frac) / 1000,
+      temp: valueAt(loc, "temperature_2m", key),
+      feel: valueAt(loc, "apparent_temperature", key),
+      rain: rain == null ? null : rain * weight,
+      prob: valueAt(loc, "precipitation_probability", key),
+      code: valueAt(loc, "weather_code", key),
+      cloud: valueAt(loc, "cloud_cover", key),
+      speed, dir, head,
+      cross: speed != null && dir != null ? Math.abs(speed * Math.sin((dir - sample.bearing) * rad)) : null,
+      gust: valueAt(loc, "wind_gusts_10m", key),
+      sun: sun == null ? null : (sun / 3600) * weight,
+    });
+  }
+  const temps = clean(hours.map((h) => h.temp));
+  if (!temps.length) return null;   // outside this model's horizon
+
+  const w = hours.map((h) => h.weight);
+  const wavg = (key) => {
+    const pairs = hours.filter((h) => h[key] != null);
+    const ws = sum(pairs.map((h) => h.weight));
+    return ws ? sum(pairs.map((h) => h[key] * h.weight)) / ws : null;
+  };
+  const rains = clean(hours.map((h) => h.rain));
+  const probs = clean(hours.map((h) => h.prob));
+  const gusts = clean(hours.map((h) => h.gust));
+  const codes = clean(hours.map((h) => h.code));
+  const suns = clean(hours.map((h) => h.sun));
+  const feels = clean(hours.map((h) => h.feel));
+  const rainyHours = hours.filter((h) => h.rain != null && h.rain / h.weight >= 0.2).length;
+
+  // Night at the stage end: 19:00 to 07:00 next morning.
+  const endLoc = data[data.length - 1];
+  const night = [];
+  for (let t = 19 * 60; t < 31 * 60; t += 60) {
+    night.push({
+      temp: valueAt(endLoc, "temperature_2m", timeKey(stage.date, t)),
+      rain: valueAt(endLoc, "precipitation", timeKey(stage.date, t + 60)),
+    });
+  }
+  const nTemps = clean(night.map((n) => n.temp));
+  const nRain = clean(night.map((n) => n.rain));
+
+  return {
+    hours,
+    tmin: Math.min(...temps), tmax: Math.max(...temps),
+    feelMin: feels.length ? Math.min(...feels) : null,
+    rain: rains.length ? sum(rains) : null,
+    rainyHours,
+    prob: probs.length ? Math.max(...probs) : null,
+    speed: wavg("speed"),
+    dir: meanDir(hours.map((h) => h.dir), hours.map((h) => (h.speed || 0) * h.weight)),
+    head: wavg("head"),
+    cross: wavg("cross"),
+    gust: gusts.length ? Math.max(...gusts) : null,
+    cloud: wavg("cloud"),
+    sun: suns.length ? sum(suns) : null,
+    code: codes.length ? Math.max(...codes) : null,
+    nightMin: nTemps.length ? Math.min(...nTemps) : null,
+    nightRain: nRain.length ? sum(nRain) : null,
+    offset: data[0].utc_offset_seconds || 0,
+  };
+}
+
+function stageWeather(stage) {
+  const per = {};
+  let loading = 0, errors = [];
+  for (const m of MODELS) {
+    if (!S.models.has(m.id)) continue;
+    if (!stage.inRange) { per[m.id] = { state: "range" }; continue; }
+    const r = responses.get(weatherUrl(stage, m.id));
+    if (!r || r.state === "loading") { per[m.id] = { state: "loading" }; loading++; continue; }
+    if (r.state === "error") { per[m.id] = { state: "error", error: r.error }; errors.push(m.name + ": " + r.error); continue; }
+    const a = analyze(stage, r.data);
+    per[m.id] = a ? { state: "ok", ...a } : { state: "horizon" };
+  }
+  const ok = MODELS.filter((m) => per[m.id] && per[m.id].state === "ok");
+  const vals = (key) => ok.map((m) => per[m.id][key]);
+
+  const metrics = {
+    tmax: { label: "Max. Temperatur", unit: " °C", d: 0, vals: vals("tmax") },
+    tmin: { label: "Min. Temperatur (Fahrt)", unit: " °C", d: 0, vals: vals("tmin") },
+    rain: { label: "Regen während der Fahrt", unit: " mm", d: 1, vals: vals("rain") },
+    prob: { label: "Regenrisiko max.", unit: " %", d: 0, vals: vals("prob") },
+    speed: { label: "Wind Ø", unit: " km/h", d: 0, vals: vals("speed") },
+    dir: { label: "Windrichtung (aus)", unit: "", d: 0, vals: vals("dir"), isDir: true },
+    head: { label: "Gegenwind Ø", unit: " km/h", d: 0, vals: vals("head") },
+    gust: { label: "Böen max.", unit: " km/h", d: 0, vals: vals("gust") },
+    sun: { label: "Sonne während der Fahrt", unit: " h", d: 1, vals: vals("sun") },
+    nightMin: { label: "Nacht-Tiefstwert am Ziel", unit: " °C", d: 0, vals: vals("nightMin") },
+  };
+  for (const [key, m] of Object.entries(metrics)) {
+    m.med = m.isDir ? meanDir(m.vals) : median(m.vals);
+    m.spread = m.isDir ? dirSpread(m.vals) : spread(m.vals);
+    m.level = agreement(key, m, metrics);
+  }
+  const levels = Object.values(metrics).map((m) => m.level).filter((l) => l != null);
+  const overall = levels.length ? Math.max(...levels) : null;
+
+  return { per, ok, metrics, overall, loading, errors };
+}
+
+function agreement(key, m, all) {
+  const s = m.spread;
+  if (s == null) return null;
+  switch (key) {
+    case "tmax": case "tmin": case "nightMin": return s <= 2 ? 0 : s <= 4 ? 1 : 2;
+    case "rain": {
+      const mx = Math.max(...clean(m.vals)), mn = Math.min(...clean(m.vals));
+      if (s <= 1) return 0;
+      if (mn < 0.3 && mx >= 3) return 2;   // some say dry, some say wet
+      return s <= Math.max(3, 0.75 * (m.med || 0)) ? 1 : 2;
+    }
+    case "prob": return s <= 25 ? 0 : s <= 50 ? 1 : 2;
+    case "speed": case "head": return s <= 5 ? 0 : s <= 10 ? 1 : 2;
+    case "gust": return s <= 10 ? 0 : s <= 20 ? 1 : 2;
+    case "dir": {
+      if ((all.speed.med ?? 0) < 8) return null;   // direction barely matters in light wind
+      return s <= 45 ? 0 : s <= 90 ? 1 : 2;
+    }
+    default: return null;
+  }
+}
+
+const LEVELS = [
+  ["s0", "✓", "Modelle einig"],
+  ["s1", "≈", "leicht abweichend"],
+  ["s2", "⚠", "Modelle uneinig"],
+];
+
+function badge(level, short = false) {
+  if (level == null) return `<span class="badge sx"><span class="dot"></span>–</span>`;
+  const [cls, icon, text] = LEVELS[level];
+  return `<span class="badge ${cls}"><span class="dot"></span>${icon} ${short ? text.replace("Modelle ", "") : text}</span>`;
+}
+
+function verdict(w) {
+  const rain = w.metrics.rain.med, gust = w.metrics.gust.med, head = w.metrics.head.med, tmax = w.metrics.tmax.med;
+  if (rain == null || gust == null) return null;
+  if (rain < 1 && gust < 40 && (head ?? 0) < 12 && (tmax ?? 15) > 8) return ["s0", "Gutes Radwetter"];
+  if (rain < 5 && gust < 55 && (head ?? 0) < 20) return ["s1", "Durchwachsen"];
+  return ["s2", "Ungemütlich"];
+}
+
+/* ---------- Rendering ---------- */
+
+let map = null, mapLayers = null, fittedFor = null;
+
+function render() {
+  if (!S.track) { $("content").classList.add("hidden"); return; }
+  $("content").classList.remove("hidden");
+  const weather = S.stages.map(stageWeather);
+  renderTotals(weather);
+  renderMap();
+  renderProfile();
+  renderOverview(weather);
+  renderComparison(weather);
+  renderStages(weather);
+}
+
+function renderTotals(weather) {
+  const T = S.track, st = S.stages;
+  const startI = idxAt(T, S.startKm * 1000);
+  const rest = (T.total - S.startKm * 1000) / 1000;
+  const up = T.cumUp[T.pts.length - 1] - T.cumUp[startI];
+  const down = T.cumDown[T.pts.length - 1] - T.cumDown[startI];
+  const end = st.length ? st[st.length - 1].date : null;
+  const rainDays = weather.filter((w) => (w.metrics.rain.med ?? 0) >= 1).length;
+  const known = weather.filter((w) => w.metrics.rain.med != null).length;
+  const tiles = [
+    ["Verbleibend", fmt(rest, rest < 100 ? 1 : 0, " km"), `von ${fmt(T.total / 1000, 0, " km")} gesamt`],
+    ["Anstieg", fmt(up, 0, " hm"), `Abstieg ${fmt(down, 0, " hm")}`],
+    ["Etappen", String(st.length), `à ca. ${S.perDay} km`],
+    ["Ankunft", end ? fmtDate(end, { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" }) : "–",
+      st.length ? `ca. ${fmtMinutes(st[st.length - 1].arr)} Uhr` : ""],
+    ["Regentage", known ? `${rainDays} / ${known}` : "–", "Etappen mit ≥ 1 mm (Median)"],
+  ];
+  $("totals").innerHTML = tiles.map(([k, v, s]) =>
+    `<div class="tile"><div class="k">${k}</div><div class="v num">${v}</div><div class="s">${s}</div></div>`).join("");
+}
+
+function renderMap() {
+  if (typeof L === "undefined") { $("map").textContent = "Karte konnte nicht geladen werden (Leaflet fehlt)."; return; }
+  const T = S.track;
+  if (!map) {
+    map = L.map("map", { scrollWheelZoom: false });
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 18, attribution: "© OpenStreetMap-Mitwirkende",
+    }).addTo(map);
+    map.on("click", (e) => {
+      const n = nearestKm(S.track, e.latlng.lat, e.latlng.lng);
+      setStartKm(n.km);
+      setStatus(n.offset > 2000
+        ? `Position gesetzt (nächster Trackpunkt ${fmt(n.offset / 1000, 1, " km")} entfernt).`
+        : "Position gesetzt.");
+    });
+    mapLayers = L.layerGroup().addTo(map);
+  }
+  mapLayers.clearLayers();
+  const latlng = (p) => [p.lat, p.lon];
+  const startI = idxAt(T, S.startKm * 1000);
+  if (startI > 0) {
+    L.polyline(T.pts.slice(0, startI + 1).map(latlng), { color: css("--ridden"), weight: 4, opacity: 0.8, dashArray: "6 6" }).addTo(mapLayers);
+  }
+  S.stages.forEach((st, k) => {
+    const pts = T.pts.slice(idxAt(T, st.a), idxAt(T, st.b) + 1).map(latlng);
+    L.polyline(pts, { color: css(k % 2 ? "--route-b" : "--route-a"), weight: 5, opacity: 0.9 })
+      .bindTooltip(`Etappe ${k + 1} · ${fmtDate(st.date)} · ${fmt(st.km, 0, " km")}`, { sticky: true })
+      .addTo(mapLayers);
+    L.marker(latlng(st.endPt), {
+      icon: L.divIcon({ className: "stage-pin", html: `<span>${k + 1}</span>`, iconSize: [22, 22], iconAnchor: [11, 11] }),
+    }).bindTooltip(`Ziel Etappe ${k + 1}: ${placeName(st.endPt) || "km " + fmt(st.b / 1000, 0)}`).addTo(mapLayers);
+  });
+  const pos = T.pts[startI];
+  L.marker(latlng(pos), {
+    icon: L.divIcon({ className: "pos-pin", html: "<span></span>", iconSize: [18, 18], iconAnchor: [9, 9] }),
+    zIndexOffset: 1000,
+  }).bindTooltip(`Aktuelle Position · km ${fmt(S.startKm, 1)}`).addTo(mapLayers);
+
+  if (fittedFor !== T) {
+    map.fitBounds(L.latLngBounds(T.pts.map(latlng)), { padding: [20, 20] });
+    fittedFor = T;
+  }
+  setTimeout(() => map.invalidateSize(), 0);
+}
+
+function plotTheme(extra = {}) {
+  const ink = css("--ink-2"), grid = css("--grid"), axis = css("--axis");
+  return {
+    paper_bgcolor: css("--surface"), plot_bgcolor: css("--surface"),
+    font: { family: "system-ui, -apple-system, Segoe UI, sans-serif", color: ink, size: 12 },
+    margin: { l: 56, r: 16, t: 28, b: 40 },
+    hoverlabel: { align: "left", bgcolor: css("--surface"), bordercolor: axis, font: { color: css("--ink") } },
+    xaxis: { gridcolor: grid, linecolor: axis, zeroline: false, fixedrange: true },
+    yaxis: { gridcolor: grid, linecolor: axis, zerolinecolor: axis, fixedrange: true },
+    showlegend: false,
+    ...extra,
+  };
+}
+
+const PLOT_CONFIG = { responsive: true, displaylogo: false, displayModeBar: false };
+
+function renderProfile() {
+  if (typeof Plotly === "undefined") return;
+  const T = S.track;
+  const every = Math.max(1, Math.ceil(T.pts.length / 2500));
+  const pts = T.pts.filter((_, i) => i % every === 0 || i === T.pts.length - 1);
+  const startD = S.startKm * 1000;
+  const stageOf = (d) => S.stages.findIndex((s) => d >= s.a && d <= s.b);
+  const lo = Math.min(...pts.map((p) => p.sm)), hi = Math.max(...pts.map((p) => p.sm));
+  const pad = Math.max(20, (hi - lo) * 0.08);
+
+  const ridden = pts.filter((p) => p.d <= startD);
+  const ahead = pts.filter((p) => p.d >= startD);
+  const traces = [];
+  if (ridden.length > 1) {
+    traces.push({
+      x: ridden.map((p) => p.d / 1000), y: ridden.map((p) => p.sm), type: "scatter", mode: "lines",
+      line: { color: css("--ridden"), width: 2 }, fill: "tozeroy", fillcolor: css("--grid"),
+      hovertemplate: "km %{x:.1f} · %{y:.0f} m · bereits gefahren<extra></extra>",
+    });
+  }
+  traces.push({
+    x: ahead.map((p) => p.d / 1000), y: ahead.map((p) => p.sm), type: "scatter", mode: "lines",
+    line: { color: css("--m1"), width: 2 }, fill: "tozeroy", fillcolor: css("--m1") + "26",
+    customdata: ahead.map((p) => { const k = stageOf(p.d); return k < 0 ? "–" : `Etappe ${k + 1}`; }),
+    hovertemplate: "km %{x:.1f} · %{y:.0f} m · %{customdata}<extra></extra>",
+  });
+
+  const shapes = S.stages.map((st) => ({
+    type: "line", x0: st.b / 1000, x1: st.b / 1000, yref: "paper", y0: 0, y1: 1,
+    line: { color: css("--axis"), width: 1, dash: "dot" },
+  }));
+  shapes.push({ type: "line", x0: S.startKm, x1: S.startKm, yref: "paper", y0: 0, y1: 1,
+                line: { color: css("--critical"), width: 2 } });
+  const annotations = S.stages.map((st, k) => ({
+    x: (st.a + st.b) / 2000, y: 1, yref: "paper", yanchor: "bottom", showarrow: false,
+    text: `E${k + 1}`, font: { size: 11, color: css("--ink-2") },
+  }));
+
+  Plotly.react("profile", traces, plotTheme({
+    height: 260, shapes, annotations, hovermode: "x",
+    xaxis: { ...plotTheme().xaxis, title: { text: "km" }, range: [0, T.total / 1000] },
+    yaxis: { ...plotTheme().yaxis, title: { text: "Höhe [m]" }, range: [lo - pad, hi + pad] },
+  }), PLOT_CONFIG);
+}
+
+function stageTitle(st) {
+  const from = placeName(st.startPt), to = placeName(st.endPt);
+  if (from || to) return `${esc(from || "km " + fmt(st.a / 1000, 0))} → ${esc(to || "km " + fmt(st.b / 1000, 0))}`;
+  return `km ${fmt(st.a / 1000, 0)} → ${fmt(st.b / 1000, 0)}`;
+}
+
+function cellStatus(w) {
+  if (!S.models.size) return `<span class="muted">kein Modell gewählt</span>`;
+  if (w.ok.length) return badge(w.overall, true);
+  if (w.loading) return `<span class="muted">lädt …</span>`;
+  const states = Object.values(w.per).map((p) => p.state);
+  if (states.every((s) => s === "range")) return `<span class="muted">zu weit voraus</span>`;
+  if (states.includes("error")) return `<span class="muted">Fehler</span>`;
+  return `<span class="muted">außerhalb Modellhorizont</span>`;
+}
+
+function renderOverview(weather) {
+  const head = `<thead><tr>
+    <th>Etappe</th><th>Datum</th><th>Strecke</th><th class="r">km</th><th class="r">↑ hm</th><th class="r">↓ hm</th>
+    <th class="r">Fahrzeit</th><th>Wetter</th><th class="r">Temp.</th><th class="r">Regen</th><th class="r">Risiko</th>
+    <th>Wind</th><th class="r">Gegen-/Rückenwind</th><th class="r">Böen</th><th>Übereinstimmung</th></tr></thead>`;
+  const rows = S.stages.map((st, k) => {
+    const w = weather[k], m = w.metrics;
+    const codes = w.ok.map((mm) => w.per[mm.id].code);
+    const [icon, text] = wxInfo(codes.length ? Math.round(median(codes)) : null);
+    const rainRange = m.rain.vals.length > 1 ? ` <span class="muted">(${fmt(Math.min(...clean(m.rain.vals)), 1)}–${fmt(Math.max(...clean(m.rain.vals)), 1)})</span>` : "";
+    return `<tr class="click" data-stage="${k}">
+      <td><b>${k + 1}</b></td>
+      <td>${fmtDate(st.date)}</td>
+      <td>${stageTitle(st)}</td>
+      <td class="r num">${fmt(st.km, 0)}</td>
+      <td class="r num">${fmt(st.up, 0)}</td>
+      <td class="r num">${fmt(st.down, 0)}</td>
+      <td class="r num">${fmtDuration(st.hours)}</td>
+      <td title="${text}">${w.ok.length ? icon + " " + text : "–"}</td>
+      <td class="r num">${m.tmin.med != null ? fmt(m.tmin.med, 0) + "–" + fmt(m.tmax.med, 0, " °C") : "–"}</td>
+      <td class="r num">${fmt(m.rain.med, 1, " mm")}${rainRange}</td>
+      <td class="r num">${fmt(m.prob.med, 0, " %")}</td>
+      <td>${m.speed.med != null ? `${arrow(m.dir.med)} ${fmt(m.speed.med, 0)} km/h ${compass(m.dir.med)}` : "–"}</td>
+      <td class="r num">${headText(m.head.med)}</td>
+      <td class="r num">${fmt(m.gust.med, 0, " km/h")}</td>
+      <td>${cellStatus(w)}</td>
+    </tr>`;
+  }).join("");
+  $("overview").innerHTML = head + `<tbody>${rows}</tbody>`;
+  $("overview").querySelectorAll("tr.click").forEach((tr) => tr.addEventListener("click", () => {
+    const k = Number(tr.dataset.stage);
+    openCards.add(k);
+    const el = $("stage-" + k);
+    if (el) { el.querySelector("details").open = true; el.scrollIntoView({ behavior: "smooth", block: "start" }); }
+  }));
+}
+
+function headText(v) {
+  if (v == null) return "–";
+  if (Math.abs(v) < 3) return `<span class="muted">kaum Gegen-/Rückenwind</span>`;
+  return v > 0 ? `${fmt(v, 0)} km/h Gegenwind` : `${fmt(-v, 0)} km/h Rückenwind`;
+}
+
+function activeModels() { return MODELS.filter((m) => S.models.has(m.id)); }
+
+function renderComparison(weather) {
+  if (typeof Plotly === "undefined") return;
+  const models = activeModels();
+  $("cmp-legend").innerHTML = models.map((m) =>
+    `<span class="badge"><span class="swatch" style="background:${css(m.color)}"></span>${m.name}</span>`).join("") +
+    `<span class="badge"><span class="swatch" style="background:${css("--ink")};height:3px"></span>Median</span>`;
+  const x = S.stages.map((st, k) => `E${k + 1} · ${fmtDate(st.date)}`);
+
+  const panel = (id, key, title, unit, d, zero) => {
+    const traces = models.map((m, mi) => ({
+      type: "scatter", mode: "markers", name: m.name,
+      x, y: weather.map((w) => (w.per[m.id] && w.per[m.id].state === "ok" ? w.per[m.id][key] : null)),
+      marker: { color: css(m.color), size: 9, line: { color: css("--surface"), width: 2 } },
+      hovertemplate: `${m.name}: %{y:.${d}f}${unit}<extra></extra>`,
+    }));
+    traces.push({
+      type: "scatter", mode: "markers", name: "Median", x,
+      y: weather.map((w) => w.metrics[key].med),
+      marker: { symbol: "line-ew", size: 22, line: { color: css("--ink"), width: 3 } },
+      customdata: weather.map((w) => {
+        const s = w.metrics[key].spread;
+        return s == null ? "–" : s.toFixed(d) + unit;
+      }),
+      hovertemplate: `<b>Median: %{y:.${d}f}${unit}</b> · Spanne %{customdata}<extra></extra>`,
+    });
+    Plotly.react(id, traces, plotTheme({
+      height: 210, hovermode: "x unified",
+      title: { text: title, x: 0, xanchor: "left", font: { size: 13, color: css("--ink") } },
+      margin: { l: 56, r: 16, t: 34, b: 34 },
+      xaxis: { ...plotTheme().xaxis, type: "category" },
+      yaxis: { ...plotTheme().yaxis, ticksuffix: unit, rangemode: zero ? "tozero" : "normal", zeroline: !zero },
+    }), PLOT_CONFIG);
+  };
+  panel("cmp-temp", "tmax", "Höchsttemperatur während der Fahrt", " °C", 0, false);
+  panel("cmp-rain", "rain", "Regen während der Fahrt", " mm", 1, true);
+  panel("cmp-head", "head", "Gegenwind Ø (negativ = Rückenwind)", " km/h", 0, false);
+  panel("cmp-gust", "gust", "Böen max.", " km/h", 0, true);
+}
+
+function sparkline(st) {
+  const T = S.track;
+  const ia = idxAt(T, st.a), ib = idxAt(T, st.b);
+  const every = Math.max(1, Math.ceil((ib - ia) / 300));
+  const pts = [];
+  for (let i = ia; i <= ib; i += every) pts.push(T.pts[i]);
+  if (pts[pts.length - 1] !== T.pts[ib]) pts.push(T.pts[ib]);
+  const lo = st.lo, hi = Math.max(st.hi, st.lo + 30);
+  const W = 1000, H = 70;
+  const xs = (p) => ((p.d - st.a) / (st.b - st.a || 1)) * W;
+  const ys = (p) => H - 4 - ((p.sm - lo) / (hi - lo)) * (H - 10);
+  const line = pts.map((p, k) => `${k ? "L" : "M"}${xs(p).toFixed(1)},${ys(p).toFixed(1)}`).join("");
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img"
+      aria-label="Höhenprofil Etappe ${st.i + 1}: ${fmt(st.lo, 0)} bis ${fmt(st.hi, 0)} m">
+    <path d="${line}L${W},${H}L0,${H}Z" fill="${css("--m1")}" fill-opacity="0.15"/>
+    <path d="${line}" fill="none" stroke="${css("--m1")}" stroke-width="2" vector-effect="non-scaling-stroke"/>
+  </svg>
+  <div class="small muted">Höhe ${fmt(st.startEle, 0)} m → ${fmt(st.endEle, 0)} m · tiefster Punkt ${fmt(st.lo, 0)} m · höchster ${fmt(st.hi, 0)} m</div>`;
+}
+
+function renderStages(weather) {
+  // Keep whichever detail panels the user has open across re-renders.
+  $("stages").querySelectorAll("details").forEach((d) => {
+    const k = Number(d.dataset.stage);
+    if (d.open) openCards.add(k); else openCards.delete(k);
+  });
+  const html = S.stages.map((st, k) => {
+    const w = weather[k], m = w.metrics;
+    const v = w.ok.length ? verdict(w) : null;
+    const endSample = st.samples[st.samples.length - 1];
+    const offset = w.ok.length ? w.per[w.ok[0].id].offset : null;
+    const sun = offset != null ? sunTimes(endSample.lat, endSample.lon, st.date, offset) : null;
+
+    const warnings = [];
+    if (sun && st.arr > sun.set) warnings.push(`🌇 Ankunft ${fmtMinutes(st.arr)} nach Sonnenuntergang (${fmtMinutes(sun.set)}) – Licht einpacken.`);
+    if (sun && st.dep < sun.rise) warnings.push(`🌅 Abfahrt vor Sonnenaufgang (${fmtMinutes(sun.rise)}).`);
+    if ((m.gust.med ?? 0) >= 50) warnings.push(`💨 Starke Böen bis ${fmt(m.gust.med, 0)} km/h.`);
+    if ((m.head.med ?? 0) >= 15) warnings.push(`🌬️ Kräftiger Gegenwind (Ø ${fmt(m.head.med, 0)} km/h) – mehr Zeit einplanen.`);
+    if ((m.tmin.med ?? 99) <= 3) warnings.push(`🥶 Kalt: bis ${fmt(m.tmin.med, 0)} °C während der Fahrt.`);
+    if ((m.nightMin.med ?? 99) <= 2) warnings.push(`🏕️ Frostgefahr in der Nacht am Ziel (${fmt(m.nightMin.med, 0)} °C).`);
+    const codes = w.ok.map((mm) => w.per[mm.id].code);
+    if (codes.some((c) => c >= 95)) warnings.push("⛈️ Mindestens ein Modell erwartet Gewitter.");
+    if (w.overall === 2) warnings.push("⚠ Die Modelle widersprechen sich deutlich – Vorhersage kurz vorher nochmal prüfen.");
+
+    let daySummary, nightSummary;
+    if (w.ok.length) {
+      const [icon, text] = wxInfo(Math.round(median(codes)));
+      daySummary = `<span class="wx">${icon}</span> <strong>${text} · ${fmt(m.tmin.med, 0)}–${fmt(m.tmax.med, 0)} °C</strong>
+        (gefühlt ab ${fmt(median(w.ok.map((mm) => w.per[mm.id].feelMin)), 0, " °C")}) ·
+        Regen ${fmt(m.rain.med, 1, " mm")}${m.prob.med != null ? `, Risiko bis ${fmt(m.prob.med, 0, " %")}` : ""} ·
+        Wind ${arrow(m.dir.med)} ${fmt(m.speed.med, 0)} km/h aus ${compass(m.dir.med)}, Böen bis ${fmt(m.gust.med, 0, " km/h")} ·
+        ${headText(m.head.med)} · Sonne ${fmt(m.sun.med, 1, " h")}`;
+      nightSummary = `🌙 <strong>Nacht am Ziel (19–07 Uhr): ${fmt(m.nightMin.med, 0, " °C")}</strong>,
+        Regen ${fmt(median(w.ok.map((mm) => w.per[mm.id].nightRain)), 1, " mm")}`;
+    } else {
+      daySummary = cellStatus(w);
+      nightSummary = "";
+    }
+
+    return `<section class="card" id="stage-${k}">
+      <div class="stage-head">
+        <div>
+          <h3>Etappe ${k + 1}: ${stageTitle(st)}</h3>
+          <p>${fmtDate(st.date, { weekday: "long", day: "2-digit", month: "long", year: "numeric" })} ·
+             ${fmtMinutes(st.dep)} → ca. ${fmtMinutes(st.arr)} Uhr
+             ${sun ? ` · Sonne ${fmtMinutes(sun.rise)}–${fmtMinutes(sun.set)}` : ""}</p>
+        </div>
+        <div style="display:flex;gap:14px;flex-wrap:wrap">
+          ${v ? `<span class="badge ${v[0]}"><span class="dot"></span>${v[1]}</span>` : ""}
+          ${w.ok.length ? badge(w.overall) : ""}
+          <span class="badge muted">${w.ok.length}/${S.models.size} Modelle</span>
+        </div>
+      </div>
+      <div class="tiles" style="margin-top:12px">
+        <div class="tile"><div class="k">Distanz</div><div class="v num">${fmt(st.km, 1, " km")}</div><div class="s">km ${fmt(st.a / 1000, 0)}–${fmt(st.b / 1000, 0)}</div></div>
+        <div class="tile"><div class="k">Anstieg</div><div class="v num">↑ ${fmt(st.up, 0, " m")}</div><div class="s">Abstieg ↓ ${fmt(st.down, 0, " m")}</div></div>
+        <div class="tile"><div class="k">Fahrzeit</div><div class="v num">${fmtDuration(st.hours)}</div><div class="s">bei ${fmt(S.speed, 1)} km/h</div></div>
+        <div class="tile"><div class="k">Regen (Median)</div><div class="v num">${fmt(m.rain.med, 1, " mm")}</div><div class="s">${m.rain.vals.length > 1 ? `Spanne ${fmt(Math.min(...clean(m.rain.vals)), 1)}–${fmt(Math.max(...clean(m.rain.vals)), 1)} mm` : ""}</div></div>
+        <div class="tile"><div class="k">${(m.head.med ?? 0) < 0 ? "Rückenwind Ø" : "Gegenwind Ø"}</div><div class="v num">${m.head.med == null ? "–" : fmt(Math.abs(m.head.med), 0, " km/h")}</div><div class="s">${m.head.med == null ? "" : Math.abs(m.head.med) < 3 ? "kaum spürbar" : m.head.med < 0 ? "schiebt von hinten" : "bremst von vorn"}</div></div>
+      </div>
+      ${sparkline(st)}
+      <div class="summary-box day-summary">${daySummary}</div>
+      ${nightSummary ? `<div class="summary-box night-summary">${nightSummary}</div>` : ""}
+      ${warnings.map((t) => `<div class="warn-line">${t}</div>`).join("")}
+      ${w.errors.length ? `<div class="warn-line muted small">Fehler: ${esc(w.errors.join(" · "))}</div>` : ""}
+      <details data-stage="${k}" ${openCards.has(k) ? "open" : ""}>
+        <summary>Modellvergleich und stündlicher Verlauf</summary>
+        ${comparisonTable(w)}
+        <div id="hourly-${k}"></div>
+      </details>
+    </section>`;
+  }).join("");
+  $("stages").innerHTML = html || `<div class="card muted">Du bist am Ziel – keine Etappen mehr übrig. 🎉</div>`;
+  $("stages").querySelectorAll("details").forEach((d) => {
+    const k = Number(d.dataset.stage);
+    d.addEventListener("toggle", () => {
+      if (d.open) { openCards.add(k); renderHourly(k, weather[k]); } else openCards.delete(k);
+    });
+    if (d.open) renderHourly(k, weather[k]);
+  });
+}
+
+function comparisonTable(w) {
+  const models = activeModels();
+  const cell = (m, key, metric) => {
+    const p = w.per[m.id];
+    if (!p || p.state !== "ok") return "–";
+    const v = p[key];
+    if (metric.isDir) return v == null ? "–" : `${arrow(v)} ${compass(v)}`;
+    return fmt(v, metric.d, metric.unit);
+  };
+  const stateText = { loading: "lädt …", error: "Fehler", horizon: "zu weit voraus", range: "zu weit voraus" };
+  const head = `<tr><th>Größe</th>${models.map((m) =>
+    `<th class="r"><span class="badge"><span class="swatch" style="background:${css(m.color)}"></span>${m.name}</span></th>`).join("")}
+    <th class="r">Median</th><th class="r">Spanne</th><th>Übereinstimmung</th></tr>`;
+  const stateRow = `<tr><td class="muted small">Status</td>${models.map((m) => {
+    const p = w.per[m.id];
+    return `<td class="r small muted">${p && p.state !== "ok" ? stateText[p.state] || "" : "✓"}</td>`;
+  }).join("")}<td></td><td></td><td></td></tr>`;
+  const rows = Object.entries(w.metrics).map(([key, metric]) => `<tr>
+    <td>${metric.label}</td>
+    ${models.map((m) => `<td class="r num">${cell(m, key, metric)}</td>`).join("")}
+    <td class="r num med">${metric.isDir ? `${arrow(metric.med)} ${compass(metric.med)}` : fmt(metric.med, metric.d, metric.unit)}</td>
+    <td class="r num">${metric.spread == null ? "–" : fmt(metric.spread, metric.d, metric.isDir ? "°" : metric.unit)}</td>
+    <td>${badge(metric.level, true)}</td>
+  </tr>`).join("");
+  return `<div class="table-wrap"><table class="cmp">${head}${stateRow}${rows}</table></div>`;
+}
+
+function renderHourly(k, w) {
+  const host = $("hourly-" + k);
+  if (!host || typeof Plotly === "undefined") return;
+  const models = activeModels().filter((m) => w.per[m.id] && w.per[m.id].state === "ok");
+  if (!models.length) { host.innerHTML = ""; return; }
+  host.innerHTML = `<p class="small muted">Stündlich entlang der Route – jeweils an dem Ort, an dem du zu der Uhrzeit voraussichtlich bist.</p>
+    <div id="h-temp-${k}"></div><div id="h-rain-${k}"></div><div id="h-head-${k}"></div>`;
+  const st = S.stages[k];
+  const xOf = (h) => fmtMinutes(Math.max(h.t, st.dep));
+  const panel = (id, key, title, unit, d, kind) => {
+    const traces = models.map((m) => {
+      const hrs = w.per[m.id].hours;
+      const base = {
+        name: m.name, x: hrs.map(xOf), y: hrs.map((h) => h[key]),
+        customdata: hrs.map((h) => fmt(h.km, 0)),
+        hovertemplate: `${m.name}: %{y:.${d}f}${unit}<extra></extra>`,
+      };
+      return kind === "bar"
+        ? { ...base, type: "bar", marker: { color: css(m.color) } }
+        : { ...base, type: "scatter", mode: "lines+markers", line: { color: css(m.color), width: 2 }, marker: { size: 8, color: css(m.color) } };
+    });
+    Plotly.react(id, traces, plotTheme({
+      height: 200, hovermode: "x unified", barmode: "group", bargap: 0.25, bargroupgap: 0.08,
+      title: { text: title, x: 0, xanchor: "left", font: { size: 13, color: css("--ink") } },
+      margin: { l: 56, r: 16, t: 34, b: 34 },
+      xaxis: { ...plotTheme().xaxis, type: "category" },
+      yaxis: { ...plotTheme().yaxis, ticksuffix: unit, rangemode: kind === "bar" ? "tozero" : "normal" },
+    }), PLOT_CONFIG);
+  };
+  panel(`h-temp-${k}`, "temp", "Temperatur", " °C", 0, "line");
+  panel(`h-rain-${k}`, "rain", "Regen pro Stunde", " mm", 1, "bar");
+  panel(`h-head-${k}`, "head", "Gegenwind (negativ = Rückenwind)", " km/h", 0, "line");
+}
+
+/* ---------- Inputs ---------- */
+
+function recompute({ weatherDelay = 700 } = {}) {
+  S.stages = buildStages();
+  render();
+  scheduleWeather(weatherDelay);
+}
+
+function saveSettings() {
+  store("settings", { perDay: S.perDay, dep: S.dep, speed: S.speed, models: [...S.models], date: S.date });
+}
+
+function setStartKm(km, force = false) {
+  const T = S.track;
+  if (!T) return;
+  const next = Math.max(0, Math.min(T.total / 1000, Math.round(km * 10) / 10));
+  if (next === S.startKm && !force) return;
+  S.startKm = next;
+  $("startKm").value = S.startKm;
+  $("startKmNum").value = S.startKm;
+  $("startKmOut").textContent = fmt(S.startKm, 1);
+  store("pos." + trackId(T), S.startKm);
+  recompute();
+}
+
+function setPerDay(km) {
+  const next = Math.max(5, Math.min(400, Math.round(km)));
+  if (next === S.perDay) return;
+  S.perDay = next;
+  $("perDay").value = Math.min(250, S.perDay);
+  $("perDayNum").value = S.perDay;
+  $("perDayOut").textContent = S.perDay;
+  saveSettings();
+  recompute();
+}
+
+function trackId(T) { return `${T.name}|${Math.round(T.total)}`; }
+
+function initControls() {
+  const saved = restore("settings");
+  if (saved) {
+    S.perDay = saved.perDay || S.perDay;
+    S.dep = saved.dep || S.dep;
+    S.speed = saved.speed || S.speed;
+    if (Array.isArray(saved.models)) S.models = new Set(saved.models.filter((id) => MODELS.some((m) => m.id === id)));
+    if (saved.date && saved.date >= todayStr()) S.date = saved.date;
+  }
+  $("perDay").value = Math.min(250, S.perDay);
+  $("perDayNum").value = S.perDay;
+  $("perDayOut").textContent = S.perDay;
+  $("date").value = S.date;
+  $("dep").value = S.dep;
+  $("speed").value = S.speed;
+
+  $("models").innerHTML = MODELS.map((m) =>
+    `<label><input type="checkbox" value="${m.id}" ${S.models.has(m.id) ? "checked" : ""}>
+     <span class="swatch" style="background:${css(m.color)}"></span>${m.name}</label>`).join("");
+  $("models").addEventListener("change", (e) => {
+    if (e.target.checked) S.models.add(e.target.value); else S.models.delete(e.target.value);
+    saveSettings();
+    recompute({ weatherDelay: 100 });
+  });
+
+  $("perDay").addEventListener("input", (e) => setPerDay(Number(e.target.value)));
+  $("perDayNum").addEventListener("change", (e) => setPerDay(Number(e.target.value) || 80));
+  $("startKm").addEventListener("input", (e) => setStartKm(Number(e.target.value)));
+  $("startKmNum").addEventListener("change", (e) => setStartKm(Number(e.target.value) || 0));
+  $("resetPos").addEventListener("click", () => setStartKm(0));
+  $("date").addEventListener("change", (e) => {
+    S.date = e.target.value || todayStr();
+    saveSettings();
+    recompute({ weatherDelay: 100 });
+  });
+  $("dep").addEventListener("change", (e) => { S.dep = e.target.value || "09:00"; saveSettings(); recompute({ weatherDelay: 100 }); });
+  $("speed").addEventListener("change", (e) => {
+    S.speed = Math.max(3, Math.min(60, Number(e.target.value) || 16));
+    saveSettings();
+    recompute({ weatherDelay: 100 });
+  });
+  $("refresh").addEventListener("click", () => loadWeather(true));
+  $("clear").addEventListener("click", () => {
+    try { localStorage.removeItem(STORE + "track"); } catch (e) { /* ignore */ }
+    S.track = null; S.stages = [];
+    $("drop-title").textContent = "GPX-Datei hier ablegen oder klicken";
+    $("startKm").disabled = $("startKmNum").disabled = true;
+    $("totalOut").textContent = "–";
+    setStatus("");
+    render();
+  });
+
+  $("locate").addEventListener("click", () => {
+    if (!S.track) { setStatus("Bitte zuerst eine GPX-Datei laden."); return; }
+    if (!navigator.geolocation) { setStatus("Dein Browser unterstützt keine Standortabfrage."); return; }
+    setStatus("Standort wird ermittelt …");
+    navigator.geolocation.getCurrentPosition((pos) => {
+      const n = nearestKm(S.track, pos.coords.latitude, pos.coords.longitude);
+      setStartKm(n.km);
+      setStatus(n.offset > 2000
+        ? `Du bist ${fmt(n.offset / 1000, 1, " km")} von der Route entfernt – nächster Punkt: km ${fmt(n.km, 1)}.`
+        : `Standort gefunden: km ${fmt(n.km, 1)} der Route.`);
+    }, (err) => setStatus("Standort nicht verfügbar: " + err.message), { enableHighAccuracy: true, timeout: 15000 });
+  });
+
+  const drop = $("drop");
+  $("file").addEventListener("change", (e) => e.target.files[0] && loadFile(e.target.files[0]));
+  ["dragenter", "dragover"].forEach((ev) => document.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach((ev) => document.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("over"); }));
+  document.addEventListener("drop", (e) => { const f = e.dataTransfer.files[0]; if (f) loadFile(f); });
+
+  // Re-colour charts when the OS theme flips.
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => render());
+}
+
+async function loadFile(file) {
+  try {
+    setStatus("GPX wird gelesen …");
+    const text = await file.text();
+    const parsed = parseGPX(text);
+    const track = resample(parsed.raw);
+    track.name = parsed.name || file.name.replace(/\.gpx$/i, "");
+    if (await fillElevation(track)) setStatus("Höhendaten ergänzt (GPX enthielt keine Höhen).");
+    else setStatus("");
+    setTrack(finishTrack(track), 0);
+    try {
+      store("track", {
+        name: track.name, step: track.step, total: track.total,
+        pts: track.pts.map((p) => [+p.lat.toFixed(5), +p.lon.toFixed(5), Math.round(p.ele * 10) / 10]),
+      });
+    } catch (e) { /* too big to remember – fine */ }
+  } catch (e) {
+    setStatus("Fehler: " + e.message);
+  }
+}
+
+function setTrack(track, startKm) {
+  S.track = track;
+  fittedFor = null;
+  openCards.clear();
+  $("drop-title").textContent = `📄 ${track.name} · ${fmt(track.total / 1000, 1, " km")}`;
+  $("drop-sub").textContent = "Andere GPX-Datei hier ablegen oder klicken, um zu wechseln.";
+  $("startKm").max = (track.total / 1000).toFixed(1);
+  $("startKmNum").max = (track.total / 1000).toFixed(1);
+  $("startKm").disabled = $("startKmNum").disabled = false;
+  $("totalOut").textContent = fmt(track.total / 1000, 1);
+  const savedPos = restore("pos." + trackId(track));
+  setStartKm(startKm || savedPos || 0, true);
+  loadWeather();
+}
+
+function restoreTrack() {
+  const t = restore("track");
+  if (!t || !Array.isArray(t.pts)) return;
+  const track = {
+    name: t.name, step: t.step, total: t.total,
+    pts: t.pts.map(([lat, lon, ele], i) => ({ lat, lon, ele, d: Math.min(i * t.step, t.total) })),
+  };
+  setTrack(finishTrack(track), 0);
+}
+
+initControls();
+restoreTrack();
+</script>
+</body>
+</html>
