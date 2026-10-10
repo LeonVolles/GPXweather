@@ -54,10 +54,19 @@ screen** (or **Install app**).
 
 ## How to use it
 
-### 1. Load your tour
+### 1. Load or plan your tour
 
-Get the GPX file of your route, for example from Komoot, Strava, Ride with GPS,
-Garmin or a tour website. On the iPhone, save it to the **Files** app first
+**Plan it right in the app:** tap **🧭** to open the route planner. Tap the map
+for start, via points and destination – the route is calculated by
+[BRouter](https://brouter.de/brouter-web/) on OpenStreetMap data. Choose a
+profile (trekking bike, fast bike, safety first, shortest), drag points to
+adjust, then tap **✓ Use as tour**. You can also save the route as GPX, or tap
+**Open in BRouter-Web** to fine-tune it there with all of BRouter's options –
+export the GPX there and load it here. Routes planned with BRouter bring their
+road surfaces along, so the riding-time model knows them right away.
+
+**Or load a GPX file:** get the GPX of your route, for example from Komoot,
+Strava, Ride with GPS, Garmin or a tour website. On the iPhone, save it to the **Files** app first
 (*Share → Save to Files*).
 
 In GPX Weather tap **＋ GPX** and pick the file. The route, map and stages
@@ -216,6 +225,6 @@ removes the selected tour from your phone.
 
 Weather data by [Open-Meteo.com](https://open-meteo.com/) (CC BY 4.0), based on
 models from ECMWF, DWD, NOAA, Météo-France and the UK Met Office. Elevation
-data: Copernicus DEM via Open-Meteo. Place names: BigDataCloud. Campsites:
+data: Copernicus DEM via Open-Meteo. Routing: BRouter. Place names: BigDataCloud. Campsites:
 OpenStreetMap via the Overpass API. Map:
 [CyclOSM](https://www.cyclosm.org/), map data © OpenStreetMap contributors.

@@ -126,6 +126,7 @@
   .tile .s { font-size: 0.8rem; color: var(--muted); }
 
   #map { height: 520px; border-radius: 12px; z-index: 0; }
+  #planMap { height: 440px; border-radius: 12px; z-index: 0; cursor: crosshair; }
   .chart { width: 100%; }
 
   /* Table */
@@ -217,6 +218,7 @@
     header p { display: none; }
     .card { padding: 12px; border-radius: 12px; }
     #map { height: 340px; }
+    #planMap { height: 380px; }
     .opt { display: none; }
     th, td { padding: 7px 6px; }
     .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
@@ -237,6 +239,7 @@
   <div class="tour-row">
     <select id="tourSelect" aria-label="Saved tours"></select>
     <label class="button" for="file" title="Load a GPX file as a new tour">＋ GPX</label>
+    <button type="button" id="planOpen" title="Plan a new route with BRouter" aria-label="Plan a route">🧭</button>
     <button type="button" id="deleteTour" title="Remove this tour from this device" aria-label="Remove this tour">🗑</button>
   </div>
   <input type="file" id="file" class="file-input">
@@ -323,6 +326,29 @@
       </div>
     </div>
   </details>
+</div>
+
+<div class="card hidden" id="planner">
+  <div class="map-head"><b>🧭 Plan a route with BRouter</b><button type="button" id="planClose" aria-label="Close">✕</button></div>
+  <div class="small muted" style="margin-bottom:8px">Tap the map for start, via points and destination. Drag a point to move it, tap it to remove it.</div>
+  <div class="tour-row" style="margin-bottom:8px">
+    <select id="planProfile" aria-label="BRouter profile"></select>
+    <button type="button" id="planHere" title="Start at my location">📍</button>
+  </div>
+  <div id="planMap"></div>
+  <div id="planInfo" class="small" style="margin-top:8px"></div>
+  <div class="btn-row">
+    <button type="button" id="planUndo">↶ Undo</button>
+    <button type="button" id="planReverse">⇄ Reverse</button>
+    <button type="button" id="planClear">Clear</button>
+  </div>
+  <div class="btn-row">
+    <button type="button" class="primary" id="planUse">✓ Use as tour</button>
+    <button type="button" id="planGpx">⬇ GPX</button>
+    <a class="button" id="planWeb" target="_blank" rel="noopener">Open in BRouter-Web ↗</a>
+  </div>
+  <div class="small muted" style="margin-top:8px">Routing by <a href="https://brouter.de/brouter-web/" target="_blank" rel="noopener">BRouter</a>
+    (OpenStreetMap data). Riding times are worked out by GPX Weather from your own pace, not by BRouter.</div>
 </div>
 
 <div id="content" class="hidden">
@@ -1428,7 +1454,8 @@ async function loadSurfaceCache() {
   for (const v of values) {
     if (!v || !v.cls) continue;
     v.cls.forEach((c, k) => { if (v.i0 + k < T.surf.length) T.surf[v.i0 + k] = c; });
-    T.surfChunks.add(v.c);
+    if (v.c === "all") { for (let c = 0; c <= Math.floor(T.total / SURF_CHUNK_M); c++) T.surfChunks.add(c); }
+    else T.surfChunks.add(v.c);
   }
   surfVersion++;
 }
@@ -1793,6 +1820,21 @@ function placeName(p) {
 function loadSavedPlaces() {
   const saved = restore("places") || {};
   for (const [k, v] of Object.entries(saved)) places.set(k, v);
+}
+
+async function ensurePlace(p) {
+  const key = placeKey(p);
+  if (places.get(key) || navigator.onLine === false) return;
+  try {
+    const j = await fetchJson(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${p.lat.toFixed(4)}&longitude=${p.lon.toFixed(4)}&localityLanguage=en`);
+    const name = j.city || j.locality || null;
+    if (name) {
+      places.set(key, name);
+      const all = restore("places") || {};
+      all[key] = name;
+      store("places", all);
+    }
+  } catch (e) { /* names are optional */ }
 }
 
 let placesBusy = false;
@@ -2896,6 +2938,233 @@ ${segs}
 `;
 }
 
+/* ---------- Route planner with BRouter (brouter.de) ---------- */
+
+const BROUTER_API = "https://brouter.de/brouter";
+const BROUTER_WEB = "https://brouter.de/brouter-web/";
+const BROUTER_PROFILES = [
+  ["trekking", "Trekking bike – cycle routes, good surfaces"],
+  ["fastbike", "Fast bike – asphalt, quick roads"],
+  ["safety", "Safety first – quiet roads and paths"],
+  ["shortest", "Shortest"],
+];
+
+const plan = { map: null, layer: null, points: [], legs: [], busy: false, error: "", profile: restore("brouterProfile") || "trekking" };
+const legCache = new Map();
+
+function openPlanner(show = true) {
+  $("planner").classList.toggle("hidden", !show);
+  if (!show) return;
+  if (typeof L === "undefined") {
+    $("planMap").innerHTML = `<div class="muted small" style="padding:20px">The map could not be loaded (offline?). Use “Open in BRouter-Web” instead.</div>`;
+    renderPlan();
+    return;
+  }
+  if (!plan.map) {
+    plan.map = L.map("planMap", { scrollWheelZoom: false, zoomSnap: 0.25 });
+    L.tileLayer("https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png", {
+      maxZoom: 20, subdomains: "abc",
+      attribution: '<a href="https://www.cyclosm.org/">CyclOSM</a> | © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    }).addTo(plan.map);
+    plan.layer = L.layerGroup().addTo(plan.map);
+    plan.map.on("click", (e) => { plan.points.push(e.latlng); updatePlan(); });
+    const T = S.track;
+    if (T) plan.map.fitBounds(L.latLngBounds(T.pts.map((p) => [p.lat, p.lon])), { padding: [20, 20] });
+    else plan.map.setView([48.5, 7], 5);
+  }
+  setTimeout(() => plan.map.invalidateSize(), 0);
+  $("planner").scrollIntoView({ behavior: "smooth", block: "start" });
+  renderPlan();
+}
+
+const legKey = (p, q) => `${plan.profile}|${p.lat.toFixed(5)},${p.lng.toFixed(5)}|${q.lat.toFixed(5)},${q.lng.toFixed(5)}`;
+
+// One leg between two points: coordinates [lon, lat, ele] and the road tags BRouter used (for the surface).
+async function routeLeg(p, q) {
+  const key = legKey(p, q);
+  if (legCache.has(key)) return legCache.get(key);
+  const url = `${BROUTER_API}?lonlats=${p.lng.toFixed(6)},${p.lat.toFixed(6)}|${q.lng.toFixed(6)},${q.lat.toFixed(6)}` +
+    `&profile=${encodeURIComponent(plan.profile)}&alternativeidx=0&format=geojson`;
+  const res = await fetch(url);
+  const text = await res.text();
+  if (!res.ok) throw new Error(text.trim().slice(0, 160) || `HTTP ${res.status}`);
+  const feature = JSON.parse(text).features[0];
+  const coords = feature.geometry.coordinates;
+  // Cumulative distance along the leg and the surface class of every stretch (from BRouter's "messages").
+  const cum = [0];
+  for (let i = 1; i < coords.length; i++) {
+    cum.push(cum[i - 1] + haversine({ lat: coords[i - 1][1], lon: coords[i - 1][0] }, { lat: coords[i][1], lon: coords[i][0] }));
+  }
+  const msgs = feature.properties.messages || [];
+  const head = msgs[0] || [];
+  const iLon = head.indexOf("Longitude"), iLat = head.indexOf("Latitude"), iTags = head.indexOf("WayTags");
+  const surf = [];   // [endDistance, class]
+  let j = 0;
+  for (const row of msgs.slice(1)) {
+    let lon = Number(row[iLon]), lat = Number(row[iLat]);
+    if (Math.abs(lon) > 1000) { lon /= 1e6; lat /= 1e6; }
+    while (j < coords.length - 1 && Math.abs(coords[j][0] - lon) + Math.abs(coords[j][1] - lat) > 2e-5) j++;
+    const tags = {};
+    for (const kv of String(row[iTags] || "").split(" ")) { const [k, v] = kv.split("="); if (k) tags[k] = v; }
+    surf.push([cum[j], surfaceClass(tags)]);
+  }
+  const leg = { coords, cum, surf, km: cum[cum.length - 1] / 1000, ascend: Number(feature.properties["filtered ascend"]) || null };
+  legCache.set(key, leg);
+  return leg;
+}
+
+let planTimer = null;
+function updatePlan() {
+  renderPlan();
+  clearTimeout(planTimer);
+  planTimer = setTimeout(calcPlan, 500);
+}
+
+async function calcPlan() {
+  const pts = plan.points;
+  plan.error = "";
+  if (pts.length < 2) { plan.legs = []; renderPlan(); return; }
+  plan.busy = true;
+  renderPlan();
+  try {
+    const legs = [];
+    for (let i = 1; i < pts.length; i++) legs.push(await routeLeg(pts[i - 1], pts[i]));
+    plan.legs = legs;
+    // Town names for start and destination (for the tour name), one lookup each, cached.
+    for (const p of [pts[0], pts[pts.length - 1]]) ensurePlace({ lat: p.lat, lon: p.lng }).then(renderPlan);
+  } catch (e) {
+    plan.legs = [];
+    plan.error = /Failed to fetch|NetworkError|Load failed/i.test(e.message)
+      ? "BRouter could not be reached from here. Use “Open in BRouter-Web” instead and load the exported GPX."
+      : "BRouter: " + e.message;
+  } finally {
+    plan.busy = false;
+    renderPlan();
+  }
+}
+
+function planCoords() {
+  const out = [];
+  plan.legs.forEach((leg, k) => leg.coords.forEach((c, i) => { if (k === 0 || i > 0) out.push(c); }));
+  return out;
+}
+
+function brouterWebLink() {
+  const pts = plan.points.length ? plan.points
+    : S.track ? [S.track.pts[idxAt(S.track, S.startKm * 1000)], S.track.pts[S.track.pts.length - 1]].map((p) => ({ lat: p.lat, lng: p.lon })) : [];
+  const c = pts.length ? pts[0] : { lat: 48.5, lng: 7 };
+  const lonlats = pts.map((p) => `${p.lng.toFixed(5)},${p.lat.toFixed(5)}`).join(";");
+  // Your riding parameters for BRouter's own travel-time estimate (profiles that support them use these names).
+  const mp = modelParams();
+  const extra = `&profile:totalMass=${Math.round(mp.mass)}&profile:bikerPower=${Math.round(mp.P)}&profile:maxSpeed=45`;
+  return `${BROUTER_WEB}#map=10/${c.lat.toFixed(4)}/${c.lng.toFixed(4)}/standard` +
+    (lonlats ? `&lonlats=${lonlats}` : "") + `&profile=${encodeURIComponent(plan.profile)}${extra}`;
+}
+
+function planGpx(name) {
+  const pts = planCoords().map(([lon, lat, ele]) =>
+    `<trkpt lat="${lat.toFixed(6)}" lon="${lon.toFixed(6)}">${ele != null ? `<ele>${Number(ele).toFixed(1)}</ele>` : ""}</trkpt>`).join("\n      ");
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="GPX Weather (BRouter, profile ${xmlEsc(plan.profile)})" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata><name>${xmlEsc(name)}</name></metadata>
+  <trk>
+    <name>${xmlEsc(name)}</name>
+    <trkseg>
+      ${pts}
+    </trkseg>
+  </trk>
+</gpx>
+`;
+}
+
+function planName() {
+  const a = plan.points[0], b = plan.points[plan.points.length - 1];
+  const na = a && placeName({ lat: a.lat, lon: a.lng }), nb = b && placeName({ lat: b.lat, lon: b.lng });
+  return na && nb ? `${na} – ${nb}` : `BRouter route ${fmtDate(todayStr())}`;
+}
+
+// Surface class at a distance along the planned route, from BRouter's road tags.
+function planSurfaceAt() {
+  const marks = [];
+  let off = 0;
+  for (const leg of plan.legs) {
+    for (const [d, c] of leg.surf) marks.push([off + d, c]);
+    off += leg.cum[leg.cum.length - 1];
+  }
+  return (d) => {
+    let lo = 0, hi = marks.length - 1;
+    if (!marks.length) return -1;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (marks[mid][0] < d) lo = mid + 1; else hi = mid; }
+    return marks[lo][1];
+  };
+}
+
+async function usePlanAsTour() {
+  if (!plan.legs.length) return;
+  const name = prompt("Name of the tour", planName());
+  if (name == null) return;
+  openPlanner(false);
+  await importGpxText(planGpx(name || planName()), name || planName(), { surfaceAt: planSurfaceAt() });
+}
+
+async function downloadPlanGpx() {
+  if (!plan.legs.length) return;
+  const name = planName();
+  await saveFile(new File([planGpx(name)], `${slugify(name)}.gpx`, { type: "application/gpx+xml" }));
+}
+
+function renderPlan() {
+  if ($("planner").classList.contains("hidden")) return;
+  $("planProfile").value = plan.profile;
+  const km = sum(plan.legs.map((l) => l.km));
+  const up = sum(plan.legs.map((l) => l.ascend || 0));
+  const days = km ? Math.max(1, Math.round(km / planPerDay())) : 0;
+  $("planInfo").innerHTML = plan.busy ? "Calculating route with BRouter …"
+    : plan.error ? `<span style="color:var(--critical)">${esc(plan.error)}</span>`
+    : plan.points.length === 0 ? "Tap the map to set the start."
+    : plan.points.length === 1 ? "Now tap the destination. Add more taps for via points."
+    : `<b>${fmt(km, 1)} km</b>${up ? ` · ↑ ${fmt(up, 0)} m` : ""} · ${plan.points.length - 2} via point${plan.points.length === 3 ? "" : "s"} · about ${days} day${days > 1 ? "s" : ""} at ${planPerDay()} km/day`;
+  for (const id of ["planUse", "planGpx"]) $(id).disabled = !plan.legs.length || plan.busy;
+  $("planUndo").disabled = !plan.points.length;
+  $("planWeb").href = brouterWebLink();
+  if (!plan.layer) return;
+  plan.layer.clearLayers();
+  if (plan.legs.length) {
+    L.polyline(planCoords().map(([lon, lat]) => [lat, lon]), { color: css("--route-a"), weight: 5, opacity: 0.9 }).addTo(plan.layer);
+  }
+  plan.points.forEach((p, i) => {
+    const label = i === 0 ? "S" : i === plan.points.length - 1 ? "F" : String(i);
+    const m = L.marker(p, {
+      draggable: true,
+      icon: L.divIcon({ className: "stage-pin", html: `<span>${label}</span>`, iconSize: [18, 18], iconAnchor: [9, 9] }),
+    }).addTo(plan.layer);
+    m.bindTooltip(i === 0 ? "Start – drag to move, tap to remove" : i === plan.points.length - 1 ? "Destination" : "Via point");
+    m.on("dragend", () => { plan.points[i] = m.getLatLng(); updatePlan(); });
+    m.on("click", () => { plan.points.splice(i, 1); updatePlan(); });
+  });
+}
+
+function initPlanner() {
+  $("planProfile").innerHTML = BROUTER_PROFILES.map(([id, label]) => `<option value="${id}">${esc(label)}</option>`).join("");
+  $("planOpen").addEventListener("click", () => openPlanner($("planner").classList.contains("hidden")));
+  $("planClose").addEventListener("click", () => openPlanner(false));
+  $("planProfile").addEventListener("change", (e) => { plan.profile = e.target.value; store("brouterProfile", plan.profile); updatePlan(); });
+  $("planUndo").addEventListener("click", () => { plan.points.pop(); updatePlan(); });
+  $("planClear").addEventListener("click", () => { plan.points = []; updatePlan(); });
+  $("planReverse").addEventListener("click", () => { plan.points.reverse(); updatePlan(); });
+  $("planHere").addEventListener("click", () => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition((pos) => {
+      const p = L.latLng(pos.coords.latitude, pos.coords.longitude);
+      plan.points.unshift(p);
+      if (plan.map) plan.map.setView(p, 11);
+      updatePlan();
+    }, (err) => { plan.error = "Location not available: " + err.message; renderPlan(); });
+  });
+  $("planUse").addEventListener("click", usePlanAsTour);
+  $("planGpx").addEventListener("click", downloadPlanGpx);
+}
+
 /* ---------- Saving files (GPX, PDF) ---------- */
 
 const slugify = (s) => String(s).normalize("NFKD").replace(/[^\w-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "tour";
@@ -3507,14 +3776,18 @@ function initControls() {
 }
 
 async function loadFile(file) {
+  setStatus(`Reading GPX … (${fmt(file.size / 1e6, 1)} MB)`);
+  await tick();
+  await importGpxText(await file.text(), file.name.replace(/\.gpx$/i, ""));
+}
+
+// Turns GPX text into a saved tour. `surfaceAt(d)` (optional) gives the road surface along the route, e.g. from BRouter.
+async function importGpxText(text, fallbackName, { surfaceAt = null } = {}) {
   try {
-    setStatus(`Reading GPX … (${fmt(file.size / 1e6, 1)} MB)`);
-    await tick();
-    const text = await file.text();
     const parsed = parseGPX(text);
     await tick();
     const track = resample(parsed.raw, parsed.segments);
-    track.name = parsed.name || file.name.replace(/\.gpx$/i, "");
+    track.name = parsed.name || fallbackName;
     const needsEle = track.pts.filter((p) => p.ele != null).length / track.pts.length < 0.8;
     // Show the route right away; elevation (if missing) and weather follow.
     await saveTourSettings();
@@ -3530,6 +3803,13 @@ async function loadFile(file) {
     }
     S.tourId = await saveNewTour(track);
     await loadSurfaceCache();
+    if (surfaceAt) {
+      track.pts.forEach((p, i) => { track.surf[i] = surfaceAt(p.d); });
+      for (let c = 0; c <= Math.floor(track.total / SURF_CHUNK_M); c++) track.surfChunks.add(c);
+      surfVersion++;
+      if (S.tourId) await idb.set(`surf|${S.tourId}|all`, { c: "all", i0: 0, cls: Array.from(track.surf) });
+      recompute({ weatherDelay: 0 });
+    }
     if (S.tourId) {
       store("current", S.tourId);
       await saveTourSettings();
@@ -3559,6 +3839,7 @@ function setTrack(track, startKm, fetchWeather = true) {
 
 async function init() {
   initControls();
+  initPlanner();
   loadSavedPlaces();
   await migrateLegacy();
   // Show the last tour with the last known weather straight away, then update.
