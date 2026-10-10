@@ -71,7 +71,9 @@ Open **Settings** and choose:
 - **Distance per day** – how many km you want to ride
 - **First stage on** – the day you start (today by default)
 - **Daily departure** – when you usually set off
-- **Travel speed incl. breaks** – used to work out when you will be where
+- **Your speed on flat asphalt** (without wind and breaks), your **breaks** in
+  % and your **weight** with bike and luggage – the starting point for the
+  riding-time estimate (see *How riding times are estimated*)
 - **Weather models** – which forecasts to compare
 
 ### 3. Update your position on the way
@@ -110,12 +112,37 @@ You have two ways to close a day:
 
 ### Your pace
 
-From your completed days the app learns how far you really ride per day, and –
-from uploaded rides – how fast you travel including breaks. With **Plan with my
-average from completed days** switched on in Settings (default), the coming
-stages, riding times and the arrival date use your own pace instead of the
-values you set. "Your pace" in *What's ahead* shows the numbers, based on your
-last seven riding days.
+From your completed days the app learns how far you really ride per day (last
+seven riding days). From uploaded rides it also learns how strong you ride and
+how long your breaks are – see below. With **Plan with my average from completed
+days** switched on in Settings (default), the coming stages, riding times and
+the arrival date use this instead of the values you set. "Your pace" in
+*What's ahead* shows the numbers.
+
+### How riding times are estimated
+
+The app does not just divide the distance by an average speed. It works out
+your speed for every few hundred metres of the route, the way a cycling power
+model does:
+
+- **Climbs and descents** from the elevation profile – uphill you get slower
+  depending on the gradient and your weight; downhill speed is limited (lower
+  on steep descents).
+- **Road surface** from OpenStreetMap – asphalt, cobbles, compacted gravel,
+  gravel and dirt each have their own rolling resistance and safe top speed.
+  The surface share is shown for every stage. It is loaded for the stages ahead
+  in the background; until then the road counts as paved.
+- **Wind** – the forecast head- or tailwind at the time you pass each part of
+  the route. Headwind costs more time than the same tailwind saves.
+- **Breaks** are added on top of the riding time.
+
+Every stage shows the result, e.g. *"3:10 h on flat asphalt · climbs +25 min ·
+surface +12 min · wind +18 min · breaks +55 min"*.
+
+The model starts from your **speed on flat asphalt** and **breaks** in Settings.
+As soon as you upload recorded rides, it calibrates itself: it finds the effort
+that reproduces your moving time on exactly those roads, and your real share of
+breaks – so a slow day in the hills is not mistaken for being slow in general.
 
 ### 4. Read the forecast
 

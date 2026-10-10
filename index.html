@@ -255,8 +255,17 @@
         <input type="time" id="dep" value="09:00" step="900">
       </div>
       <div class="ctl">
-        <label for="speed">Travel speed incl. breaks (km/h)</label>
-        <input type="number" id="speed" min="5" max="40" step="0.5" value="16" inputmode="decimal">
+        <label for="flatSpeed">Your speed on flat asphalt, no wind (km/h)</label>
+        <input type="number" id="flatSpeed" min="8" max="40" step="0.5" value="20" inputmode="decimal">
+        <div class="muted small">Climbs, road surface and wind are worked out from this for every part of the route.</div>
+      </div>
+      <div class="ctl">
+        <label for="breaks">Breaks (% on top of the riding time)</label>
+        <input type="number" id="breaks" min="0" max="150" step="5" value="25" inputmode="numeric">
+      </div>
+      <div class="ctl">
+        <label for="mass">Weight: you + bike + luggage (kg)</label>
+        <input type="number" id="mass" min="50" max="250" step="1" value="100" inputmode="numeric">
       </div>
       <div class="ctl">
         <label>Weather models</label>
@@ -583,7 +592,7 @@ function wxInfo(code) {
 
 /* ---------- State ---------- */
 
-const DEFAULTS = { perDay: 80, dep: "09:00", speed: 16 };
+const DEFAULTS = { perDay: 80, dep: "09:00", flatSpeed: 20, breaks: 25, mass: 100 };
 
 const S = {
   tourId: null,
@@ -592,7 +601,9 @@ const S = {
   perDay: DEFAULTS.perDay,
   date: todayStr(),
   dep: DEFAULTS.dep,
-  speed: DEFAULTS.speed,
+  flatSpeed: DEFAULTS.flatSpeed,   // km/h on flat asphalt without wind (sets the riding power)
+  breaks: DEFAULTS.breaks,         // % on top of the riding time
+  mass: DEFAULTS.mass,             // kg, rider + bike + luggage
   models: new Set(MODELS.filter((m) => m.on).map((m) => m.id)),
   autoGps: false,
   useHistory: true,       // plan future stages with the pace of the completed days
@@ -827,7 +838,7 @@ function unpackTrack(t) {
 }
 
 function tourSettings() {
-  return { startKm: S.startKm, perDay: S.perDay, date: S.date, dep: S.dep, speed: S.speed, days: S.days, savedAt: Date.now() };
+  return { startKm: S.startKm, perDay: S.perDay, date: S.date, dep: S.dep, flatSpeed: S.flatSpeed, breaks: S.breaks, mass: S.mass, days: S.days, savedAt: Date.now() };
 }
 
 let saveTimer = null;
@@ -881,12 +892,16 @@ async function openTour(id) {
   store("current", id);
   S.perDay = settings.perDay || DEFAULTS.perDay;
   S.dep = settings.dep || DEFAULTS.dep;
-  S.speed = settings.speed || DEFAULTS.speed;
+  S.flatSpeed = settings.flatSpeed || DEFAULTS.flatSpeed;
+  S.breaks = settings.breaks ?? DEFAULTS.breaks;
+  S.mass = settings.mass || DEFAULTS.mass;
   // A planned future start date is kept; otherwise the first stage is today.
   S.date = settings.date && settings.date > todayStr() ? settings.date : todayStr();
   S.days = settings.days && typeof settings.days === "object" ? settings.days : {};
   syncInputs();
   setTrack(unpackTrack(t), settings.startKm || 0);
+  await loadSurfaceCache();
+  recompute({ weatherDelay: 0 });
   renderTourSelect();
   return true;
 }
@@ -1008,10 +1023,6 @@ function planPerDay() {
   return h ? Math.max(5, Math.round(h.perDay)) : S.perDay;
 }
 
-function planSpeed() {
-  const h = S.useHistory ? rideHistory() : null;
-  return h && h.speed ? Math.max(3, Math.round(h.speed * 10) / 10) : S.speed;
-}
 
 function endToday() {
   if (!S.track) return;
@@ -1054,7 +1065,8 @@ function parseRide(text) {
     const d = haversine(pts[i - 1], pts[i]) / 1000;
     km += d;
     const dt = pts[i].t != null && pts[i - 1].t != null ? (pts[i].t - pts[i - 1].t) / 3600000 : null;
-    if (dt != null && dt > 0 && dt < 0.1 && d / dt > 2) moving += dt;    // count only time actually moving
+    // Count only time actually moving: 2–60 km/h (slower is a break, faster is a train or ferry).
+    if (dt != null && dt > 0 && d / dt > 2 && d / dt < 60) moving += dt;
   }
   for (const p of pts) {                                                // climb with a 3 m dead band against GPS noise
     if (p.ele == null) continue;
@@ -1124,13 +1136,323 @@ async function uploadRide(file) {
   }
 }
 
+/* ---------- Riding-time model ----------
+   Speed is worked out piece by piece along the route from a simple cycling power model:
+   power = (rolling resistance + gradient + air drag) × speed. Rolling resistance and the
+   safe top speed depend on the road surface (OpenStreetMap), the gradient comes from the
+   elevation profile, the wind from the forecast at the time you pass. Your power and your
+   breaks are calibrated from uploaded rides; without rides they come from the settings. */
+
+const SURFACES = [
+  { key: "paved", label: "paved", crr: 0.006, vmax: 45 },
+  { key: "cobbles", label: "cobbles / setts", crr: 0.014, vmax: 22 },
+  { key: "compacted", label: "compacted / fine gravel", crr: 0.009, vmax: 32 },
+  { key: "gravel", label: "gravel / unpaved", crr: 0.013, vmax: 26 },
+  { key: "rough", label: "dirt / grass / sand", crr: 0.025, vmax: 18 },
+];
+const CDA = 0.6;            // m², upright touring position with bags
+const EFF = 0.96;           // drivetrain efficiency
+const MIN_V = 3.5 / 3.6;    // on very steep climbs you push the bike at about this speed
+
+const airDensity = (ele) => 1.225 * Math.exp(-(ele || 0) / 8500);
+
+function powerFor(v, grade, crr, mass, rho, head) {
+  const cos = 1 / Math.sqrt(1 + grade * grade), sin = grade * cos;
+  const air = v + head;
+  const force = mass * 9.81 * (crr * cos + sin) + 0.5 * rho * CDA * air * Math.abs(air);
+  return (force * v) / EFF;
+}
+
+// Speed (m/s) you hold with power P on a piece of road.
+function speedFor(P, grade, surf, mass, rho, head) {
+  const s = SURFACES[surf > 0 ? surf : 0];
+  const vmax = Math.min(s.vmax, grade < -0.06 ? 35 : 99) / 3.6;   // brake on steep descents
+  if (powerFor(vmax, grade, s.crr, mass, rho, head) <= P) return vmax;
+  let lo = 0.2, hi = vmax;
+  if (powerFor(lo, grade, s.crr, mass, rho, head) >= P) return MIN_V;
+  for (let k = 0; k < 28; k++) {
+    const mid = (lo + hi) / 2;
+    if (powerFor(mid, grade, s.crr, mass, rho, head) > P) hi = mid; else lo = mid;
+  }
+  return Math.max(lo, MIN_V);
+}
+
+// Calls fn(length_m, i) for every piece of the simplified track between a and b (segment i runs from pts[i-1] to pts[i]).
+function forSegments(a, b, fn) {
+  const T = S.track;
+  const i0 = Math.max(1, Math.floor(a / T.step) + 1), i1 = Math.min(T.pts.length - 1, Math.ceil(b / T.step));
+  for (let i = i0; i <= i1; i++) {
+    const s0 = Math.max(a, T.pts[i - 1].d), s1 = Math.min(b, T.pts[i].d);
+    if (s1 > s0) fn(s1 - s0, i);
+  }
+}
+
+function segGrade(i) {
+  const T = S.track, p = T.pts[i], q = T.pts[i - 1];
+  const dd = p.d - q.d;
+  if (p.gap || dd <= 0) return 0;
+  return Math.max(-0.2, Math.min(0.2, (p.sm - q.sm) / dd));
+}
+
+const segSurface = (i) => (S.track.surf ? S.track.surf[i] : -1);
+
+function flatPower(kmh, mass) { return powerFor(kmh / 3.6, 0, SURFACES[0].crr, mass, 1.2, 0); }
+function flatSpeed(P, mass) { return speedFor(P, 0, 0, mass, 1.2, 0) * 3.6; }
+
+// Moving time (h) for a stretch with power P, without wind.
+function movingTime(a, b, P, mass) {
+  let t = 0;
+  forSegments(a, b, (len, i) => { t += len / speedFor(P, segGrade(i), segSurface(i), mass, airDensity(S.track.pts[i].sm), 0); });
+  return t / 3600;
+}
+
+// Your power and breaks from uploaded rides: the power that reproduces each day's moving time on that part of the route.
+let calCache = { key: null, value: null };
+let surfVersion = 0;
+function calibration() {
+  const days = completedDays().filter((d) => d.rec && d.rec.movingH > 0.3 && d.km > 5);
+  if (!days.length) return null;
+  const key = JSON.stringify([days.map((d) => [d.a, d.b, d.rec.movingH, d.rec.elapsedH, d.rec.km]), S.mass, surfVersion]);
+  if (calCache.key === key) return calCache.value;
+  let pSum = 0, wSum = 0;
+  for (const d of days) {
+    // Detours and GPS noise: scale the recorded time to the route distance.
+    const target = d.rec.movingH * Math.max(0.7, Math.min(1.3, d.km / (d.rec.km || d.km)));
+    let lo = 20, hi = 600;
+    for (let k = 0; k < 22; k++) {
+      const mid = (lo + hi) / 2;
+      if (movingTime(d.a, d.b, mid, S.mass) > target) lo = mid; else hi = mid;
+    }
+    pSum += ((lo + hi) / 2) * target;
+    wSum += target;
+  }
+  const timed = days.filter((d) => d.rec.elapsedH > d.rec.movingH);
+  const breaks = timed.length
+    ? Math.max(1, Math.min(2.5, sum(timed.map((d) => d.rec.elapsedH)) / sum(timed.map((d) => d.rec.movingH)))) : null;
+  const P = pSum / wSum;
+  calCache = { key, value: { P, breaks, days: days.length, flat: flatSpeed(P, S.mass) } };
+  return calCache.value;
+}
+
+function modelParams() {
+  const cal = S.useHistory ? calibration() : null;
+  return {
+    mass: S.mass,
+    P: cal ? cal.P : flatPower(S.flatSpeed, S.mass),
+    breaks: cal && cal.breaks ? cal.breaks : 1 + S.breaks / 100,
+    cal,
+  };
+}
+
+// Distance/time profile of a stage: cumulative metres and moving seconds. headAt(minutes) gives the headwind in m/s.
+function stageProfile(st, params, headAt = null, opts = { grade: true, surface: true }) {
+  const T = S.track;
+  const d = [0], t = [0];
+  let tm = 0;
+  forSegments(st.a, st.b, (len, i) => {
+    const gap = T.pts[i].gap;   // a gap in the GPX (e.g. a ferry): no road data, counted at flat speed
+    const head = headAt && !gap ? headAt(st.dep + (tm * params.breaks) / 60) : 0;
+    const v = speedFor(params.P, opts.grade ? segGrade(i) : 0, opts.surface && !gap ? segSurface(i) : 0,
+      params.mass, airDensity(T.pts[i].sm), head);
+    tm += len / v;
+    d.push(d[d.length - 1] + len);
+    t.push(tm);
+  });
+  return { d, t, moving: tm / 3600 };
+}
+
+function setProfile(st, prof, params) {
+  st.prof = prof;
+  st.breaks = params.breaks;
+  st.moving = prof.moving;
+  st.hours = prof.moving * params.breaks;
+  st.arr = st.dep + st.hours * 60;
+}
+
+// Where along the track (m) you are at a given time of day (minutes after midnight).
+function posAt(st, minutes) {
+  const p = st.prof;
+  if (!p || p.t.length < 2) return st.a;
+  const tm = Math.max(0, ((minutes - st.dep) * 60) / st.breaks);
+  let lo = 0, hi = p.t.length - 1;
+  if (tm >= p.t[hi]) return st.b;
+  while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (p.t[mid] <= tm) lo = mid; else hi = mid; }
+  const f = (tm - p.t[lo]) / (p.t[hi] - p.t[lo] || 1);
+  return st.a + p.d[lo] + (p.d[hi] - p.d[lo]) * f;
+}
+
+// Second pass: include the forecast head-/tailwind (median of the models, hour by hour).
+function applyWind(st, w) {
+  if (!w.ok.length) return false;
+  const byHour = new Map();
+  for (const m of w.ok) for (const h of w.per[m.id].hours) {
+    if (h.head == null) continue;
+    if (!byHour.has(h.t)) byHour.set(h.t, []);
+    byHour.get(h.t).push(h.head);
+  }
+  if (!byHour.size) return false;
+  const hours = [...byHour.keys()].sort((x, y) => x - y);
+  const headAt = (min) => {
+    let t = Math.floor(min / 60) * 60;
+    if (!byHour.has(t)) t = min < hours[0] ? hours[0] : hours[hours.length - 1];
+    return median(byHour.get(t)) / 3.6;
+  };
+  const params = modelParams();
+  if (st.movingNoWind == null) st.movingNoWind = st.moving;
+  setProfile(st, stageProfile(st, params, headAt), params);
+  st.windH = st.moving - st.movingNoWind;
+  return true;
+}
+
+// How much climbs, surface and wind add compared with flat asphalt without wind (hours of moving time).
+function timeBreakdown(st) {
+  const params = modelParams();
+  const flat = stageProfile(st, params, null, { grade: false, surface: false }).moving;
+  const grade = stageProfile(st, params, null, { grade: true, surface: false }).moving;
+  const both = st.movingNoWind ?? stageProfile(st, params).moving;
+  return { flat, climbs: grade - flat, surface: both - grade, wind: st.windH || 0, breaks: st.hours - st.moving };
+}
+
+function surfaceShare(a, b) {
+  const share = new Array(SURFACES.length).fill(0);
+  let unknown = 0, total = 0;
+  forSegments(a, b, (len, i) => {
+    if (S.track.pts[i].gap) return;
+    total += len;
+    const s = segSurface(i);
+    if (s < 0) unknown += len; else share[s] += len;
+  });
+  return { share: share.map((x) => (total ? x / total : 0)), unknown: total ? unknown / total : 1 };
+}
+
+/* ---------- Road surfaces from OpenStreetMap ---------- */
+
+const SURF_CHUNK_M = 40000;
+let surfBusy = false;
+
+function surfaceClass(t) {
+  const s = (t.surface || "").toLowerCase();
+  if (/^(asphalt|paved|concrete|concrete:plates|concrete:lanes|chipseal|metal|wood)$/.test(s)) return 0;
+  if (/^(sett|cobblestone|unhewn_cobblestone|cobblestone:flattened|bricks|stone)$/.test(s)) return 1;
+  if (/^(compacted|fine_gravel|paving_stones|grass_paver)$/.test(s)) return 2;
+  if (/^(gravel|unpaved|pebblestone|rock|woodchips)$/.test(s)) return 3;
+  if (/^(dirt|ground|earth|mud|grass|sand|soil)$/.test(s)) return 4;
+  const tt = t.tracktype;
+  if (tt) return { grade1: 2, grade2: 3, grade3: 3, grade4: 4, grade5: 4 }[tt] ?? 3;
+  const hw = t.highway || "";
+  if (hw === "track") return 3;
+  if (hw === "path" || hw === "bridleway") return 2;
+  return 0;   // roads, cycleways and residential streets are paved unless tagged otherwise
+}
+
+async function loadSurfaceCache() {
+  const T = S.track;
+  T.surf = new Int8Array(T.pts.length).fill(-1);
+  T.surfChunks = new Set();
+  if (!S.tourId) return;
+  const values = await idb.values(`surf|${S.tourId}|`);
+  for (const v of values) {
+    if (!v || !v.cls) continue;
+    v.cls.forEach((c, k) => { if (v.i0 + k < T.surf.length) T.surf[v.i0 + k] = c; });
+    T.surfChunks.add(v.c);
+  }
+  surfVersion++;
+}
+
+// Surfaces for the route ahead (and for uploaded rides, for calibration): one 40 km piece per request, one at a time.
+async function loadSurfaces() {
+  const T = S.track;
+  if (surfBusy || !T || !S.tourId || !T.surf || navigator.onLine === false) return;
+  const cool = restore("cooldown.surfaces");
+  if (cool && Date.now() < cool) return;
+  const ahead = S.stages.slice(0, 8);
+  const ranges = ahead.length ? [[ahead[0].a, ahead[ahead.length - 1].b]] : [];
+  for (const d of completedDays()) if (d.rec) ranges.push([d.a, d.b]);
+  const want = new Set();
+  for (const [a, b] of ranges) for (let c = Math.floor(a / SURF_CHUNK_M); c <= Math.floor(b / SURF_CHUNK_M); c++) want.add(c);
+  const todo = [...want].filter((c) => !T.surfChunks.has(c)).sort((x, y) => x - y);
+  if (!todo.length) return;
+  surfBusy = true;
+  const tourId = S.tourId;
+  try {
+    for (const c of todo) {
+      if (S.track !== T) break;
+      await loadSurfaceChunk(T, tourId, c);
+      surfVersion++;
+      recompute({ weatherDelay: 5000 });
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+  } catch (e) {
+    store("cooldown.surfaces", Date.now() + (e.status === 429 || e.status === 504 ? 15 : 3) * 60000);
+  } finally {
+    surfBusy = false;
+  }
+}
+
+async function loadSurfaceChunk(T, tourId, c) {
+  const i0 = idxAt(T, c * SURF_CHUNK_M), i1 = idxAt(T, Math.min(T.total, (c + 1) * SURF_CHUNK_M));
+  const every = Math.max(1, Math.round(150 / T.step));
+  const coords = [];
+  for (let i = i0; i <= i1; i += every) if (!T.pts[i].gap) coords.push(`${T.pts[i].lat.toFixed(5)},${T.pts[i].lon.toFixed(5)}`);
+  const cls = new Array(i1 - i0 + 1).fill(-1);
+  if (coords.length >= 2) {
+    const query = `[out:json][timeout:60];way(around:20,${coords.join(",")})["highway"];out tags geom;`;
+    const res = await fetch("https://overpass-api.de/api/interpreter", {
+      method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "data=" + encodeURIComponent(query),
+    });
+    if (!res.ok) { const e = new Error("HTTP " + res.status); e.status = res.status; throw e; }
+    const json = await res.json();
+    // Index the road segments in a coarse grid, then give every route point the surface of the nearest road.
+    const cell = 0.003, grid = new Map();
+    const keyOf = (la, lo) => `${Math.floor(la / cell)},${Math.floor(lo / cell)}`;
+    for (const w of json.elements || []) {
+      if (!w.geometry || w.geometry.length < 2) continue;
+      const k = surfaceClass(w.tags || {});
+      for (let j = 1; j < w.geometry.length; j++) {
+        const p = w.geometry[j - 1], q = w.geometry[j];
+        const seg = { p, q, k };
+        for (let la = Math.floor(Math.min(p.lat, q.lat) / cell); la <= Math.floor(Math.max(p.lat, q.lat) / cell); la++) {
+          for (let lo = Math.floor(Math.min(p.lon, q.lon) / cell); lo <= Math.floor(Math.max(p.lon, q.lon) / cell); lo++) {
+            const key = `${la},${lo}`;
+            if (!grid.has(key)) grid.set(key, []);
+            grid.get(key).push(seg);
+          }
+        }
+      }
+    }
+    for (let i = i0; i <= i1; i++) {
+      const pt = T.pts[i];
+      if (pt.gap) continue;
+      const kx = Math.cos(pt.lat * rad) * 111320, ky = 110540;
+      let best = 25, bestK = -1;
+      const [cla, clo] = keyOf(pt.lat, pt.lon).split(",").map(Number);
+      for (let la = cla - 1; la <= cla + 1; la++) for (let lo = clo - 1; lo <= clo + 1; lo++) {
+        for (const s of grid.get(`${la},${lo}`) || []) {
+          // distance from the point to the segment, in metres (local flat projection)
+          const ax = (s.p.lon - pt.lon) * kx, ay = (s.p.lat - pt.lat) * ky;
+          const bx = (s.q.lon - pt.lon) * kx, by = (s.q.lat - pt.lat) * ky;
+          const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy;
+          const t = l2 ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / l2)) : 0;
+          const dist = Math.hypot(ax + t * dx, ay + t * dy);
+          if (dist < best) { best = dist; bestK = s.k; }
+        }
+      }
+      cls[i - i0] = bestK;
+    }
+  }
+  cls.forEach((k, j) => { T.surf[i0 + j] = k; });
+  T.surfChunks.add(c);
+  await idb.set(`surf|${tourId}|${c}`, { c, i0, cls });
+}
+
 function buildStages() {
   const T = S.track;
   if (!T) return [];
   const today = todayStr();
   const pos = Math.min(S.startKm * 1000, T.total);
   const per = planPerDay() * 1000;
-  const speed = planSpeed();
+  const params = modelParams();
   const closed = todayClosed();
   // When the first stage is today, it starts where you set off this morning, so updating
   // your position during the ride doesn't move today's goal. An ended day moves the plan to tomorrow.
@@ -1152,15 +1474,17 @@ function buildStages() {
   const [h, m] = S.dep.split(":").map(Number);
   const depMin = h * 60 + m;
   return ranges.map(([ra, rb], i) => {
-    const r = rangeStats(ra, rb);
-    const hours = r.km / speed;
     const date = addDays(planDate, i);
-    return {
-      ...r, i, no: offset + i + 1, date, hours, speed,
+    const st = {
+      ...rangeStats(ra, rb), i, no: offset + i + 1, date,
       done: Math.max(0, Math.min(rb, pos) - ra) / 1000,       // km of this stage already ridden
       dayOffset: dayDiff(today, date),
-      dep: depMin, arr: depMin + hours * 60,
+      dep: depMin,
     };
+    setProfile(st, stageProfile(st, params), params);         // riding time from terrain and surface (wind follows)
+    st.movingNoWind = st.moving;
+    st.windH = 0;
+    return st;
   });
 }
 
@@ -1248,6 +1572,7 @@ async function loadWeather(force = false) {
     await loadWeatherOnce(force);
   } finally {
     loadingWeather = false;
+    loadSurfaces();
     if (pendingWeather !== null) {
       const f = pendingWeather;
       pendingWeather = null;
@@ -1477,8 +1802,7 @@ function analyze(stage, model) {
     const weight = (to - from) / 60;
     if (weight <= 0) continue;
     const mid = (from + to) / 2;
-    const frac = stage.arr > stage.dep ? (mid - stage.dep) / (stage.arr - stage.dep) : 0;
-    const d = stage.a + (stage.b - stage.a) * frac;
+    const d = posAt(stage, mid);   // where the riding-time model puts you at that time
     const e = lookup(d);
     if (e && offset == null) offset = e.off;
     if (e && (fetched == null || e.t < fetched)) fetched = e.t;
@@ -1637,16 +1961,23 @@ function render() {
   if (!S.track) { $("content").classList.add("hidden"); return; }
   $("content").classList.remove("hidden");
   $("settingsSummary").textContent =
-    `· ${planPerDay()} km/day · ${fmt(planSpeed(), planSpeed() % 1 ? 1 : 0)} km/h · ${S.dep} · ${S.models.size} models`;
+    `· ${planPerDay()} km/day · ${S.dep} · ${S.models.size} models`;
+  const mp = modelParams();
   const hist = rideHistory();
   $("perDayNote").textContent = S.useHistory && hist
-    ? `Planning uses your average of ${planPerDay()} km/day${hist.speed ? ` and ${fmt(planSpeed(), 1)} km/h` : ""} (see "Your pace" below).` : "";
+    ? `Planning uses your average of ${planPerDay()} km/day (see "Your pace" below).` : "";
   $("historyInfo").textContent = !hist ? "No completed days yet – using the distance and speed set above."
     : `Your last ${hist.days} day${hist.days > 1 ? "s" : ""}: ${fmt(hist.perDay, 0)} km/day` +
-      (hist.speed ? `, ${fmt(hist.speed, 1)} km/h incl. breaks (from ${hist.timedDays} recorded ride${hist.timedDays > 1 ? "s" : ""})` : ", speed from the setting above (upload recorded rides to measure it)") +
+      (mp.cal ? `; riding like ${fmt(mp.cal.flat, 1)} km/h on flat asphalt` + (mp.cal.breaks ? `, breaks +${fmt((mp.cal.breaks - 1) * 100, 0)} %` : "") +
+        ` (from ${mp.cal.days} recorded ride${mp.cal.days > 1 ? "s" : ""})` : "; upload recorded rides to measure your speed") +
       (S.useHistory ? "." : " – not used for planning.");
   let weather = [];
-  try { weather = S.stages.map(stageWeather); } catch (e) { console.error(e); }
+  try {
+    weather = S.stages.map((st) => {
+      const w = stageWeather(st);
+      return applyWind(st, w) ? stageWeather(st) : w;   // riding time with the forecast wind, then weather along that timing
+    });
+  } catch (e) { console.error(e); }
   // Each part renders on its own, so a failure in one (e.g. a CDN library missing) never hides the route.
   const parts = [
     () => renderNext(weather), () => renderPreview(), () => renderTotals(weather), () => renderMap(),
@@ -1695,8 +2026,10 @@ function renderTotals(weather) {
     ["Rainy days", known ? `${rainDays} / ${known}` : "–", known ? "stages with ≥ 1 mm (median)" : "no weather data yet"],
   ];
   const hist = rideHistory();
+  const mp = modelParams();
   if (hist) tiles.push(["Your pace", `${fmt(hist.perDay, 0)} km/day`,
-    `${hist.speed ? fmt(hist.speed, 1) + " km/h incl. breaks · " : ""}last ${hist.days} day${hist.days > 1 ? "s" : ""}${S.useHistory ? ", used for planning" : ""}`]);
+    `last ${hist.days} day${hist.days > 1 ? "s" : ""}` + (mp.cal ? ` · like ${fmt(mp.cal.flat, 1)} km/h on flat asphalt` : "") +
+    (S.useHistory ? ", used for planning" : "")]);
   $("totals").innerHTML = tiles.map(([k, v, s]) =>
     `<div class="tile"><div class="k">${k}</div><div class="v num">${v}</div><div class="s">${s}</div></div>`).join("");
 }
@@ -2088,6 +2421,33 @@ function stageSummaries(st, w) {
   return { day: daySummary, night: nightSummary };
 }
 
+function fmtMin(h) {
+  const m = Math.round(h * 60);
+  return `${m < 0 ? "−" : "+"}${Math.abs(m) >= 60 ? fmtDuration(Math.abs(h)) : Math.abs(m) + " min"}`;
+}
+
+// "Riding time 4:10 h: flat asphalt 3:20 h, climbs +35 min, surface +10 min, wind +5 min, breaks +1:00 h"
+function timeText(st) {
+  const b = timeBreakdown(st);
+  const parts = [`${fmtDuration(b.flat)} on flat asphalt`];
+  if (Math.abs(b.climbs) >= 1 / 60) parts.push(`climbs ${fmtMin(b.climbs)}`);
+  if (Math.abs(b.surface) >= 1 / 60) parts.push(`surface ${fmtMin(b.surface)}`);
+  if (Math.abs(b.wind) >= 1 / 60) parts.push(`wind ${fmtMin(b.wind)}`);
+  parts.push(`breaks ${fmtMin(b.breaks)}`);
+  return `⏱ Time estimate: ${parts.join(" · ")}`;
+}
+
+function surfaceTile(st) {
+  const s = surfaceShare(st.a, st.b);
+  if (s.unknown > 0.5) {
+    return `<div class="tile"><div class="k">Surface</div><div class="v num">–</div><div class="s">${surfBusy ? "loading from OpenStreetMap …" : "not loaded yet – counted as paved"}</div></div>`;
+  }
+  const order = SURFACES.map((x, k) => [k, s.share[k]]).filter(([, v]) => v >= 0.02).sort((x, y) => y[1] - x[1]);
+  const [k0, v0] = order[0] || [0, 1];
+  const rest = order.slice(1).map(([k, v]) => `${fmt(v * 100, 0)} % ${SURFACES[k].label}`).join(" · ");
+  return `<div class="tile"><div class="k">Surface</div><div class="v num">${fmt(v0 * 100, 0)} % ${SURFACES[k0].key === "paved" ? "paved" : SURFACES[k0].label}</div><div class="s">${rest || "&nbsp;"}</div></div>`;
+}
+
 // One stage card. `compact` is the highlighted "today / next stage" box at the top.
 function stageCard(st, k, w, compact) {
   const m = w.metrics;
@@ -2123,7 +2483,8 @@ function stageCard(st, k, w, compact) {
     <div class="tiles" style="margin-top:12px">
       <div class="tile"><div class="k">Distance</div><div class="v num">${fmt(st.km, 1, " km")}</div><div class="s">km ${fmt(st.a / 1000, 0)}–${fmt(st.b / 1000, 0)}</div></div>
       <div class="tile"><div class="k">Climb</div><div class="v num">↑ ${fmt(st.up, 0, " m")}</div><div class="s">descent ↓ ${fmt(st.down, 0, " m")}</div></div>
-      <div class="tile"><div class="k">Riding time</div><div class="v num">${fmtDuration(st.hours)}</div><div class="s">at ${fmt(st.speed, 1)} km/h</div></div>
+      <div class="tile"><div class="k">Time on the road</div><div class="v num">${fmtDuration(st.hours)}</div><div class="s">${fmtDuration(st.moving)} riding + breaks · avg. ${fmt(st.km / (st.moving || 1), 1)} km/h</div></div>
+      ${surfaceTile(st)}
       <div class="tile"><div class="k">Rain (median)</div><div class="v num">${fmt(m.rain.med, 1, " mm")}</div><div class="s">${rv.length > 1 ? `range ${fmt(Math.min(...rv), 1)}–${fmt(Math.max(...rv), 1)} mm` : ""}</div></div>
       <div class="tile"><div class="k">${headTile[0]}</div><div class="v num">${headTile[1]}</div><div class="s">${headTile[2]}</div></div>
     </div>
@@ -2131,6 +2492,7 @@ function stageCard(st, k, w, compact) {
         <div class="progress-bar" style="width:${Math.min(100, (100 * st.done) / (st.km || 1)).toFixed(1)}%"></div></div>
       <div class="small">Ridden today: <b>${fmt(st.done, 1)} km</b> · ${fmt(Math.max(0, st.km - st.done), 1)} km to go</div>` : ""}
     ${sparkline(st)}
+    <div class="small muted" style="margin-top:6px">${timeText(st)}</div>
     <div class="summary-box day-summary">${daySummary}</div>
     ${nightSummary ? `<div class="summary-box night-summary">${nightSummary}</div>` : ""}
     ${warnings.map((t) => `<div class="warn-line">${t}</div>`).join("")}
@@ -2637,7 +2999,8 @@ async function downloadPdf() {
     write(`Created ${new Date().toLocaleString(LOCALE)} · ${weatherStatusText() || "no weather data"}`, 9, "normal", grey);
     write(`From km ${fmt(S.startKm, 1)}: ${fmt(rest, 0)} km left, ${fmt(up, 0)} m climbing, ${st0.length} stages of about ${planPerDay()} km` +
       (st0.length ? `, arrival ${fmtDate(st0[st0.length - 1].date, { weekday: "short", day: "numeric", month: "short", year: "numeric" })}` : "") +
-      `. Departure ${S.dep}, ${fmt(planSpeed(), 1)} km/h incl. breaks. Models: ${activeModels().map((m) => m.name).join(", ")}.`, 10);
+      `. Departure ${S.dep}. Riding times use climbs, road surface and wind` +
+      (modelParams().cal ? `, calibrated on your recorded rides` : `, ${fmt(S.flatSpeed, 1)} km/h on flat asphalt, ${S.breaks} % breaks`) + `. Models: ${activeModels().map((m) => m.name).join(", ")}.`, 10);
     y += 2;
     const ph = await image("profile", 1600, 360, M, W - 2 * M);
     y += ph ? ph + 4 : 0;
@@ -2702,7 +3065,8 @@ async function downloadPdf() {
       write(`${fmtDate(st.date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · ${fmtMinutes(st.dep)} -> about ${fmtMinutes(st.arr)}` +
         (sun ? ` · sunrise ${fmtMinutes(sun.rise)}, sunset ${fmtMinutes(sun.set)}` : "") + (st.section ? ` · GPX section: ${st.section}` : ""), 9, "normal", grey);
       write(`Distance ${fmt(st.km, 1)} km (km ${fmt(st.a / 1000, 0)}-${fmt(st.b / 1000, 0)}) · climb ${fmt(st.up, 0)} m, descent ${fmt(st.down, 0)} m · ` +
-        `elevation ${fmt(st.startEle, 0)} -> ${fmt(st.endEle, 0)} m (${fmt(st.lo, 0)}-${fmt(st.hi, 0)} m) · riding time ${fmtDuration(st.hours)}`, 10);
+        `elevation ${fmt(st.startEle, 0)} -> ${fmt(st.endEle, 0)} m (${fmt(st.lo, 0)}-${fmt(st.hi, 0)} m) · on the road ${fmtDuration(st.hours)}`, 10);
+      write(timeText(st), 9, "normal", grey);
       const sum = stageSummaries(st, w);
       const v = w.ok.length ? verdict(w) : null;
       if (v) write(`${v[1]}${w.overall == null ? "" : " · " + LEVELS[w.overall][2]} · ${w.ok.length}/${S.models.size} models`, 10, "bold");
@@ -2785,7 +3149,9 @@ function syncInputs() {
   $("date").value = S.date;
   $("date").min = todayStr();
   $("dep").value = S.dep;
-  $("speed").value = S.speed;
+  $("flatSpeed").value = S.flatSpeed;
+  $("breaks").value = S.breaks;
+  $("mass").value = S.mass;
   $("autoGps").checked = S.autoGps;
   $("useHistory").checked = S.useHistory;
 }
@@ -2864,10 +3230,15 @@ function initControls() {
     recompute({ weatherDelay: 300 });
   });
   $("dep").addEventListener("change", (e) => { S.dep = e.target.value || DEFAULTS.dep; recompute({ weatherDelay: 300 }); });
-  $("speed").addEventListener("change", (e) => {
-    S.speed = Math.max(3, Math.min(60, Number(e.target.value) || DEFAULTS.speed));
+  const num = (id, key, lo, hi) => $(id).addEventListener("change", (e) => {
+    const v = Number(e.target.value);
+    S[key] = Number.isFinite(v) && e.target.value !== "" ? Math.max(lo, Math.min(hi, v)) : DEFAULTS[key];
+    e.target.value = S[key];
     recompute({ weatherDelay: 300 });
   });
+  num("flatSpeed", "flatSpeed", 8, 40);
+  num("breaks", "breaks", 0, 150);
+  num("mass", "mass", 50, 250);
   $("autoGps").addEventListener("change", (e) => { S.autoGps = e.target.checked; saveGlobalSettings(); });
   $("useHistory").addEventListener("change", (e) => { S.useHistory = e.target.checked; saveGlobalSettings(); recompute({ weatherDelay: 300 }); });
   $("rideFile").addEventListener("change", (e) => { if (e.target.files[0]) uploadRide(e.target.files[0]); e.target.value = ""; });
@@ -2952,6 +3323,7 @@ async function loadFile(file) {
       recompute({ weatherDelay: 0 });
     }
     S.tourId = await saveNewTour(track);
+    await loadSurfaceCache();
     if (S.tourId) {
       store("current", S.tourId);
       await saveTourSettings();
