@@ -99,7 +99,7 @@
   .tile .v { font-size: 1.35rem; font-weight: 650; }
   .tile .s { font-size: 0.8rem; color: var(--muted); }
 
-  #map { height: 420px; border-radius: 12px; z-index: 0; }
+  #map { height: 520px; border-radius: 12px; z-index: 0; }
   .chart { width: 100%; }
 
   /* Table */
@@ -128,6 +128,8 @@
   .night-summary { background: var(--night-bg); border-left: 4px solid var(--night-line); }
   .warn-line { margin-top: 8px; font-size: 0.9rem; }
   .spark { width: 100%; height: 70px; display: block; margin-top: 10px; }
+  .svg-map, .svg-profile { width: 100%; display: block; background: var(--surface-2); border-radius: 12px; cursor: crosshair; }
+  .svg-profile { background: none; cursor: default; }
   details > summary { cursor: pointer; margin-top: 14px; font-weight: 600; }
   .cmp td:first-child { color: var(--ink-2); }
   .cmp td.med { font-weight: 650; }
@@ -135,9 +137,9 @@
   footer { margin: 30px 0 10px; font-size: 0.82rem; color: var(--muted); }
   .hidden { display: none !important; }
   .leaflet-div-icon.stage-pin { background: none; border: none; }
-  .stage-pin span { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
-                    background: var(--surface); color: var(--ink); border: 2px solid var(--ink);
-                    font: 700 11px system-ui; }
+  .stage-pin span { display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%;
+                    background: var(--surface); color: var(--ink); border: 1.5px solid var(--ink);
+                    font: 700 9px system-ui; }
   .pos-pin span { display: block; width: 18px; height: 18px; border-radius: 50%;
                   background: var(--critical); border: 3px solid #fff; box-shadow: 0 0 0 2px var(--critical); }
   @media (max-width: 600px) {
@@ -206,11 +208,25 @@
 </div>
 
 <div id="content" class="hidden">
+  <h2 class="part">Route</h2>
+  <div class="card">
+    <div class="tiles" id="preview"></div>
+    <div id="gap-note" class="small muted" style="margin-top:10px"></div>
+  </div>
+
   <h2 class="part">Was noch vor dir liegt</h2>
   <div class="card"><div class="tiles" id="totals"></div></div>
 
   <h2 class="part">Karte</h2>
-  <div class="card"><div id="map"></div></div>
+  <div class="card">
+    <div id="map"></div>
+    <div class="small muted" style="margin-top:8px">
+      <span class="badge"><span class="swatch" style="background:var(--route-a)"></span>/<span class="swatch" style="background:var(--route-b)"></span> Etappen</span> ·
+      <span class="badge"><span class="swatch" style="background:var(--ridden)"></span> bereits gefahren</span> ·
+      <span class="badge">┄ Lücke im GPX (Luftlinie)</span> ·
+      <span class="badge"><span class="dot" style="background:var(--critical)"></span> aktuelle Position</span>
+    </div>
+  </div>
 
   <h2 class="part">Höhenprofil</h2>
   <div class="card"><div id="profile" class="chart"></div></div>
@@ -223,6 +239,7 @@
     <p class="small muted" style="margin-top:0">Jeder Punkt ist ein Wettermodell, der Strich der Median.
       Liegen die Punkte weit auseinander, sind sich die Modelle uneinig und die Vorhersage ist unsicher.</p>
     <div id="cmp-legend" class="models small"></div>
+    <div id="cmp-empty" class="muted small hidden" style="padding:12px 0">Noch keine Wetterdaten – die Route und die Etappen siehst du trotzdem oben und unten.</div>
     <div id="cmp-temp" class="chart"></div>
     <div id="cmp-rain" class="chart"></div>
     <div id="cmp-head" class="chart"></div>
@@ -246,22 +263,29 @@
 
 /* ---------- Configuration ---------- */
 
+// days = forecast_days requested from Open-Meteo, roughly the model's real horizon.
 const MODELS = [
-  { id: "ecmwf_ifs025", name: "ECMWF", color: "--m1", on: true },
-  { id: "icon_seamless", name: "ICON", color: "--m2", on: true },
-  { id: "gfs_seamless", name: "GFS", color: "--m3", on: true },
-  { id: "meteofrance_seamless", name: "Météo-France", color: "--m4", on: true },
-  { id: "ukmo_seamless", name: "UK Met Office", color: "--m5", on: false },
+  { id: "ecmwf_ifs025", name: "ECMWF", color: "--m1", on: true, days: 15 },
+  { id: "icon_seamless", name: "ICON", color: "--m2", on: true, days: 8 },
+  { id: "gfs_seamless", name: "GFS", color: "--m3", on: true, days: 16 },
+  { id: "meteofrance_seamless", name: "Météo-France", color: "--m4", on: true, days: 5 },
+  { id: "ukmo_seamless", name: "UK Met Office", color: "--m5", on: false, days: 7 },
 ];
 
 const HOURLY = [
   "temperature_2m", "apparent_temperature", "precipitation", "precipitation_probability",
-  "weather_code", "cloud_cover", "wind_speed_10m", "wind_direction_10m", "wind_gusts_10m",
-  "sunshine_duration",
+  "weather_code", "wind_speed_10m", "wind_direction_10m", "wind_gusts_10m", "sunshine_duration",
 ].join(",");
 
-const SAMPLE_FRACTIONS = [0, 0.25, 0.5, 0.75, 1];
-const MAX_FORECAST_DAY = 15;      // stage date may be at most today + 15 (API serves 16 days)
+// Weather is fetched on a fixed grid along the track, so moving sliders reuses cached points.
+const GRID_KM = 20;
+const MAX_POINTS_PER_MODEL = 100;     // thin the grid for very long reach
+const POINTS_PER_REQUEST = 50;        // several locations per HTTP request
+const FRESH_MS = 3 * 3600 * 1000;     // cached forecasts are reused for 3 hours
+const FORCE_MIN_MS = 15 * 60 * 1000;  // "neu laden" never refetches data younger than 15 min
+const ERROR_COOLDOWN_MS = 2 * 60 * 1000;
+const LIMIT_COOLDOWN_MS = 30 * 60 * 1000;
+const GAP_M = 1000;                   // jumps larger than this between GPX points are gaps
 const STORE = "gpxweather.v1.";
 
 /* ---------- Small helpers ---------- */
@@ -274,6 +298,8 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&
 const fmt = (v, d = 0, unit = "") => (v == null || Number.isNaN(v) ? "–" : v.toFixed(d) + unit);
 const sum = (a) => a.reduce((s, v) => s + v, 0);
 const clean = (a) => a.filter((v) => v != null && !Number.isNaN(v));
+const tick = () => new Promise((r) => setTimeout(r, 0));
+const numFmt = (v) => v.toLocaleString("de-DE");
 
 function median(values) {
   const v = clean(values).sort((a, b) => a - b);
@@ -355,6 +381,11 @@ function fmtDuration(hours) {
   return `${Math.floor(m / 60)}:${pad(m % 60)} h`;
 }
 
+function fmtAge(ms) {
+  const min = Math.round(ms / 60000);
+  return min < 1 ? "gerade eben" : min < 60 ? `vor ${min} min` : `vor ${fmt(min / 60, 1)} h`;
+}
+
 function haversine(a, b) {
   const R = 6371000;
   const dLat = (b.lat - a.lat) * rad, dLon = (b.lon - a.lon) * rad;
@@ -370,7 +401,7 @@ function bearing(a, b) {
 }
 
 function store(key, value) {
-  try { localStorage.setItem(STORE + key, JSON.stringify(value)); } catch (e) { /* storage unavailable */ }
+  try { localStorage.setItem(STORE + key, JSON.stringify(value)); return true; } catch (e) { return false; }
 }
 
 function restore(key) {
@@ -378,6 +409,40 @@ function restore(key) {
 }
 
 function setStatus(text) { $("status").textContent = text; }
+
+/* Tiny IndexedDB key/value store for cached forecasts (localStorage is too small). */
+const idb = (() => {
+  let dbp = null;
+  function open() {
+    if (!dbp) {
+      dbp = new Promise((resolve, reject) => {
+        const req = indexedDB.open("gpxweather", 1);
+        req.onupgradeneeded = () => req.result.createObjectStore("kv");
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      }).catch(() => null);
+    }
+    return dbp;
+  }
+  async function get(key) {
+    try {
+      const db = await open();
+      if (!db) return undefined;
+      return await new Promise((resolve) => {
+        const q = db.transaction("kv").objectStore("kv").get(key);
+        q.onsuccess = () => resolve(q.result);
+        q.onerror = () => resolve(undefined);
+      });
+    } catch (e) { return undefined; }
+  }
+  async function set(key, value) {
+    try {
+      const db = await open();
+      if (db) db.transaction("kv", "readwrite").objectStore("kv").put(value, key);
+    } catch (e) { /* cache is optional */ }
+  }
+  return { get, set };
+})();
 
 /* Sunrise / sunset (NOAA approximation), minutes after local midnight. */
 function sunTimes(lat, lon, dateStr, offsetSec) {
@@ -418,7 +483,7 @@ function wxInfo(code) {
 /* ---------- State ---------- */
 
 const S = {
-  track: null,            // { name, step, pts: [{d, lat, lon, ele, sm}], total, cumUp, cumDown }
+  track: null,            // { name, step, pts: [{d, lat, lon, ele, sm, gap, seg}], total, cumUp, cumDown, segments, info }
   startKm: 0,
   perDay: 80,
   date: todayStr(),
@@ -428,45 +493,73 @@ const S = {
   stages: [],
 };
 
-const responses = new Map();   // url -> { state: "loading"|"ok"|"error", data, error }
+const wx = new Map();          // "model|lat,lon" -> { t, off, idx: Map(time -> i), h: hourly }
+const modelState = {};         // model id -> { state: "idle"|"loading"|"ok"|"error"|"limited", msg, until }
 const places = new Map();      // "lat,lon" -> name
 const openCards = new Set();
+let fetchCount = 0;            // HTTP requests to the forecast API in this session
 
 /* ---------- GPX parsing & track preparation ---------- */
 
 function parseGPX(text) {
   const xml = new DOMParser().parseFromString(text, "application/xml");
   if (xml.getElementsByTagName("parsererror").length) throw new Error("Die Datei ist kein gültiges GPX/XML.");
-  let nodes = [...xml.getElementsByTagNameNS("*", "trkpt")];
-  if (!nodes.length) nodes = [...xml.getElementsByTagNameNS("*", "rtept")];
-  if (!nodes.length) throw new Error("Keine Track- oder Routenpunkte (trkpt/rtept) im GPX gefunden.");
 
-  const nameNode = xml.getElementsByTagNameNS("*", "name")[0];
+  const readPoints = (nodes, seg, out) => {
+    for (const n of nodes) {
+      const lat = parseFloat(n.getAttribute("lat"));
+      const lon = parseFloat(n.getAttribute("lon"));
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+      const eleNode = n.getElementsByTagNameNS("*", "ele")[0];
+      const ele = eleNode ? parseFloat(eleNode.textContent) : NaN;
+      out.push({ lat, lon, ele: Number.isFinite(ele) ? ele : null, seg });
+    }
+  };
+
   const raw = [];
-  for (const n of nodes) {
-    const lat = parseFloat(n.getAttribute("lat"));
-    const lon = parseFloat(n.getAttribute("lon"));
-    if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
-    const eleNode = n.getElementsByTagNameNS("*", "ele")[0];
-    const ele = eleNode ? parseFloat(eleNode.textContent) : NaN;
-    raw.push({ lat, lon, ele: Number.isFinite(ele) ? ele : null });
+  const segments = [];
+  const childName = (el) => {
+    for (const c of el.children) if (c.localName === "name") return c.textContent.trim();
+    return "";
+  };
+  for (const trk of xml.getElementsByTagNameNS("*", "trk")) {
+    const name = childName(trk);
+    const segs = trk.getElementsByTagNameNS("*", "trkseg");
+    const groups = segs.length ? [...segs] : [trk];
+    for (const g of groups) {
+      segments.push({ name });
+      readPoints(g.getElementsByTagNameNS("*", "trkpt"), segments.length - 1, raw);
+    }
   }
-  if (raw.length < 2) throw new Error("Der Track hat zu wenige Punkte.");
-  return { name: nameNode ? nameNode.textContent.trim() : "", raw };
+  if (!raw.length) {
+    for (const rte of xml.getElementsByTagNameNS("*", "rte")) {
+      segments.push({ name: childName(rte) });
+      readPoints(rte.getElementsByTagNameNS("*", "rtept"), segments.length - 1, raw);
+    }
+  }
+  if (raw.length < 2) throw new Error("Keine Track- oder Routenpunkte (trkpt/rtept) im GPX gefunden.");
+
+  const meta = xml.getElementsByTagNameNS("*", "metadata")[0];
+  const name = (meta && childName(meta)) || (segments.length === 1 ? segments[0].name : "");
+  return { name, raw, segments };
 }
 
-function resample(raw) {
-  let d = 0;
-  const pts = [{ ...raw[0], d: 0 }];
+function resample(raw, segments) {
+  // Cumulative distance; flag jumps (gaps between GPX sections, e.g. a ferry).
+  let d = 0, gapSum = 0, gapCount = 0;
+  const pts = [{ ...raw[0], d: 0, gapBefore: false }];
   for (let i = 1; i < raw.length; i++) {
     const step = haversine(raw[i - 1], raw[i]);
     if (step < 0.5) continue;
+    const gap = step > GAP_M && (raw[i].seg !== raw[i - 1].seg || step > 5 * GAP_M);
+    if (gap) { gapSum += step; gapCount++; }
     d += step;
-    pts.push({ ...raw[i], d });
+    pts.push({ ...raw[i], d, gapBefore: gap });
   }
   const total = d;
   if (total < 100) throw new Error("Der Track ist kürzer als 100 m.");
 
+  // Evenly spaced points keep everything fast, even for tracks with 100 000+ points.
   const step = Math.max(50, total / 8000);
   const count = Math.floor(total / step);
   const out = [];
@@ -479,18 +572,30 @@ function resample(raw) {
     let ele = null;
     if (a.ele != null && b.ele != null) ele = a.ele + (b.ele - a.ele) * t;
     else ele = a.ele ?? b.ele;
-    out.push({ d: dist, lat: a.lat + (b.lat - a.lat) * t, lon: a.lon + (b.lon - a.lon) * t, ele });
+    out.push({
+      d: dist, lat: a.lat + (b.lat - a.lat) * t, lon: a.lon + (b.lon - a.lon) * t, ele,
+      gap: b.gapBefore && t > 0 && t < 1, seg: t < 1 ? a.seg : b.seg,
+    });
     if (dist >= total) break;
   }
-  return { step, total, pts: out };
+
+  // Where each GPX section starts along the track.
+  const segStart = new Map();
+  pts.forEach((p) => { if (!segStart.has(p.seg)) segStart.set(p.seg, p.d); });
+  const segs = segments.map((s, k) => ({ name: s.name, start: segStart.get(k) ?? null })).filter((s) => s.start != null);
+
+  return {
+    step, total, pts: out, segments: segs,
+    info: { rawPoints: raw.length, gapSum, gapCount, hadEle: raw.filter((p) => p.ele != null).length / raw.length },
+  };
 }
 
 async function fillElevation(track) {
   const pts = track.pts;
-  const known = pts.filter((p) => p.ele != null).length;
-  if (known / pts.length >= 0.8) return false;
+  pts.forEach((p) => { p.ele = null; });
 
-  const every = Math.max(1, Math.ceil(pts.length / 3000));
+  // At most ~1500 points (15 requests), the rest is interpolated.
+  const every = Math.max(1, Math.ceil(pts.length / 1500));
   const idx = [];
   for (let i = 0; i < pts.length; i += every) idx.push(i);
   if (idx[idx.length - 1] !== pts.length - 1) idx.push(pts.length - 1);
@@ -498,35 +603,37 @@ async function fillElevation(track) {
   const batches = [];
   for (let i = 0; i < idx.length; i += 100) batches.push(idx.slice(i, i + 100));
   let done = 0;
-  await runLimited(batches.map((batch) => async () => {
-    const lat = batch.map((i) => pts[i].lat.toFixed(5)).join(",");
-    const lon = batch.map((i) => pts[i].lon.toFixed(5)).join(",");
-    const res = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lon}`);
-    if (!res.ok) throw new Error("Höhendaten konnten nicht geladen werden (" + res.status + ").");
-    const json = await res.json();
-    batch.forEach((i, k) => { pts[i].ele = json.elevation[k]; });
-    done++;
-    setStatus(`Höhendaten werden geladen … ${done}/${batches.length}`);
-  }), 3);
+  try {
+    await runLimited(batches.map((batch) => async () => {
+      const lat = batch.map((i) => pts[i].lat.toFixed(5)).join(",");
+      const lon = batch.map((i) => pts[i].lon.toFixed(5)).join(",");
+      const json = await fetchJson(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lon}`);
+      batch.forEach((i, k) => { pts[i].ele = json.elevation[k]; });
+      done++;
+      setStatus(`Höhendaten werden geladen … ${done}/${batches.length}`);
+    }), 2);
+  } catch (e) {
+    setStatus("Höhendaten konnten nicht geladen werden – Höhenprofil ist unvollständig. (" + e.message + ")");
+  }
 
-  // Interpolate the points between the fetched ones.
-  for (let k = 0; k < idx.length - 1; k++) {
-    const a = idx[k], b = idx[k + 1];
-    for (let i = a + 1; i < b; i++) {
-      const t = (i - a) / (b - a);
-      pts[i].ele = pts[a].ele + (pts[b].ele - pts[a].ele) * t;
+  // Interpolate between known points.
+  let prev = -1;
+  for (let i = 0; i < pts.length; i++) {
+    if (pts[i].ele == null) continue;
+    if (prev >= 0 && i - prev > 1) {
+      for (let k = prev + 1; k < i; k++) pts[k].ele = pts[prev].ele + (pts[i].ele - pts[prev].ele) * (k - prev) / (i - prev);
     }
+    prev = i;
   }
   return true;
 }
 
 function finishTrack(track) {
   const pts = track.pts;
-  // Fill any remaining gaps by carrying neighbours.
   let last = pts.find((p) => p.ele != null)?.ele ?? 0;
   for (const p of pts) { if (p.ele == null) p.ele = last; else last = p.ele; }
 
-  // Smooth elevation (~200 m window) to avoid counting GPS noise as climbing.
+  // Smooth elevation (~200 m window) so GPS noise isn't counted as climbing.
   const w = Math.max(1, Math.round(100 / track.step));
   const prefix = [0];
   pts.forEach((p, i) => prefix.push(prefix[i] + p.ele));
@@ -537,11 +644,15 @@ function finishTrack(track) {
 
   track.cumUp = [0];
   track.cumDown = [0];
+  track.cumGap = [0];
   for (let i = 1; i < pts.length; i++) {
     const diff = pts[i].sm - pts[i - 1].sm;
     track.cumUp.push(track.cumUp[i - 1] + Math.max(0, diff));
     track.cumDown.push(track.cumDown[i - 1] + Math.max(0, -diff));
+    track.cumGap.push(track.cumGap[i - 1] + (pts[i].gap ? pts[i].d - pts[i - 1].d : 0));
   }
+  track.segments = track.segments || [];
+  track.info = track.info || {};
   return track;
 }
 
@@ -571,6 +682,12 @@ function nearestKm(track, lat, lon) {
   return { km: p.d / 1000, offset: haversine(p, { lat, lon }) };
 }
 
+function segmentAt(track, meters) {
+  let name = "";
+  for (const s of track.segments) { if (s.start <= meters + 1) name = s.name; else break; }
+  return name;
+}
+
 /* ---------- Stages ---------- */
 
 function buildStages() {
@@ -586,6 +703,7 @@ function buildStages() {
 
   const [h, m] = S.dep.split(":").map(Number);
   const depMin = h * 60 + m;
+  const today = todayStr();
   const stages = [];
   for (let i = 0; i < n; i++) {
     const a = start + i * per;
@@ -596,37 +714,63 @@ function buildStages() {
     const km = (b - a) / 1000;
     const hours = km / S.speed;
     const date = addDays(S.date, i);
-    const samples = SAMPLE_FRACTIONS.map((f) => {
-      const d = a + (b - a) * f;
-      const p = pointAt(T, d);
-      return { f, d, lat: p.lat, lon: p.lon, bearing: travelBearing(T, d) };
-    });
     stages.push({
       i, a, b, km, date, hours,
+      dayOffset: dayDiff(today, date),
       dep: depMin, arr: depMin + hours * 60,
       up: T.cumUp[ib] - T.cumUp[ia],
       down: T.cumDown[ib] - T.cumDown[ia],
+      gapKm: (T.cumGap[ib] - T.cumGap[ia]) / 1000,
       lo, hi,
       startEle: T.pts[ia].sm, endEle: T.pts[ib].sm,
       startPt: T.pts[ia], endPt: T.pts[ib],
-      samples,
-      inRange: dayDiff(todayStr(), date) <= MAX_FORECAST_DAY && dayDiff(todayStr(), date) >= -60,
+      section: segmentAt(T, (a + b) / 2),
     });
   }
   return stages;
 }
 
-/* ---------- Weather fetching ---------- */
+/* ---------- Weather: grid points, cache, fetching ---------- */
 
-function weatherUrl(stage, modelId) {
-  const lat = stage.samples.map((s) => s.lat.toFixed(3)).join(",");
-  const lon = stage.samples.map((s) => s.lon.toFixed(3)).join(",");
-  const p = new URLSearchParams({
-    latitude: lat, longitude: lon, hourly: HOURLY, models: modelId,
-    timezone: "auto", start_date: stage.date, end_date: addDays(stage.date, 1),
-    wind_speed_unit: "kmh",
-  });
-  return "https://api.open-meteo.com/v1/forecast?" + p.toString();
+function gridPoint(g) {
+  const T = S.track;
+  const d = Math.min(g * GRID_KM * 1000, T.total);
+  const p = pointAt(T, d);
+  // Round like the stored track does, so keys stay identical after a page reload.
+  const r = (v) => Number(v.toFixed(5)).toFixed(3);
+  return { g, d, lat: p.lat, lon: p.lon, key: `${r(p.lat)},${r(p.lon)}` };
+}
+
+function maxGrid() { return Math.ceil(S.track.total / (GRID_KM * 1000)); }
+
+// Grid points a model has to deliver: only the stages that lie inside its forecast horizon.
+function neededPoints(model) {
+  const reach = S.stages.filter((st) => st.dayOffset >= 0 && st.dayOffset < model.days);
+  if (!reach.length) return [];
+  const G = GRID_KM * 1000;
+  const i0 = Math.max(0, Math.floor(reach[0].a / G));
+  const i1 = Math.min(maxGrid(), Math.ceil(reach[reach.length - 1].b / G));
+  const k = Math.ceil((i1 - i0 + 1) / MAX_POINTS_PER_MODEL);
+  const out = [];
+  for (let g = i0; g <= i1; g += k) out.push(gridPoint(g));
+  if ((i1 - i0) % k) out.push(gridPoint(i1));
+  return out;
+}
+
+function prepareEntry(entry) {
+  entry.idx = new Map(entry.h.time.map((t, i) => [t, i]));
+  return entry;
+}
+
+async function cached(modelId, key) {
+  const k = modelId + "|" + key;
+  if (wx.has(k)) return wx.get(k);
+  const fromDb = await idb.get("wx|" + k);
+  if (fromDb && fromDb.h && Date.now() - fromDb.t < 24 * 3600 * 1000) {
+    wx.set(k, prepareEntry(fromDb));
+    return wx.get(k);
+  }
+  return null;
 }
 
 async function runLimited(tasks, limit) {
@@ -645,55 +789,140 @@ async function runLimited(tasks, limit) {
 async function fetchJson(url) {
   const res = await fetch(url);
   const json = await res.json().catch(() => null);
-  if (!res.ok) throw new Error((json && json.reason) || "HTTP " + res.status);
+  if (!res.ok) {
+    const err = new Error((json && json.reason) || "HTTP " + res.status);
+    err.status = res.status;
+    throw err;
+  }
   return json;
 }
 
 let fetchTimer = null;
-function scheduleWeather(delay = 700) {
+function scheduleWeather(delay = 800) {
   clearTimeout(fetchTimer);
-  fetchTimer = setTimeout(loadWeather, delay);
+  fetchTimer = setTimeout(() => loadWeather(false), delay);
 }
+
+let loadingWeather = false, pendingWeather = null;
 
 async function loadWeather(force = false) {
   if (!S.track) return;
-  const jobs = [];
-  for (const st of S.stages) {
-    if (!st.inRange) continue;
-    for (const m of MODELS) {
-      if (!S.models.has(m.id)) continue;
-      const url = weatherUrl(st, m.id);
-      const known = responses.get(url);
-      if (known && !force && known.state !== "error") continue;
-      responses.set(url, { state: "loading" });
-      jobs.push(url);
+  if (loadingWeather) { pendingWeather = pendingWeather || force; return; }
+  loadingWeather = true;
+  try {
+    await loadWeatherOnce(force);
+  } finally {
+    loadingWeather = false;
+    if (pendingWeather !== null) {
+      const f = pendingWeather;
+      pendingWeather = null;
+      loadWeather(f);
     }
   }
-  loadPlaces();
-  if (!jobs.length) { render(); return; }
+}
 
-  render();
-  let done = 0, failed = 0;
-  setStatus(`Wetterdaten werden geladen … 0/${jobs.length}`);
-  await runLimited(jobs.map((url) => async () => {
-    try {
-      let data = await fetchJson(url);
-      if (!Array.isArray(data)) data = [data];
-      data.forEach((loc) => {
-        loc.index = new Map(loc.hourly.time.map((t, k) => [t, k]));
-      });
-      responses.set(url, { state: "ok", data });
-    } catch (e) {
-      failed++;
-      responses.set(url, { state: "error", error: e.message });
+async function loadWeatherOnce(force) {
+  const now = Date.now();
+  const messages = [];
+  const work = [];
+
+  for (const model of MODELS) {
+    if (!S.models.has(model.id)) continue;
+    const ms = modelState[model.id] || (modelState[model.id] = { state: "idle", ...(restore("cooldown." + model.id) || {}) });
+    if (force && ms.state === "error") ms.until = 0;   // a manual refresh may retry errors, but never a rate limit
+    const need = neededPoints(model);
+    const missing = [];
+    for (const p of need) {
+      const e = await cached(model.id, p.key);
+      const age = e ? now - e.t : Infinity;
+      if (age < (force ? FORCE_MIN_MS : FRESH_MS)) continue;
+      missing.push(p);
     }
-    done++;
-    setStatus(`Wetterdaten werden geladen … ${done}/${jobs.length}`);
-    scheduleRender();
-  }), 6);
-  setStatus(`Wetter aktualisiert um ${new Date().toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}` +
-            (failed ? ` · ${failed} Abfrage(n) fehlgeschlagen` : ""));
+    if (!missing.length) {
+      if (ms.state !== "limited" && ms.state !== "error") ms.state = "ok";
+      continue;
+    }
+    if (ms.until && now < ms.until) {
+      messages.push(`${model.name}: ${ms.msg} – nächster Versuch in ${Math.ceil((ms.until - now) / 60000)} min`);
+      continue;
+    }
+    ms.state = "loading";
+    for (let i = 0; i < missing.length; i += POINTS_PER_REQUEST) {
+      work.push({ model, points: missing.slice(i, i + POINTS_PER_REQUEST) });
+    }
+  }
+
+  loadPlaces();
   render();
+  if (!work.length) {
+    const ages = [...wx.values()].map((e) => now - e.t);
+    setStatus(messages.length ? messages.join(" · ")
+      : ages.length ? `Wetterdaten aktuell (geladen ${fmtAge(Math.max(...ages))}). Abfragen in dieser Sitzung: ${fetchCount}`
+      : "");
+    return;
+  }
+
+  let done = 0;
+  setStatus(`Wetterdaten werden geladen … 0/${work.length} Abfragen`);
+  // One model after another, a single request at a time per model: gentle on rate limits.
+  const byModel = new Map();
+  work.forEach((w) => { if (!byModel.has(w.model)) byModel.set(w.model, []); byModel.get(w.model).push(w); });
+  await runLimited([...byModel.entries()].map(([model, jobs]) => async () => {
+    const ms = modelState[model.id];
+    for (const job of jobs) {
+      if (ms.until && Date.now() < ms.until) break;
+      const p = new URLSearchParams({
+        latitude: job.points.map((q) => q.lat.toFixed(3)).join(","),
+        longitude: job.points.map((q) => q.lon.toFixed(3)).join(","),
+        hourly: HOURLY, models: model.id, timezone: "auto",
+        forecast_days: String(model.days), wind_speed_unit: "kmh",
+      });
+      try {
+        fetchCount++;
+        countDaily(job.points.length);
+        let data = await fetchJson("https://api.open-meteo.com/v1/forecast?" + p.toString());
+        if (!Array.isArray(data)) data = [data];
+        const t = Date.now();
+        data.forEach((loc, k) => {
+          const entry = prepareEntry({ t, off: loc.utc_offset_seconds || 0, h: loc.hourly });
+          const key = model.id + "|" + job.points[k].key;
+          wx.set(key, entry);
+          idb.set("wx|" + key, { t, off: entry.off, h: entry.h });
+        });
+        ms.state = "ok";
+        ms.until = 0;
+        store("cooldown." + model.id, null);
+      } catch (e) {
+        const limited = e.status === 429 || /limit/i.test(e.message);
+        ms.state = limited ? "limited" : "error";
+        ms.msg = limited ? "API-Limit erreicht" : e.message;
+        ms.until = Date.now() + (limited ? LIMIT_COOLDOWN_MS : ERROR_COOLDOWN_MS);
+        store("cooldown." + model.id, { state: ms.state, msg: ms.msg, until: ms.until });
+        messages.push(`${model.name}: ${ms.msg}`);
+        break;   // don't hammer a failing API with the remaining requests
+      }
+      done++;
+      setStatus(`Wetterdaten werden geladen … ${done}/${work.length} Abfragen`);
+      scheduleRender();
+    }
+  }), 2);
+
+  for (const id of Object.keys(modelState)) if (modelState[id].state === "loading") modelState[id].state = "ok";
+  setStatus(`Wetter aktualisiert um ${new Date().toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}` +
+            ` · ${fetchCount} Abfragen in dieser Sitzung, heute ${numFmt(dailyCount())} Orte abgefragt` +
+            (messages.length ? " · " + messages.join(" · ") : ""));
+  render();
+}
+
+function countDaily(n) {
+  const c = restore("calls") || {};
+  const today = todayStr();
+  store("calls", { day: today, n: (c.day === today ? c.n : 0) + n });
+}
+
+function dailyCount() {
+  const c = restore("calls");
+  return c && c.day === todayStr() ? c.n : 0;
 }
 
 let renderQueued = false;
@@ -703,47 +932,56 @@ function scheduleRender() {
   requestAnimationFrame(() => { renderQueued = false; render(); });
 }
 
-/* Place names for stage start/end points */
-function placeKey(p) { return `${p.lat.toFixed(2)},${p.lon.toFixed(2)}`; }
+/* Place names for stage start/end points (cached forever, a few requests at a time). */
+function placeKey(p) { return `${(Math.round(p.lat * 50) / 50).toFixed(2)},${(Math.round(p.lon * 50) / 50).toFixed(2)}`; }
 
 function placeName(p) {
   return places.get(placeKey(p)) || null;
 }
 
+let placesBusy = false;
 async function loadPlaces() {
-  const saved = restore("places") || {};
-  const want = [];
-  for (const st of S.stages) {
-    for (const p of [st.startPt, st.endPt]) {
-      const key = placeKey(p);
-      if (places.has(key)) continue;
-      if (saved[key]) { places.set(key, saved[key]); continue; }
-      places.set(key, null);
-      want.push([key, p]);
-    }
-  }
-  if (!want.length) return;
-  await runLimited(want.map(([key, p]) => async () => {
-    try {
-      const j = await fetchJson(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${p.lat.toFixed(4)}&longitude=${p.lon.toFixed(4)}&localityLanguage=de`);
-      const name = j.city || j.locality || j.principalSubdivision || null;
-      if (name) {
-        places.set(key, name);
-        const all = restore("places") || {};
-        all[key] = name;
-        store("places", all);
-        scheduleRender();
+  if (placesBusy) return;
+  placesBusy = true;
+  try {
+    const saved = restore("places") || {};
+    const want = [];
+    // Only stages inside the forecast window get names: fewer lookups while sliders move.
+    for (const st of S.stages.filter((x) => x.dayOffset < 16).slice(0, 16)) {
+      for (const p of [st.startPt, st.endPt]) {
+        const key = placeKey(p);
+        if (places.has(key)) continue;
+        if (saved[key]) { places.set(key, saved[key]); continue; }
+        places.set(key, null);
+        want.push([key, p]);
       }
-    } catch (e) { /* names are optional */ }
-  }), 4);
+    }
+    if (want.length) scheduleRender();
+    await runLimited(want.map(([key, p]) => async () => {
+      try {
+        const j = await fetchJson(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${p.lat.toFixed(4)}&longitude=${p.lon.toFixed(4)}&localityLanguage=de`);
+        const name = j.city || j.locality || null;
+        if (name) {
+          places.set(key, name);
+          const all = restore("places") || {};
+          all[key] = name;
+          store("places", all);
+          scheduleRender();
+        }
+      } catch (e) { /* names are optional */ }
+    }), 2);
+  } finally {
+    placesBusy = false;
+  }
 }
 
 /* ---------- Weather analysis ---------- */
 
-function valueAt(loc, key, time) {
-  const k = loc.index.get(time);
+function valueAt(entry, key, time) {
+  if (!entry) return null;
+  const k = entry.idx.get(time);
   if (k == null) return null;
-  const arr = loc.hourly[key];
+  const arr = entry.h[key];
   return arr && arr[k] != null ? arr[k] : null;
 }
 
@@ -753,9 +991,32 @@ function timeKey(date, minutes) {
   return `${addDays(date, day)}T${pad(hr)}:00`;
 }
 
-function analyze(stage, data) {
-  // Walk through the ride hour by hour and read the weather at the place you'll be at that time.
+// Weather at a distance along the track: nearest grid point that has data for this model.
+function makeLookup(model) {
+  const G = GRID_KM * 1000, max = maxGrid();
+  const memo = new Map();
+  const at = (g) => {
+    if (!memo.has(g)) memo.set(g, wx.get(model.id + "|" + gridPoint(g).key) || null);
+    return memo.get(g);
+  };
+  return (d) => {
+    const g0 = Math.round(d / G);
+    for (let o = 0; o <= 3; o++) {
+      for (const g of o ? [g0 - o, g0 + o] : [g0]) {
+        if (g < 0 || g > max) continue;
+        const e = at(g);
+        if (e) return e;
+      }
+    }
+    return null;
+  };
+}
+
+function analyze(stage, model) {
+  // Walk through the ride hour by hour and read the weather where you'll be at that time.
+  const lookup = makeLookup(model);
   const hours = [];
+  let offset = null;
   const first = Math.floor(stage.dep / 60) * 60;
   for (let t = first; t < stage.arr; t += 60) {
     const from = Math.max(t, stage.dep), to = Math.min(t + 60, stage.arr);
@@ -763,32 +1024,31 @@ function analyze(stage, data) {
     if (weight <= 0) continue;
     const mid = (from + to) / 2;
     const frac = stage.arr > stage.dep ? (mid - stage.dep) / (stage.arr - stage.dep) : 0;
-    const si = Math.round(frac * (SAMPLE_FRACTIONS.length - 1));
-    const loc = data[si], sample = stage.samples[si];
+    const d = stage.a + (stage.b - stage.a) * frac;
+    const e = lookup(d);
+    if (e && offset == null) offset = e.off;
+    const brg = travelBearing(S.track, d);
     const key = timeKey(stage.date, t), next = timeKey(stage.date, t + 60);
-    const speed = valueAt(loc, "wind_speed_10m", key);
-    const dir = valueAt(loc, "wind_direction_10m", key);
-    const head = speed != null && dir != null ? speed * Math.cos((dir - sample.bearing) * rad) : null;
-    const rain = valueAt(loc, "precipitation", next);
-    const sun = valueAt(loc, "sunshine_duration", next);
+    const speed = valueAt(e, "wind_speed_10m", key);
+    const dir = valueAt(e, "wind_direction_10m", key);
+    const rain = valueAt(e, "precipitation", next);
+    const sun = valueAt(e, "sunshine_duration", next);
     hours.push({
-      t, weight, km: (stage.a + (stage.b - stage.a) * frac) / 1000,
-      temp: valueAt(loc, "temperature_2m", key),
-      feel: valueAt(loc, "apparent_temperature", key),
+      t, weight, km: d / 1000,
+      temp: valueAt(e, "temperature_2m", key),
+      feel: valueAt(e, "apparent_temperature", key),
       rain: rain == null ? null : rain * weight,
-      prob: valueAt(loc, "precipitation_probability", key),
-      code: valueAt(loc, "weather_code", key),
-      cloud: valueAt(loc, "cloud_cover", key),
-      speed, dir, head,
-      cross: speed != null && dir != null ? Math.abs(speed * Math.sin((dir - sample.bearing) * rad)) : null,
-      gust: valueAt(loc, "wind_gusts_10m", key),
+      prob: valueAt(e, "precipitation_probability", key),
+      code: valueAt(e, "weather_code", key),
+      speed, dir,
+      head: speed != null && dir != null ? speed * Math.cos((dir - brg) * rad) : null,
+      gust: valueAt(e, "wind_gusts_10m", key),
       sun: sun == null ? null : (sun / 3600) * weight,
     });
   }
   const temps = clean(hours.map((h) => h.temp));
-  if (!temps.length) return null;   // outside this model's horizon
+  if (!temps.length) return null;
 
-  const w = hours.map((h) => h.weight);
   const wavg = (key) => {
     const pairs = hours.filter((h) => h[key] != null);
     const ws = sum(pairs.map((h) => h.weight));
@@ -800,52 +1060,48 @@ function analyze(stage, data) {
   const codes = clean(hours.map((h) => h.code));
   const suns = clean(hours.map((h) => h.sun));
   const feels = clean(hours.map((h) => h.feel));
-  const rainyHours = hours.filter((h) => h.rain != null && h.rain / h.weight >= 0.2).length;
 
   // Night at the stage end: 19:00 to 07:00 next morning.
-  const endLoc = data[data.length - 1];
-  const night = [];
+  const endE = lookup(stage.b);
+  const nTemps = [], nRain = [];
   for (let t = 19 * 60; t < 31 * 60; t += 60) {
-    night.push({
-      temp: valueAt(endLoc, "temperature_2m", timeKey(stage.date, t)),
-      rain: valueAt(endLoc, "precipitation", timeKey(stage.date, t + 60)),
-    });
+    nTemps.push(valueAt(endE, "temperature_2m", timeKey(stage.date, t)));
+    nRain.push(valueAt(endE, "precipitation", timeKey(stage.date, t + 60)));
   }
-  const nTemps = clean(night.map((n) => n.temp));
-  const nRain = clean(night.map((n) => n.rain));
+  const nt = clean(nTemps), nr = clean(nRain);
 
   return {
     hours,
     tmin: Math.min(...temps), tmax: Math.max(...temps),
     feelMin: feels.length ? Math.min(...feels) : null,
     rain: rains.length ? sum(rains) : null,
-    rainyHours,
     prob: probs.length ? Math.max(...probs) : null,
     speed: wavg("speed"),
     dir: meanDir(hours.map((h) => h.dir), hours.map((h) => (h.speed || 0) * h.weight)),
     head: wavg("head"),
-    cross: wavg("cross"),
     gust: gusts.length ? Math.max(...gusts) : null,
-    cloud: wavg("cloud"),
     sun: suns.length ? sum(suns) : null,
     code: codes.length ? Math.max(...codes) : null,
-    nightMin: nTemps.length ? Math.min(...nTemps) : null,
-    nightRain: nRain.length ? sum(nRain) : null,
-    offset: data[0].utc_offset_seconds || 0,
+    nightMin: nt.length ? Math.min(...nt) : null,
+    nightRain: nr.length ? sum(nr) : null,
+    offset,
   };
 }
 
 function stageWeather(stage) {
   const per = {};
-  let loading = 0, errors = [];
+  const errors = [];
+  let loading = 0;
   for (const m of MODELS) {
     if (!S.models.has(m.id)) continue;
-    if (!stage.inRange) { per[m.id] = { state: "range" }; continue; }
-    const r = responses.get(weatherUrl(stage, m.id));
-    if (!r || r.state === "loading") { per[m.id] = { state: "loading" }; loading++; continue; }
-    if (r.state === "error") { per[m.id] = { state: "error", error: r.error }; errors.push(m.name + ": " + r.error); continue; }
-    const a = analyze(stage, r.data);
-    per[m.id] = a ? { state: "ok", ...a } : { state: "horizon" };
+    if (stage.dayOffset < 0) { per[m.id] = { state: "past" }; continue; }
+    if (stage.dayOffset >= m.days) { per[m.id] = { state: "range" }; continue; }
+    const a = analyze(stage, m);
+    if (a) { per[m.id] = { state: "ok", ...a }; continue; }
+    const ms = modelState[m.id] || {};
+    if (ms.state === "loading") { per[m.id] = { state: "loading" }; loading++; }
+    else if (ms.state === "error" || ms.state === "limited") { per[m.id] = { state: "error", error: ms.msg }; errors.push(m.name + ": " + ms.msg); }
+    else per[m.id] = { state: "nodata" };
   }
   const ok = MODELS.filter((m) => per[m.id] && per[m.id].state === "ok");
   const vals = (key) => ok.map((m) => per[m.id][key]);
@@ -869,8 +1125,9 @@ function stageWeather(stage) {
   }
   const levels = Object.values(metrics).map((m) => m.level).filter((l) => l != null);
   const overall = levels.length ? Math.max(...levels) : null;
+  const offset = ok.length ? per[ok[0].id].offset : null;
 
-  return { per, ok, metrics, overall, loading, errors };
+  return { per, ok, metrics, overall, loading, errors, offset };
 }
 
 function agreement(key, m, all) {
@@ -879,9 +1136,9 @@ function agreement(key, m, all) {
   switch (key) {
     case "tmax": case "tmin": case "nightMin": return s <= 2 ? 0 : s <= 4 ? 1 : 2;
     case "rain": {
-      const mx = Math.max(...clean(m.vals)), mn = Math.min(...clean(m.vals));
+      const v = clean(m.vals);
       if (s <= 1) return 0;
-      if (mn < 0.3 && mx >= 3) return 2;   // some say dry, some say wet
+      if (Math.min(...v) < 0.3 && Math.max(...v) >= 3) return 2;   // some say dry, some say wet
       return s <= Math.max(3, 0.75 * (m.med || 0)) ? 1 : 2;
     }
     case "prob": return s <= 25 ? 0 : s <= 50 ? 1 : 2;
@@ -922,13 +1179,36 @@ let map = null, mapLayers = null, fittedFor = null;
 function render() {
   if (!S.track) { $("content").classList.add("hidden"); return; }
   $("content").classList.remove("hidden");
-  const weather = S.stages.map(stageWeather);
-  renderTotals(weather);
-  renderMap();
-  renderProfile();
-  renderOverview(weather);
-  renderComparison(weather);
-  renderStages(weather);
+  let weather = [];
+  try { weather = S.stages.map(stageWeather); } catch (e) { console.error(e); }
+  // Each part renders on its own, so a failure in one (e.g. a CDN library missing) never hides the route.
+  const parts = [
+    () => renderPreview(), () => renderTotals(weather), () => renderMap(), () => renderProfile(),
+    () => renderOverview(weather), () => renderComparison(weather), () => renderStages(weather),
+  ];
+  for (const part of parts) {
+    try { part(); } catch (e) { console.error(e); }
+  }
+}
+
+function renderPreview() {
+  const T = S.track, info = T.info || {};
+  let lo = Infinity, hi = -Infinity;
+  for (const p of T.pts) { lo = Math.min(lo, p.sm); hi = Math.max(hi, p.sm); }
+  const tiles = [
+    ["Tour", esc(T.name || "GPX-Track"), T.segments.length > 1 ? `${T.segments.length} Abschnitte` : ""],
+    ["Länge", fmt(T.total / 1000, 1, " km"), info.rawPoints ? `${numFmt(info.rawPoints)} GPX-Punkte` : ""],
+    ["Anstieg gesamt", fmt(T.cumUp[T.cumUp.length - 1], 0, " hm"), `Abstieg ${fmt(T.cumDown[T.cumDown.length - 1], 0, " hm")}`],
+    ["Höhe", `${fmt(lo, 0)}–${fmt(hi, 0)} m`, info.hadEle != null && info.hadEle < 0.8 ? "aus Höhenmodell ergänzt" : "aus dem GPX"],
+    ["Start → Ziel", esc(placeName(T.pts[0]) || "Start") + " → " + esc(placeName(T.pts[T.pts.length - 1]) || "Ziel"), ""],
+  ];
+  $("preview").innerHTML = tiles.map(([k, v, s]) =>
+    `<div class="tile"><div class="k">${k}</div><div class="v" style="font-size:1.05rem">${v}</div><div class="s">${s}</div></div>`).join("");
+  const gapKm = T.cumGap[T.cumGap.length - 1] / 1000;
+  $("gap-note").textContent = gapKm > 0.5
+    ? `Hinweis: Der GPX-Track hat ${info.gapCount || ""} Lücke(n) zwischen den Abschnitten (zusammen ${fmt(gapKm, 0)} km Luftlinie, z. B. Fähre oder fehlende Teilstücke). ` +
+      "Sie sind auf der Karte gestrichelt und werden als Luftlinie in die Etappen eingerechnet."
+    : "";
 }
 
 function renderTotals(weather) {
@@ -941,60 +1221,129 @@ function renderTotals(weather) {
   const rainDays = weather.filter((w) => (w.metrics.rain.med ?? 0) >= 1).length;
   const known = weather.filter((w) => w.metrics.rain.med != null).length;
   const tiles = [
-    ["Verbleibend", fmt(rest, rest < 100 ? 1 : 0, " km"), `von ${fmt(T.total / 1000, 0, " km")} gesamt`],
+    ["Verbleibend", fmt(rest, rest < 100 ? 1 : 0, " km"), `ab km ${fmt(S.startKm, 1)}`],
     ["Anstieg", fmt(up, 0, " hm"), `Abstieg ${fmt(down, 0, " hm")}`],
     ["Etappen", String(st.length), `à ca. ${S.perDay} km`],
     ["Ankunft", end ? fmtDate(end, { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" }) : "–",
       st.length ? `ca. ${fmtMinutes(st[st.length - 1].arr)} Uhr` : ""],
-    ["Regentage", known ? `${rainDays} / ${known}` : "–", "Etappen mit ≥ 1 mm (Median)"],
+    ["Regentage", known ? `${rainDays} / ${known}` : "–", known ? "Etappen mit ≥ 1 mm (Median)" : "noch keine Wetterdaten"],
   ];
   $("totals").innerHTML = tiles.map(([k, v, s]) =>
     `<div class="tile"><div class="k">${k}</div><div class="v num">${v}</div><div class="s">${s}</div></div>`).join("");
 }
 
+// Splits the track between two indices into runs of normal track and gaps.
+function runs(T, ia, ib) {
+  const out = [];
+  let cur = null;
+  for (let k = ia; k <= ib; k++) {
+    const p = T.pts[k];
+    const gap = !!p.gap;
+    if (!cur || cur.gap !== gap) {
+      const prev = cur && cur.pts[cur.pts.length - 1];
+      cur = { gap, pts: prev ? [prev] : [] };
+      out.push(cur);
+    }
+    cur.pts.push(p);
+  }
+  return out.filter((r) => r.pts.length > 1);
+}
+
+function stageColor(k) { return css(k % 2 ? "--route-b" : "--route-a"); }
+
 function renderMap() {
-  if (typeof L === "undefined") { $("map").textContent = "Karte konnte nicht geladen werden (Leaflet fehlt)."; return; }
+  if (typeof L === "undefined") { renderSvgMap(); return; }
   const T = S.track;
   if (!map) {
-    map = L.map("map", { scrollWheelZoom: false });
+    map = L.map("map", { scrollWheelZoom: false, zoomSnap: 0.25 });
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 18, attribution: "© OpenStreetMap-Mitwirkende",
     }).addTo(map);
-    map.on("click", (e) => {
-      const n = nearestKm(S.track, e.latlng.lat, e.latlng.lng);
-      setStartKm(n.km);
-      setStatus(n.offset > 2000
-        ? `Position gesetzt (nächster Trackpunkt ${fmt(n.offset / 1000, 1, " km")} entfernt).`
-        : "Position gesetzt.");
-    });
+    map.on("click", (e) => pickOnMap(e.latlng.lat, e.latlng.lng));
     mapLayers = L.layerGroup().addTo(map);
   }
   mapLayers.clearLayers();
-  const latlng = (p) => [p.lat, p.lon];
+  const ll = (p) => [p.lat, p.lon];
   const startI = idxAt(T, S.startKm * 1000);
+  const gapStyle = { color: css("--ridden"), weight: 2, opacity: 0.9, dashArray: "4 8" };
   if (startI > 0) {
-    L.polyline(T.pts.slice(0, startI + 1).map(latlng), { color: css("--ridden"), weight: 4, opacity: 0.8, dashArray: "6 6" }).addTo(mapLayers);
+    for (const r of runs(T, 0, startI)) {
+      L.polyline(r.pts.map(ll), r.gap ? gapStyle : { color: css("--ridden"), weight: 4, opacity: 0.7 }).addTo(mapLayers);
+    }
   }
   S.stages.forEach((st, k) => {
-    const pts = T.pts.slice(idxAt(T, st.a), idxAt(T, st.b) + 1).map(latlng);
-    L.polyline(pts, { color: css(k % 2 ? "--route-b" : "--route-a"), weight: 5, opacity: 0.9 })
-      .bindTooltip(`Etappe ${k + 1} · ${fmtDate(st.date)} · ${fmt(st.km, 0, " km")}`, { sticky: true })
-      .addTo(mapLayers);
-    L.marker(latlng(st.endPt), {
-      icon: L.divIcon({ className: "stage-pin", html: `<span>${k + 1}</span>`, iconSize: [22, 22], iconAnchor: [11, 11] }),
-    }).bindTooltip(`Ziel Etappe ${k + 1}: ${placeName(st.endPt) || "km " + fmt(st.b / 1000, 0)}`).addTo(mapLayers);
+    const tip = `Etappe ${k + 1} · ${fmtDate(st.date)} · ${fmt(st.km, 0, " km")}`;
+    for (const r of runs(T, idxAt(T, st.a), idxAt(T, st.b))) {
+      L.polyline(r.pts.map(ll), r.gap ? gapStyle : { color: stageColor(k), weight: 5, opacity: 0.9 })
+        .bindTooltip(r.gap ? "Lücke im GPX (Luftlinie)" : tip, { sticky: true }).addTo(mapLayers);
+    }
+    // Numbered pins for short trips; small dots for long ones so they don't cover the route.
+    const pin = S.stages.length <= 12
+      ? L.marker(ll(st.endPt), {
+          icon: L.divIcon({ className: "stage-pin", html: `<span>${k + 1}</span>`, iconSize: [18, 18], iconAnchor: [9, 9] }),
+        })
+      : L.circleMarker(ll(st.endPt), { radius: 4, color: css("--ink"), weight: 1.5, fillColor: css("--surface"), fillOpacity: 1 });
+    pin.bindTooltip(`Ziel Etappe ${k + 1}: ${placeName(st.endPt) || "km " + fmt(st.b / 1000, 0)}`).addTo(mapLayers);
   });
-  const pos = T.pts[startI];
-  L.marker(latlng(pos), {
+  L.marker(ll(T.pts[startI]), {
     icon: L.divIcon({ className: "pos-pin", html: "<span></span>", iconSize: [18, 18], iconAnchor: [9, 9] }),
     zIndexOffset: 1000,
   }).bindTooltip(`Aktuelle Position · km ${fmt(S.startKm, 1)}`).addTo(mapLayers);
 
   if (fittedFor !== T) {
-    map.fitBounds(L.latLngBounds(T.pts.map(latlng)), { padding: [20, 20] });
+    map.fitBounds(L.latLngBounds(T.pts.map(ll)), { padding: [20, 20] });
     fittedFor = T;
   }
   setTimeout(() => map.invalidateSize(), 0);
+}
+
+function pickOnMap(lat, lon) {
+  const n = nearestKm(S.track, lat, lon);
+  setStartKm(n.km);
+  setStatus(n.offset > 2000
+    ? `Position gesetzt (nächster Trackpunkt ${fmt(n.offset / 1000, 1, " km")} entfernt).`
+    : "Position gesetzt.");
+}
+
+// Fallback when Leaflet can't load (offline, blocked CDN): draw the route as plain SVG.
+function renderSvgMap() {
+  const T = S.track;
+  let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
+  for (const p of T.pts) {
+    minLat = Math.min(minLat, p.lat); maxLat = Math.max(maxLat, p.lat);
+    minLon = Math.min(minLon, p.lon); maxLon = Math.max(maxLon, p.lon);
+  }
+  const kx = Math.cos(((minLat + maxLat) / 2) * rad);
+  const w = Math.max(1e-6, (maxLon - minLon) * kx), h = Math.max(1e-6, maxLat - minLat);
+  const W = 1000, H = Math.max(300, Math.min(650, (W * h) / w)), padPx = 20;
+  const scale = Math.min((W - 2 * padPx) / w, (H - 2 * padPx) / h);
+  const x = (p) => (padPx + (p.lon - minLon) * kx * scale).toFixed(1);
+  const y = (p) => (H - padPx - (p.lat - minLat) * scale).toFixed(1);
+  const path = (pts) => pts.map((p, i) => `${i ? "L" : "M"}${x(p)},${y(p)}`).join("");
+  const every = Math.max(1, Math.ceil(T.pts.length / 3000));
+  const thin = (r) => r.pts.filter((_, i) => i % every === 0 || i === r.pts.length - 1);
+  const startI = idxAt(T, S.startKm * 1000);
+  let svg = "";
+  for (const r of runs(T, 0, startI)) {
+    svg += `<path d="${path(thin(r))}" fill="none" stroke="${css("--ridden")}" stroke-width="${r.gap ? 1.5 : 3}" ${r.gap ? 'stroke-dasharray="4 6"' : ""}/>`;
+  }
+  S.stages.forEach((st, k) => {
+    for (const r of runs(T, idxAt(T, st.a), idxAt(T, st.b))) {
+      svg += `<path d="${path(thin(r))}" fill="none" stroke="${r.gap ? css("--ridden") : stageColor(k)}" stroke-width="${r.gap ? 1.5 : 3.5}" ${r.gap ? 'stroke-dasharray="4 6"' : ""}><title>Etappe ${k + 1}</title></path>`;
+    }
+    svg += `<circle cx="${x(st.endPt)}" cy="${y(st.endPt)}" r="9" fill="${css("--surface")}" stroke="${css("--ink")}" stroke-width="2"/>
+            <text x="${x(st.endPt)}" y="${y(st.endPt)}" dy="4" text-anchor="middle" font-size="10" font-weight="700" fill="${css("--ink")}">${k + 1}</text>`;
+  });
+  const pos = T.pts[startI];
+  svg += `<circle cx="${x(pos)}" cy="${y(pos)}" r="8" fill="${css("--critical")}" stroke="#fff" stroke-width="3"/>`;
+  $("map").style.height = "auto";
+  $("map").innerHTML = `<svg class="svg-map" viewBox="0 0 ${W} ${H.toFixed(0)}" role="img" aria-label="Route">${svg}</svg>
+    <div class="small muted">Kartenhintergrund nicht verfügbar – Route vereinfacht dargestellt. Klicke auf die Route, um deine Position zu setzen.</div>`;
+  $("map").querySelector("svg").addEventListener("click", (e) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const px = ((e.clientX - r.left) / r.width) * W, py = ((e.clientY - r.top) / r.height) * H;
+    pickOnMap(minLat + (H - padPx - py) / scale, minLon + (px - padPx) / (kx * scale));
+  });
 }
 
 function plotTheme(extra = {}) {
@@ -1014,15 +1363,16 @@ function plotTheme(extra = {}) {
 const PLOT_CONFIG = { responsive: true, displaylogo: false, displayModeBar: false };
 
 function renderProfile() {
-  if (typeof Plotly === "undefined") return;
   const T = S.track;
   const every = Math.max(1, Math.ceil(T.pts.length / 2500));
   const pts = T.pts.filter((_, i) => i % every === 0 || i === T.pts.length - 1);
   const startD = S.startKm * 1000;
-  const stageOf = (d) => S.stages.findIndex((s) => d >= s.a && d <= s.b);
   const lo = Math.min(...pts.map((p) => p.sm)), hi = Math.max(...pts.map((p) => p.sm));
-  const pad = Math.max(20, (hi - lo) * 0.08);
+  const padM = Math.max(20, (hi - lo) * 0.08);
 
+  if (typeof Plotly === "undefined") { renderSvgProfile(pts, lo - padM, hi + padM); return; }
+
+  const stageOf = (d) => S.stages.findIndex((s) => d >= s.a && d <= s.b);
   const ridden = pts.filter((p) => p.d <= startD);
   const ahead = pts.filter((p) => p.d >= startD);
   const traces = [];
@@ -1036,7 +1386,10 @@ function renderProfile() {
   traces.push({
     x: ahead.map((p) => p.d / 1000), y: ahead.map((p) => p.sm), type: "scatter", mode: "lines",
     line: { color: css("--m1"), width: 2 }, fill: "tozeroy", fillcolor: css("--m1") + "26",
-    customdata: ahead.map((p) => { const k = stageOf(p.d); return k < 0 ? "–" : `Etappe ${k + 1}`; }),
+    customdata: ahead.map((p) => {
+      const k = stageOf(p.d);
+      return (k < 0 ? "" : `Etappe ${k + 1}`) + (p.gap ? " · Lücke im GPX" : "");
+    }),
     hovertemplate: "km %{x:.1f} · %{y:.0f} m · %{customdata}<extra></extra>",
   });
 
@@ -1046,16 +1399,31 @@ function renderProfile() {
   }));
   shapes.push({ type: "line", x0: S.startKm, x1: S.startKm, yref: "paper", y0: 0, y1: 1,
                 line: { color: css("--critical"), width: 2 } });
-  const annotations = S.stages.map((st, k) => ({
+  const labelEvery = Math.max(1, Math.ceil(S.stages.length / 25));
+  const annotations = S.stages.filter((_, k) => k % labelEvery === 0).map((st) => ({
     x: (st.a + st.b) / 2000, y: 1, yref: "paper", yanchor: "bottom", showarrow: false,
-    text: `E${k + 1}`, font: { size: 11, color: css("--ink-2") },
+    text: `E${st.i + 1}`, font: { size: 11, color: css("--ink-2") },
   }));
 
   Plotly.react("profile", traces, plotTheme({
     height: 260, shapes, annotations, hovermode: "x",
     xaxis: { ...plotTheme().xaxis, title: { text: "km" }, range: [0, T.total / 1000] },
-    yaxis: { ...plotTheme().yaxis, title: { text: "Höhe [m]" }, range: [lo - pad, hi + pad] },
+    yaxis: { ...plotTheme().yaxis, title: { text: "Höhe [m]" }, range: [lo - padM, hi + padM] },
   }), PLOT_CONFIG);
+}
+
+function renderSvgProfile(pts, lo, hi) {
+  const T = S.track, W = 1000, H = 220;
+  const x = (d) => ((d / T.total) * W).toFixed(1);
+  const y = (e) => (H - 20 - ((e - lo) / (hi - lo)) * (H - 40)).toFixed(1);
+  const line = pts.map((p, i) => `${i ? "L" : "M"}${x(p.d)},${y(p.sm)}`).join("");
+  const marks = S.stages.map((st) => `<line x1="${x(st.b)}" x2="${x(st.b)}" y1="0" y2="${H}" stroke="${css("--axis")}" stroke-dasharray="3 3"/>`).join("");
+  $("profile").innerHTML = `<svg class="svg-profile" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="height:${H}px" role="img" aria-label="Höhenprofil">
+    ${marks}
+    <path d="${line}L${W},${H}L0,${H}Z" fill="${css("--m1")}" fill-opacity="0.15"/>
+    <path d="${line}" fill="none" stroke="${css("--m1")}" stroke-width="2" vector-effect="non-scaling-stroke"/>
+    <line x1="${x(S.startKm * 1000)}" x2="${x(S.startKm * 1000)}" y1="0" y2="${H}" stroke="${css("--critical")}" stroke-width="2" vector-effect="non-scaling-stroke"/>
+  </svg><div class="small muted">${fmt(lo, 0)}–${fmt(hi, 0)} m · ${fmt(T.total / 1000, 0)} km</div>`;
 }
 
 function stageTitle(st) {
@@ -1069,9 +1437,10 @@ function cellStatus(w) {
   if (w.ok.length) return badge(w.overall, true);
   if (w.loading) return `<span class="muted">lädt …</span>`;
   const states = Object.values(w.per).map((p) => p.state);
-  if (states.every((s) => s === "range")) return `<span class="muted">zu weit voraus</span>`;
-  if (states.includes("error")) return `<span class="muted">Fehler</span>`;
-  return `<span class="muted">außerhalb Modellhorizont</span>`;
+  if (states.every((s) => s === "past")) return `<span class="muted">liegt in der Vergangenheit</span>`;
+  if (states.every((s) => s === "range")) return `<span class="muted">noch zu weit voraus</span>`;
+  if (states.includes("error")) return `<span class="muted">Wetter nicht verfügbar</span>`;
+  return `<span class="muted">noch keine Wetterdaten</span>`;
 }
 
 function renderOverview(weather) {
@@ -1083,11 +1452,12 @@ function renderOverview(weather) {
     const w = weather[k], m = w.metrics;
     const codes = w.ok.map((mm) => w.per[mm.id].code);
     const [icon, text] = wxInfo(codes.length ? Math.round(median(codes)) : null);
-    const rainRange = m.rain.vals.length > 1 ? ` <span class="muted">(${fmt(Math.min(...clean(m.rain.vals)), 1)}–${fmt(Math.max(...clean(m.rain.vals)), 1)})</span>` : "";
+    const rv = clean(m.rain.vals);
+    const rainRange = rv.length > 1 ? ` <span class="muted">(${fmt(Math.min(...rv), 1)}–${fmt(Math.max(...rv), 1)})</span>` : "";
     return `<tr class="click" data-stage="${k}">
       <td><b>${k + 1}</b></td>
       <td>${fmtDate(st.date)}</td>
-      <td>${stageTitle(st)}</td>
+      <td>${stageTitle(st)}${st.gapKm > 0.5 ? ` <span class="muted small" title="Lücke im GPX">(┄ ${fmt(st.gapKm, 0)} km)</span>` : ""}</td>
       <td class="r num">${fmt(st.km, 0)}</td>
       <td class="r num">${fmt(st.up, 0)}</td>
       <td class="r num">${fmt(st.down, 0)}</td>
@@ -1120,25 +1490,33 @@ function headText(v) {
 function activeModels() { return MODELS.filter((m) => S.models.has(m.id)); }
 
 function renderComparison(weather) {
-  if (typeof Plotly === "undefined") return;
+  const ids = ["cmp-temp", "cmp-rain", "cmp-head", "cmp-gust"];
+  const hasData = weather.some((w) => w.ok.length);
+  $("cmp-empty").classList.toggle("hidden", hasData);
+  ids.forEach((id) => $(id).classList.toggle("hidden", !hasData));
+  $("cmp-legend").classList.toggle("hidden", !hasData);
+  if (!hasData || typeof Plotly === "undefined") return;
+
   const models = activeModels();
   $("cmp-legend").innerHTML = models.map((m) =>
     `<span class="badge"><span class="swatch" style="background:${css(m.color)}"></span>${m.name}</span>`).join("") +
     `<span class="badge"><span class="swatch" style="background:${css("--ink")};height:3px"></span>Median</span>`;
-  const x = S.stages.map((st, k) => `E${k + 1} · ${fmtDate(st.date)}`);
+  // Only stages that have weather data – the rest would just be empty columns.
+  const shown = weather.map((w, k) => [w, S.stages[k]]).filter(([w]) => w.ok.length);
+  const x = shown.map(([, st]) => `E${st.i + 1} · ${fmtDate(st.date)}`);
 
   const panel = (id, key, title, unit, d, zero) => {
-    const traces = models.map((m, mi) => ({
+    const traces = models.map((m) => ({
       type: "scatter", mode: "markers", name: m.name,
-      x, y: weather.map((w) => (w.per[m.id] && w.per[m.id].state === "ok" ? w.per[m.id][key] : null)),
+      x, y: shown.map(([w]) => (w.per[m.id] && w.per[m.id].state === "ok" ? w.per[m.id][key] : null)),
       marker: { color: css(m.color), size: 9, line: { color: css("--surface"), width: 2 } },
       hovertemplate: `${m.name}: %{y:.${d}f}${unit}<extra></extra>`,
     }));
     traces.push({
       type: "scatter", mode: "markers", name: "Median", x,
-      y: weather.map((w) => w.metrics[key].med),
+      y: shown.map(([w]) => w.metrics[key].med),
       marker: { symbol: "line-ew", size: 22, line: { color: css("--ink"), width: 3 } },
-      customdata: weather.map((w) => {
+      customdata: shown.map(([w]) => {
         const s = w.metrics[key].spread;
         return s == null ? "–" : s.toFixed(d) + unit;
       }),
@@ -1184,16 +1562,16 @@ function renderStages(weather) {
     const k = Number(d.dataset.stage);
     if (d.open) openCards.add(k); else openCards.delete(k);
   });
+  const browserOffset = -new Date().getTimezoneOffset() * 60;
   const html = S.stages.map((st, k) => {
     const w = weather[k], m = w.metrics;
     const v = w.ok.length ? verdict(w) : null;
-    const endSample = st.samples[st.samples.length - 1];
-    const offset = w.ok.length ? w.per[w.ok[0].id].offset : null;
-    const sun = offset != null ? sunTimes(endSample.lat, endSample.lon, st.date, offset) : null;
+    const sun = sunTimes(st.endPt.lat, st.endPt.lon, st.date, w.offset ?? browserOffset);
 
     const warnings = [];
     if (sun && st.arr > sun.set) warnings.push(`🌇 Ankunft ${fmtMinutes(st.arr)} nach Sonnenuntergang (${fmtMinutes(sun.set)}) – Licht einpacken.`);
     if (sun && st.dep < sun.rise) warnings.push(`🌅 Abfahrt vor Sonnenaufgang (${fmtMinutes(sun.rise)}).`);
+    if (st.gapKm > 0.5) warnings.push(`┄ ${fmt(st.gapKm, 0)} km dieser Etappe fehlen im GPX (Luftlinie eingerechnet, z. B. Fähre).`);
     if ((m.gust.med ?? 0) >= 50) warnings.push(`💨 Starke Böen bis ${fmt(m.gust.med, 0)} km/h.`);
     if ((m.head.med ?? 0) >= 15) warnings.push(`🌬️ Kräftiger Gegenwind (Ø ${fmt(m.head.med, 0)} km/h) – mehr Zeit einplanen.`);
     if ((m.tmin.med ?? 99) <= 3) warnings.push(`🥶 Kalt: bis ${fmt(m.tmin.med, 0)} °C während der Fahrt.`);
@@ -1202,7 +1580,7 @@ function renderStages(weather) {
     if (codes.some((c) => c >= 95)) warnings.push("⛈️ Mindestens ein Modell erwartet Gewitter.");
     if (w.overall === 2) warnings.push("⚠ Die Modelle widersprechen sich deutlich – Vorhersage kurz vorher nochmal prüfen.");
 
-    let daySummary, nightSummary;
+    let daySummary, nightSummary = "";
     if (w.ok.length) {
       const [icon, text] = wxInfo(Math.round(median(codes)));
       daySummary = `<span class="wx">${icon}</span> <strong>${text} · ${fmt(m.tmin.med, 0)}–${fmt(m.tmax.med, 0)} °C</strong>
@@ -1214,8 +1592,11 @@ function renderStages(weather) {
         Regen ${fmt(median(w.ok.map((mm) => w.per[mm.id].nightRain)), 1, " mm")}`;
     } else {
       daySummary = cellStatus(w);
-      nightSummary = "";
     }
+    const headTile = m.head.med == null
+      ? ["Gegen-/Rückenwind", "–", "ohne Wetterdaten"]
+      : [m.head.med < 0 ? "Rückenwind Ø" : "Gegenwind Ø", fmt(Math.abs(m.head.med), 0, " km/h"),
+         Math.abs(m.head.med) < 3 ? "kaum spürbar" : m.head.med < 0 ? "schiebt von hinten" : "bremst von vorn"];
 
     return `<section class="card" id="stage-${k}">
       <div class="stage-head">
@@ -1223,7 +1604,8 @@ function renderStages(weather) {
           <h3>Etappe ${k + 1}: ${stageTitle(st)}</h3>
           <p>${fmtDate(st.date, { weekday: "long", day: "2-digit", month: "long", year: "numeric" })} ·
              ${fmtMinutes(st.dep)} → ca. ${fmtMinutes(st.arr)} Uhr
-             ${sun ? ` · Sonne ${fmtMinutes(sun.rise)}–${fmtMinutes(sun.set)}` : ""}</p>
+             ${sun ? ` · Sonne ${fmtMinutes(sun.rise)}–${fmtMinutes(sun.set)}` : ""}
+             ${st.section ? `<br><span class="small muted">GPX-Abschnitt: ${esc(st.section)}</span>` : ""}</p>
         </div>
         <div style="display:flex;gap:14px;flex-wrap:wrap">
           ${v ? `<span class="badge ${v[0]}"><span class="dot"></span>${v[1]}</span>` : ""}
@@ -1236,18 +1618,18 @@ function renderStages(weather) {
         <div class="tile"><div class="k">Anstieg</div><div class="v num">↑ ${fmt(st.up, 0, " m")}</div><div class="s">Abstieg ↓ ${fmt(st.down, 0, " m")}</div></div>
         <div class="tile"><div class="k">Fahrzeit</div><div class="v num">${fmtDuration(st.hours)}</div><div class="s">bei ${fmt(S.speed, 1)} km/h</div></div>
         <div class="tile"><div class="k">Regen (Median)</div><div class="v num">${fmt(m.rain.med, 1, " mm")}</div><div class="s">${m.rain.vals.length > 1 ? `Spanne ${fmt(Math.min(...clean(m.rain.vals)), 1)}–${fmt(Math.max(...clean(m.rain.vals)), 1)} mm` : ""}</div></div>
-        <div class="tile"><div class="k">${(m.head.med ?? 0) < 0 ? "Rückenwind Ø" : "Gegenwind Ø"}</div><div class="v num">${m.head.med == null ? "–" : fmt(Math.abs(m.head.med), 0, " km/h")}</div><div class="s">${m.head.med == null ? "" : Math.abs(m.head.med) < 3 ? "kaum spürbar" : m.head.med < 0 ? "schiebt von hinten" : "bremst von vorn"}</div></div>
+        <div class="tile"><div class="k">${headTile[0]}</div><div class="v num">${headTile[1]}</div><div class="s">${headTile[2]}</div></div>
       </div>
       ${sparkline(st)}
       <div class="summary-box day-summary">${daySummary}</div>
       ${nightSummary ? `<div class="summary-box night-summary">${nightSummary}</div>` : ""}
       ${warnings.map((t) => `<div class="warn-line">${t}</div>`).join("")}
-      ${w.errors.length ? `<div class="warn-line muted small">Fehler: ${esc(w.errors.join(" · "))}</div>` : ""}
-      <details data-stage="${k}" ${openCards.has(k) ? "open" : ""}>
+      ${w.errors.length ? `<div class="warn-line muted small">${esc(w.errors.join(" · "))}</div>` : ""}
+      ${w.ok.length ? `<details data-stage="${k}" ${openCards.has(k) ? "open" : ""}>
         <summary>Modellvergleich und stündlicher Verlauf</summary>
         ${comparisonTable(w)}
         <div id="hourly-${k}"></div>
-      </details>
+      </details>` : ""}
     </section>`;
   }).join("");
   $("stages").innerHTML = html || `<div class="card muted">Du bist am Ziel – keine Etappen mehr übrig. 🎉</div>`;
@@ -1269,7 +1651,7 @@ function comparisonTable(w) {
     if (metric.isDir) return v == null ? "–" : `${arrow(v)} ${compass(v)}`;
     return fmt(v, metric.d, metric.unit);
   };
-  const stateText = { loading: "lädt …", error: "Fehler", horizon: "zu weit voraus", range: "zu weit voraus" };
+  const stateText = { loading: "lädt …", error: "Fehler", nodata: "keine Daten", range: "zu weit voraus", past: "vorbei" };
   const head = `<tr><th>Größe</th>${models.map((m) =>
     `<th class="r"><span class="badge"><span class="swatch" style="background:${css(m.color)}"></span>${m.name}</span></th>`).join("")}
     <th class="r">Median</th><th class="r">Spanne</th><th>Übereinstimmung</th></tr>`;
@@ -1301,7 +1683,6 @@ function renderHourly(k, w) {
       const hrs = w.per[m.id].hours;
       const base = {
         name: m.name, x: hrs.map(xOf), y: hrs.map((h) => h[key]),
-        customdata: hrs.map((h) => fmt(h.km, 0)),
         hovertemplate: `${m.name}: %{y:.${d}f}${unit}<extra></extra>`,
       };
       return kind === "bar"
@@ -1323,7 +1704,7 @@ function renderHourly(k, w) {
 
 /* ---------- Inputs ---------- */
 
-function recompute({ weatherDelay = 700 } = {}) {
+function recompute({ weatherDelay = 800 } = {}) {
   S.stages = buildStages();
   render();
   scheduleWeather(weatherDelay);
@@ -1381,7 +1762,7 @@ function initControls() {
   $("models").addEventListener("change", (e) => {
     if (e.target.checked) S.models.add(e.target.value); else S.models.delete(e.target.value);
     saveSettings();
-    recompute({ weatherDelay: 100 });
+    recompute({ weatherDelay: 300 });
   });
 
   $("perDay").addEventListener("input", (e) => setPerDay(Number(e.target.value)));
@@ -1392,19 +1773,20 @@ function initControls() {
   $("date").addEventListener("change", (e) => {
     S.date = e.target.value || todayStr();
     saveSettings();
-    recompute({ weatherDelay: 100 });
+    recompute({ weatherDelay: 300 });
   });
-  $("dep").addEventListener("change", (e) => { S.dep = e.target.value || "09:00"; saveSettings(); recompute({ weatherDelay: 100 }); });
+  $("dep").addEventListener("change", (e) => { S.dep = e.target.value || "09:00"; saveSettings(); recompute({ weatherDelay: 300 }); });
   $("speed").addEventListener("change", (e) => {
     S.speed = Math.max(3, Math.min(60, Number(e.target.value) || 16));
     saveSettings();
-    recompute({ weatherDelay: 100 });
+    recompute({ weatherDelay: 300 });
   });
   $("refresh").addEventListener("click", () => loadWeather(true));
   $("clear").addEventListener("click", () => {
     try { localStorage.removeItem(STORE + "track"); } catch (e) { /* ignore */ }
     S.track = null; S.stages = [];
     $("drop-title").textContent = "GPX-Datei hier ablegen oder klicken";
+    $("drop-sub").textContent = "Die Datei bleibt in deinem Browser, sie wird nirgends hochgeladen.";
     $("startKm").disabled = $("startKmNum").disabled = true;
     $("totalOut").textContent = "–";
     setStatus("");
@@ -1431,31 +1813,46 @@ function initControls() {
   document.addEventListener("drop", (e) => { const f = e.dataTransfer.files[0]; if (f) loadFile(f); });
 
   // Re-colour charts when the OS theme flips.
-  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => render());
+  const mq = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
+  if (mq && mq.addEventListener) mq.addEventListener("change", () => render());
 }
 
 async function loadFile(file) {
   try {
-    setStatus("GPX wird gelesen …");
+    setStatus(`GPX wird gelesen … (${fmt(file.size / 1e6, 1)} MB)`);
+    await tick();
     const text = await file.text();
     const parsed = parseGPX(text);
-    const track = resample(parsed.raw);
+    await tick();
+    const track = resample(parsed.raw, parsed.segments);
     track.name = parsed.name || file.name.replace(/\.gpx$/i, "");
-    if (await fillElevation(track)) setStatus("Höhendaten ergänzt (GPX enthielt keine Höhen).");
-    else setStatus("");
-    setTrack(finishTrack(track), 0);
-    try {
-      store("track", {
-        name: track.name, step: track.step, total: track.total,
-        pts: track.pts.map((p) => [+p.lat.toFixed(5), +p.lon.toFixed(5), Math.round(p.ele * 10) / 10]),
-      });
-    } catch (e) { /* too big to remember – fine */ }
+    // Show the route right away; elevation (if missing) and weather follow.
+    const needsEle = track.pts.filter((p) => p.ele != null).length / track.pts.length < 0.8;
+    setTrack(finishTrack(track), 0, !needsEle);
+    if (needsEle) {
+      await fillElevation(track);
+      finishTrack(track);
+      recompute({ weatherDelay: 0 });
+    }
+    setStatus(`${numFmt(parsed.raw.length)} Punkte geladen · ${fmt(track.total / 1000, 1, " km")}. Wetterdaten werden geladen …`);
+    rememberTrack(track);
   } catch (e) {
+    console.error(e);
     setStatus("Fehler: " + e.message);
   }
 }
 
-function setTrack(track, startKm) {
+function rememberTrack(track) {
+  const ok = store("track", {
+    name: track.name, step: track.step, total: track.total, segments: track.segments, info: track.info,
+    pts: track.pts.map((p) => p.gap
+      ? [+p.lat.toFixed(5), +p.lon.toFixed(5), Math.round(p.ele * 10) / 10, 1]
+      : [+p.lat.toFixed(5), +p.lon.toFixed(5), Math.round(p.ele * 10) / 10]),
+  });
+  if (!ok) setStatus("Hinweis: Track ist zu groß, um ihn im Browser zu speichern – beim nächsten Mal bitte neu laden.");
+}
+
+function setTrack(track, startKm, fetchWeather = true) {
   S.track = track;
   fittedFor = null;
   openCards.clear();
@@ -1466,18 +1863,29 @@ function setTrack(track, startKm) {
   $("startKm").disabled = $("startKmNum").disabled = false;
   $("totalOut").textContent = fmt(track.total / 1000, 1);
   const savedPos = restore("pos." + trackId(track));
+  S.startKm = -1;   // force the first recompute
   setStartKm(startKm || savedPos || 0, true);
-  loadWeather();
+  if (!fetchWeather) clearTimeout(fetchTimer);
+  // Start / end names for the preview.
+  for (const p of [track.pts[0], track.pts[track.pts.length - 1]]) {
+    const k = placeKey(p);
+    const saved = (restore("places") || {})[k];
+    if (saved) places.set(k, saved);
+  }
 }
 
 function restoreTrack() {
   const t = restore("track");
   if (!t || !Array.isArray(t.pts)) return;
-  const track = {
-    name: t.name, step: t.step, total: t.total,
-    pts: t.pts.map(([lat, lon, ele], i) => ({ lat, lon, ele, d: Math.min(i * t.step, t.total) })),
-  };
-  setTrack(finishTrack(track), 0);
+  try {
+    const track = {
+      name: t.name, step: t.step, total: t.total, segments: t.segments || [], info: t.info || {},
+      pts: t.pts.map(([lat, lon, ele, gap], i) => ({ lat, lon, ele, gap: !!gap, d: Math.min(i * t.step, t.total) })),
+    };
+    setTrack(finishTrack(track), 0);
+  } catch (e) {
+    console.error(e);
+  }
 }
 
 initControls();
