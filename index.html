@@ -86,6 +86,8 @@
   .btn-row.quick > :first-child { flex: 3 1 auto; }
   .btn-row.quick > :last-child { flex: 1 1 auto; }
   details.more { margin-top: 12px; border-top: 1px solid var(--grid); }
+  .btn-row.icons > * { flex: 1 1 0; flex-direction: column; gap: 2px; font-size: 1.35rem; padding: 6px 4px; min-height: 58px; }
+  .btn-row.icons span { font-size: 0.72rem; color: var(--ink-2); line-height: 1.1; }
   details.more > summary { margin-top: 10px; }
   select, .ctl input[type=number], .ctl input[type=date], .ctl input[type=time] {
     width: 100%; min-height: 44px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--axis);
@@ -170,6 +172,11 @@
   details.section > :last-child { margin-bottom: 16px; }
   details.section .card { box-shadow: none; }
   .map-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .opts { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--axis); border-radius: 999px;
+          padding: 4px 10px; font-size: 0.85rem; cursor: pointer; min-height: 34px; font-weight: 400; }
+  .chip:has(input:checked) { background: var(--accent); color: #fff; border-color: transparent; }
+  .chip input { position: absolute; opacity: 0; pointer-events: none; }
   .seg { display: inline-flex; border: 1px solid var(--axis); border-radius: 10px; overflow: hidden; }
   .seg button, .seg label { border: none; border-radius: 0; min-height: 36px; padding: 6px 12px; font-size: 0.9rem; margin: 0;
                             display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 400; }
@@ -238,7 +245,7 @@
 <div class="card">
   <div class="tour-row">
     <select id="tourSelect" aria-label="Saved tours"></select>
-    <label class="button" for="file" title="Load a GPX file as a new tour">＋ GPX</label>
+    <label class="button" for="file" title="Load a GPX file as a new tour" aria-label="Load GPX">📂</label>
     <button type="button" id="planOpen" title="Plan a new route with BRouter" aria-label="Plan a route">🧭</button>
     <button type="button" id="deleteTour" title="Remove this tour from this device" aria-label="Remove this tour">🗑</button>
   </div>
@@ -250,13 +257,13 @@
   </label>
 
   <div class="btn-row quick">
-    <button type="button" class="primary" id="locate">📍 Update position</button>
-    <button type="button" id="refresh" title="Refresh weather" aria-label="Refresh weather">↻ Weather</button>
+    <button type="button" class="primary" id="locate" title="Find your position on the route (GPS)">📍 Where am I?</button>
+    <button type="button" id="refresh" title="Refresh weather" aria-label="Refresh weather">🔄</button>
   </div>
   <div id="status" class="small muted" role="status"></div>
 
   <details class="settings" id="settings">
-    <summary>Settings <span class="muted small" id="settingsSummary"></span></summary>
+    <summary>⚙️ Settings <span class="muted small" id="settingsSummary"></span></summary>
     <div class="controls">
       <div class="ctl">
         <label>Plan each day by</label>
@@ -335,6 +342,12 @@
     <select id="planProfile" aria-label="BRouter profile"></select>
     <button type="button" id="planHere" title="Start at my location">📍</button>
   </div>
+  <div class="opts" id="planOpts">
+    <label class="chip" title="Avoid main roads without cycle lanes"><input type="checkbox" data-opt="avoid_unsafe"> 🚗 Avoid main roads</label>
+    <label class="chip" title="Follow signposted cycle routes as much as possible"><input type="checkbox" data-opt="stick_to_cycleroutes"> 🚲 Cycle routes only</label>
+    <label class="chip" title="No ferries"><input type="checkbox" data-opt="no_ferries"> ⛴️ No ferries</label>
+    <label class="chip" title="Prefer quiet, low-traffic roads"><input type="checkbox" data-opt="consider_traffic"> 🤫 Quiet roads</label>
+  </div>
   <div id="planMap"></div>
   <div id="planInfo" class="small" style="margin-top:8px"></div>
   <div class="btn-row">
@@ -344,11 +357,12 @@
   </div>
   <div class="btn-row">
     <button type="button" class="primary" id="planUse">✓ Use as tour</button>
-    <button type="button" id="planGpx">⬇ GPX</button>
-    <a class="button" id="planWeb" target="_blank" rel="noopener">Open in BRouter-Web ↗</a>
+    <button type="button" id="planGpx">📲 GPX</button>
+    <a class="button" id="planWeb" target="_blank" rel="noopener">🌐 BRouter-Web ↗</a>
   </div>
   <div class="small muted" style="margin-top:8px">Routing by <a href="https://brouter.de/brouter-web/" target="_blank" rel="noopener">BRouter</a>
-    (OpenStreetMap data). Riding times are worked out by GPX Weather from your own pace, not by BRouter.</div>
+    (OpenStreetMap data). Riding times come from GPX Weather's own model, calibrated on your rides – BRouter-Web's
+    time estimate only knows the weight and power you set in its Profile panel.</div>
 </div>
 
 <div id="content" class="hidden">
@@ -2126,10 +2140,10 @@ function renderProgress() {
     <div class="progress big" role="progressbar" aria-valuenow="${pct.toFixed(0)}" aria-valuemin="0" aria-valuemax="100">
       <div class="progress-bar" style="width:${pct.toFixed(2)}%"></div>${todayBar}</div>
     <div class="prog-stats">
-      ${stat("Ridden", `${numFmt(Math.round(done))} of ${numFmt(Math.round(total))} km`)}
-      ${stat("To go", `${numFmt(Math.round(total - done))} km <span class="small muted">↑ ${numFmt(Math.round(upLeft))} m</span>`)}
-      ${stat("Days", `${days ? `${days} ridden · ` : ""}${st.length} to go`)}
-      ${stat("Arrival", last ? fmtDate(last.date, { weekday: "short", day: "numeric", month: "short" }) : "🎉 arrived")}
+      ${stat("🚴 Ridden", `${numFmt(Math.round(done))} of ${numFmt(Math.round(total))} km`)}
+      ${stat("🏁 To go", `${numFmt(Math.round(total - done))} km <span class="small muted">↑ ${numFmt(Math.round(upLeft))} m</span>`)}
+      ${stat("📅 Days", `${days ? `${days} ridden · ` : ""}${st.length} to go`)}
+      ${stat("🎯 Arrival", last ? fmtDate(last.date, { weekday: "short", day: "numeric", month: "short" }) : "🎉 arrived")}
     </div>`;
 }
 
@@ -2693,12 +2707,12 @@ function todayCard(st, k, w) {
   const { day: daySummary, night: nightSummary } = stageSummaries(st, w);
   const label = st.dayOffset === 0 ? "Today" : st.dayOffset === 1 ? "Tomorrow" : fmtDate(st.date);
   const tile = (k2, v2, s2) => `<div class="tile"><div class="k">${k2}</div><div class="v num">${v2}</div><div class="s">${s2}</div></div>`;
-  const windTile = m.head.med == null ? tile("Wind", "–", "no forecast yet")
-    : tile("Wind", `${fmt(m.speed.med, 0)} km/h ${compass(m.dir.med)}`, Math.abs(m.head.med) < 3 ? "hardly head- or tailwind"
+  const windTile = m.head.med == null ? tile("💨 Wind", "–", "no forecast yet")
+    : tile("💨 Wind", `${fmt(m.speed.med, 0)} km/h ${compass(m.dir.med)}`, Math.abs(m.head.med) < 3 ? "hardly head- or tailwind"
       : m.head.med > 0 ? `${fmt(m.head.med, 0)} km/h headwind` : `${fmt(-m.head.med, 0)} km/h tailwind`);
   const weatherTile = w.ok.length
-    ? tile("Weather", `${icon} ${fmt(m.tmin.med, 0)}–${fmt(m.tmax.med, 0)}°`, `${text} · rain ${fmt(m.rain.med, 1)} mm${m.prob.med != null ? `, ${fmt(m.prob.med, 0)} %` : ""}`)
-    : tile("Weather", "–", pdfSafe(cellStatus(w)));
+    ? tile(`${icon} Weather`, `${fmt(m.tmin.med, 0)}–${fmt(m.tmax.med, 0)}°`, `☔ ${fmt(m.rain.med, 1)} mm${m.prob.med != null ? ` · ${fmt(m.prob.med, 0)} %` : ""} · ${text}`)
+    : tile("🌦️ Weather", "–", pdfSafe(cellStatus(w)));
   return `<section class="card next-card">
     <div class="stage-head">
       <div>
@@ -2711,8 +2725,8 @@ function todayCard(st, k, w) {
       </div>
     </div>
     <div class="tiles" style="margin-top:12px">
-      ${tile("Distance", fmt(st.km, 1, " km"), `↑ ${fmt(st.up, 0)} m · ↓ ${fmt(st.down, 0)} m`)}
-      ${tile("On the road", fmtDuration(st.hours), `${fmtDuration(st.moving)} riding + breaks`)}
+      ${tile("📏 Distance", fmt(st.km, 1, " km"), `↑ ${fmt(st.up, 0)} m · ↓ ${fmt(st.down, 0)} m`)}
+      ${tile("⏱️ On the road", fmtDuration(st.hours), `🚴 ${fmtDuration(st.moving)} + ☕ ${fmtDuration(st.hours - st.moving)}`)}
       ${weatherTile}
       ${windTile}
     </div>
@@ -2720,14 +2734,17 @@ function todayCard(st, k, w) {
         <div class="progress-bar" style="width:${Math.min(100, (100 * st.done) / (st.km || 1)).toFixed(1)}%"></div></div>
       <div class="small">Ridden today: <b>${fmt(st.done, 1)} km</b> · ${fmt(Math.max(0, st.km - st.done), 1)} km to go</div>` : ""}
     ${warnings.map((t) => `<div class="warn-line">${t}</div>`).join("")}
-    ${st.dayOffset === 0 ? `<div class="btn-row">
-      <button type="button" data-end-day>🏁 End today here</button>
-      <label class="button" for="rideFile">📤 Upload ride</label>
-    </div>` : ""}
+    <div class="btn-row icons">
+      <button type="button" data-gpx="${k}" title="Send this stage's GPX to your navigation app (e.g. Bergfex Touren)">📲<span>To nav app</span></button>
+      <button type="button" data-camp-open="${k}" title="Campsites near the end of this stage">⛺<span>Campsites</span></button>
+      ${st.dayOffset === 0 ? `<button type="button" data-end-day title="Save your current position as the end of today">🏁<span>End day</span></button>
+      <label class="button" for="rideFile" title="Upload the GPX you recorded today">📤<span>Upload ride</span></label>` : ""}
+    </div>
+    ${campSection(st, k)}
     ${st.dayOffset === 1 && todayClosed() ? `<div class="small muted" style="margin-top:10px">Today ended at km ${fmt(S.startKm, 1)}.
       <button type="button" data-reopen style="min-height:32px;padding:4px 10px">Undo</button></div>` : ""}
     <details class="more">
-      <summary>More about this stage</summary>
+      <summary>ℹ️ More about this stage</summary>
       <div class="tiles" style="margin-top:10px">${surfaceTile(st)}
         ${tile("Elevation", `${fmt(st.lo, 0)}–${fmt(st.hi, 0)} m`, `${fmt(st.startEle, 0)} m → ${fmt(st.endEle, 0)} m`)}</div>
       ${sparkline(st)}
@@ -2735,10 +2752,8 @@ function todayCard(st, k, w) {
       <div class="summary-box day-summary">${daySummary}</div>
       ${nightSummary ? `<div class="summary-box night-summary">${nightSummary}</div>` : ""}
       ${st.section ? `<div class="small muted" style="margin-top:8px">GPX section: ${esc(st.section)}</div>` : ""}
-      ${campSection(st, k)}
       <div class="btn-row">
-        <button type="button" data-goto="${k}">Model comparison & hourly ↓</button>
-        <button type="button" data-gpx="${k}">⬇ GPX of this stage</button>
+        <button type="button" data-goto="${k}">📊 Models & hourly</button>
       </div>
     </details>
   </section>`;
@@ -2949,7 +2964,8 @@ const BROUTER_PROFILES = [
   ["shortest", "Shortest"],
 ];
 
-const plan = { map: null, layer: null, points: [], legs: [], busy: false, error: "", profile: restore("brouterProfile") || "trekking" };
+const plan = { map: null, layer: null, points: [], legs: [], busy: false, error: "", profile: restore("brouterProfile") || "trekking",
+  opts: restore("brouterOpts") || {} };
 const legCache = new Map();
 
 function openPlanner(show = true) {
@@ -2977,14 +2993,24 @@ function openPlanner(show = true) {
   renderPlan();
 }
 
-const legKey = (p, q) => `${plan.profile}|${p.lat.toFixed(5)},${p.lng.toFixed(5)}|${q.lat.toFixed(5)},${q.lng.toFixed(5)}`;
+// Route options as BRouter profile parameters (variables of the trekking profile).
+function planOptionParams() {
+  if (plan.profile !== "trekking") return "";
+  const o = plan.opts;
+  return (o.avoid_unsafe ? "&profile:avoid_unsafe=true" : "") +
+    (o.stick_to_cycleroutes ? "&profile:stick_to_cycleroutes=true" : "") +
+    (o.no_ferries ? "&profile:allow_ferries=false" : "") +
+    (o.consider_traffic ? "&profile:consider_traffic=true" : "");
+}
+
+const legKey = (p, q) => `${plan.profile}${planOptionParams()}|${p.lat.toFixed(5)},${p.lng.toFixed(5)}|${q.lat.toFixed(5)},${q.lng.toFixed(5)}`;
 
 // One leg between two points: coordinates [lon, lat, ele] and the road tags BRouter used (for the surface).
 async function routeLeg(p, q) {
   const key = legKey(p, q);
   if (legCache.has(key)) return legCache.get(key);
   const url = `${BROUTER_API}?lonlats=${p.lng.toFixed(6)},${p.lat.toFixed(6)}|${q.lng.toFixed(6)},${q.lat.toFixed(6)}` +
-    `&profile=${encodeURIComponent(plan.profile)}&alternativeidx=0&format=geojson`;
+    `&profile=${encodeURIComponent(plan.profile)}&alternativeidx=0&format=geojson` + planOptionParams();
   const res = await fetch(url);
   const text = await res.text();
   if (!res.ok) throw new Error(text.trim().slice(0, 160) || `HTTP ${res.status}`);
@@ -3054,11 +3080,9 @@ function brouterWebLink() {
     : S.track ? [S.track.pts[idxAt(S.track, S.startKm * 1000)], S.track.pts[S.track.pts.length - 1]].map((p) => ({ lat: p.lat, lng: p.lon })) : [];
   const c = pts.length ? pts[0] : { lat: 48.5, lng: 7 };
   const lonlats = pts.map((p) => `${p.lng.toFixed(5)},${p.lat.toFixed(5)}`).join(";");
-  // Your riding parameters for BRouter's own travel-time estimate (profiles that support them use these names).
-  const mp = modelParams();
-  const extra = `&profile:totalMass=${Math.round(mp.mass)}&profile:bikerPower=${Math.round(mp.P)}&profile:maxSpeed=45`;
+  // BRouter-Web takes waypoints and profile from the link (speed/weight settings only in its Profile panel).
   return `${BROUTER_WEB}#map=10/${c.lat.toFixed(4)}/${c.lng.toFixed(4)}/standard` +
-    (lonlats ? `&lonlats=${lonlats}` : "") + `&profile=${encodeURIComponent(plan.profile)}${extra}`;
+    (lonlats ? `&lonlats=${lonlats}` : "") + `&profile=${encodeURIComponent(plan.profile)}`;
 }
 
 function planGpx(name) {
@@ -3116,6 +3140,7 @@ async function downloadPlanGpx() {
 function renderPlan() {
   if ($("planner").classList.contains("hidden")) return;
   $("planProfile").value = plan.profile;
+  $("planOpts").classList.toggle("hidden", plan.profile !== "trekking");
   const km = sum(plan.legs.map((l) => l.km));
   const up = sum(plan.legs.map((l) => l.ascend || 0));
   const days = km ? Math.max(1, Math.round(km / planPerDay())) : 0;
@@ -3149,6 +3174,10 @@ function initPlanner() {
   $("planOpen").addEventListener("click", () => openPlanner($("planner").classList.contains("hidden")));
   $("planClose").addEventListener("click", () => openPlanner(false));
   $("planProfile").addEventListener("change", (e) => { plan.profile = e.target.value; store("brouterProfile", plan.profile); updatePlan(); });
+  document.querySelectorAll("#planOpts input").forEach((i) => {
+    i.checked = !!plan.opts[i.dataset.opt];
+    i.addEventListener("change", () => { plan.opts[i.dataset.opt] = i.checked; store("brouterOpts", plan.opts); updatePlan(); });
+  });
   $("planUndo").addEventListener("click", () => { plan.points.pop(); updatePlan(); });
   $("planClear").addEventListener("click", () => { plan.points = []; updatePlan(); });
   $("planReverse").addEventListener("click", () => { plan.points.reverse(); updatePlan(); });
@@ -3719,6 +3748,11 @@ function initControls() {
     if (e.target.closest("[data-reopen]")) reopenToday();
     const doneGpx = e.target.closest("[data-done-gpx]");
     if (doneGpx) downloadDone(Number(doneGpx.dataset.doneGpx));
+    const campBtn = e.target.closest("[data-camp-open]");
+    if (campBtn) {
+      const d = campBtn.closest("section").querySelector("details.camp");
+      if (d) { d.open = !d.open; if (d.open) d.scrollIntoView({ behavior: "smooth", block: "nearest" }); }
+    }
     const search = e.target.closest("[data-camp-search]");
     if (search) searchCamps(Number(search.dataset.campSearch));
     const show = e.target.closest("[data-camp-show]");

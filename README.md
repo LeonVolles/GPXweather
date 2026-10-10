@@ -59,10 +59,13 @@ screen** (or **Install app**).
 **Plan it right in the app:** tap **🧭** to open the route planner. Tap the map
 for start, via points and destination – the route is calculated by
 [BRouter](https://brouter.de/brouter-web/) on OpenStreetMap data. Choose a
-profile (trekking bike, fast bike, safety first, shortest), drag points to
-adjust, then tap **✓ Use as tour**. You can also save the route as GPX, or tap
-**Open in BRouter-Web** to fine-tune it there with all of BRouter's options –
-export the GPX there and load it here. Routes planned with BRouter bring their
+profile (trekking bike, fast bike, safety first, shortest) and – for trekking –
+options like 🚗 avoid main roads, 🚲 cycle routes only, ⛴️ no ferries or 🤫 quiet
+roads. Drag points to adjust, then tap **✓ Use as tour**. **📲 GPX** saves the
+route (e.g. for Bergfex Touren), **🌐 BRouter-Web** opens the same points and
+profile in BRouter's full planner – export the GPX there and load it with 📂.
+(BRouter-Web can't take your speed or weight from a link; GPX Weather's own
+riding-time model is used for all times anyway.) Routes planned with BRouter bring their
 road surfaces along, so the riding-time model knows them right away.
 
 **Or load a GPX file:** get the GPX of your route, for example from Komoot,
@@ -161,8 +164,11 @@ The start page only shows what you need for a quick check:
 
 - **Tour progress** – how much of the whole route you have ridden, what is
   left, the number of days to go and the expected arrival.
-- **Today's stage** (green box) – distance, time on the road, weather and wind,
-  your progress today and any warnings. **More about this stage** opens the
+- **Today's stage** (green box) – 📏 distance, ⏱️ time on the road (🚴 riding +
+  ☕ breaks), weather and 💨 wind, your progress today and any warnings. Below
+  are four buttons: **📲 To nav app** (opens the share sheet – pick Bergfex
+  Touren or your navigation app to load today's GPX), **⛺ Campsites** near
+  tonight's stop, **🏁 End day** and **📤 Upload ride**. **More about this stage** opens the
   details: surface, elevation, time estimate, weather and night, campsites and
   the GPX.
 - **The map**, zoomed to today's route; switch to **Whole tour** for the
