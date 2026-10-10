@@ -1,131 +1,128 @@
 # GPX Weather
 
-A web app for multi-day bike tours. Load a GPX file, choose how far you ride per
-day, and get a weather report for every daily stage – from several forecast
-models side by side, so you can see whether they agree.
+**Plan the weather for your bike tour, day by day.**
 
-Everything runs in your browser. There is no server, no account and no API key.
+👉 **Open the app: https://leonvolles.github.io/GPXweather/**
+
+GPX Weather is a free web app for multi-day bike tours. You load the GPX file of
+your route, choose how many kilometres you want to ride per day, and the app
+splits the route into daily stages. For every stage you see what the weather
+will be like on the road – at the time you will actually be there – plus
+distance, climbing and how much head- or tailwind to expect.
+
+The forecast comes from several weather models at once (ECMWF, ICON, GFS,
+Météo-France). The app shows whether they agree, so you know how reliable the
+forecast is.
+
+No account, no sign-up, no ads. Your tours stay on your phone.
 
 ![App icon](icon-192.png)
 
-## Features
+## What you get for every stage
 
-- **Daily stages**: a slider sets the kilometres per day; the rest of the route
-  is split into stages from your start date and departure time.
-- **Your position**: tap "📍 Update my position" (GPS), tap the route on the map,
-  or use the km slider. Only the part ahead of you is planned. After you have
-  used GPS once, the position is updated automatically whenever the app opens
-  (can be switched off in the settings).
-- **Per stage**: distance, climb and descent, elevation profile, riding time,
-  sunrise/sunset, temperature (and how cold it feels), rain amount and
-  probability, wind speed and direction, gusts, **head- or tailwind relative to
-  your direction of travel**, sunshine, and the night low at the stage end.
-- **Weather where you will be**: the forecast is read hour by hour at the place
-  you are expected to be at that time, not at a single point.
-- **Model comparison**: ECMWF, ICON, GFS, Météo-France (and optionally UK Met
-  Office) from [Open-Meteo](https://open-meteo.com/). Each stage shows the
-  median, the spread between the models and a clear "models agree / disagree"
-  rating.
-- **GPX per stage**: every stage has a "⬇ GPX of this stage" button. The file
-  contains the original track points of that stage (full detail), start and end
-  waypoints and the stage data in its description. On the iPhone it opens the
-  share sheet, so you can save it to Files or open it directly in a navigation
-  app (Komoot, OsmAnd, Garmin, …).
-- **Bike map**: [CyclOSM](https://www.cyclosm.org/) as the base map (switchable
-  to the standard OpenStreetMap map).
-- **Saved tours**: every GPX you load is stored on your device. Several tours
-  can be kept and switched in the list at the top. When you open the app again,
-  everything is there immediately – the last position, settings and the last
-  known weather – and only the position and the weather are updated.
-- **Works on the phone and offline**: the layout is made for phones. Once
-  opened, the app also starts without a connection and shows the last saved
-  weather.
-- **Large files**: tracks with 100 000+ points load in a few seconds. Gaps
-  between GPX sections (e.g. a ferry) are shown dashed and counted as straight
-  lines.
-- **Gentle on the free APIs**: weather is fetched on a fixed 20 km grid along
-  the route, only as far ahead as each model forecasts, with up to 50 places per
-  request, and cached for 3 hours. Moving sliders or reopening the app does not
-  trigger new requests. If a service answers "limit reached", that model pauses
-  for 30 minutes.
+- 📏 Distance, climb and descent, an elevation profile and the riding time
+- 🌡️ Temperature while riding, how cold it feels, and the night low at the
+  destination (useful when camping)
+- 🌧️ Rain amount and rain probability while you ride
+- 🌬️ Wind speed and direction, gusts, and **head- or tailwind in your direction
+  of travel**
+- 🌅 Sunrise and sunset, with a warning if you would arrive after dark
+- ✅ Whether the weather models agree or disagree
+- ⬇️ The GPX of just that stage, to load into your navigation app
 
-## Use it on the iPhone
+You also get a map of the whole tour (bike map by CyclOSM), an elevation profile
+and an overview table of all stages.
 
-The app needs to be served over https once; the easiest way is GitHub Pages,
-which is free for this public repository.
-
-### 1. Publish the app (once)
-
-1. Make sure the app files (`index.html`, `sw.js`, `manifest.webmanifest` and
-   the `*.png` icons) are on the `main` branch.
-2. On GitHub open the repository → **Settings** → **Pages**.
-3. Under **Build and deployment** choose **Source: Deploy from a branch**,
-   **Branch: `main`**, folder **`/ (root)`**, and press **Save**.
-4. After a minute the app is live at
-   **https://leonvolles.github.io/GPXweather/**
-
-### 2. Install it on the iPhone
+## Install it on your iPhone
 
 1. Open **https://leonvolles.github.io/GPXweather/** in **Safari**.
-2. Tap the **Share** button (square with arrow) → **Add to Home Screen** → **Add**.
-3. From now on, start "GPX Weather" from the home screen. It opens full screen
-   like a normal app and also starts without a connection.
+2. Tap the **Share** button (the square with the arrow).
+3. Choose **Add to Home Screen**, then **Add**.
 
-### 3. Load your tour
+"GPX Weather" now sits on your home screen like a normal app. It opens full
+screen and also starts without a connection, showing the last weather it
+loaded.
 
-1. Save the GPX file in the **Files** app first (e.g. from Komoot, Strava,
-   Ride with GPS or a mail attachment: *Share → Save to Files*).
-2. In GPX Weather tap **＋ Load GPX** and pick the file. The route, map and
-   stages appear immediately; the weather follows a few seconds later.
-3. Tap **📍 Update my position** and allow location access ("Allow While Using
-   App"). If you declined by mistake: iPhone **Settings → Privacy & Security →
-   Location Services → Safari Websites → While Using the App**.
+> Always use the app from the home screen. The home-screen app and a Safari tab
+> keep their tours separately.
 
-### Good to know on the iPhone
+**On Android:** open the link in Chrome, tap the **⋮** menu → **Add to Home
+screen** (or **Install app**).
 
-- The home-screen app and a Safari tab keep **separate** data. Load your GPX in
-  the app you will actually use (the home-screen app is recommended).
-- Safari may delete data of websites that were not used for several weeks.
-  Home-screen apps are not affected by this.
-- The map tiles need a connection; without one, the route is still shown.
+**On a computer:** just open the link in any browser.
 
-## Privacy and security
+## How to use it
 
-- The GPX file never leaves your device. Tours, settings and cached weather are
-  stored only in the browser (IndexedDB / localStorage) of that device.
-- The app sends only coordinates to these free public services, without any
-  key, account or personal data:
-  - [Open-Meteo](https://open-meteo.com/) – weather (points every 20 km along
-    the route) and, only if the GPX has no elevation, elevation data.
-  - [BigDataCloud](https://www.bigdatacloud.com/free-api/free-reverse-geocode-to-city-api)
-    – town names for stage start and end points.
-  - [CyclOSM](https://www.cyclosm.org/) / [OpenStreetMap](https://www.openstreetmap.org/)
-    – map tiles of the area you look at.
-- The libraries Leaflet and Plotly are loaded from unpkg.com and cdn.plot.ly.
-- The repository contains no API keys, passwords or other secrets.
+### 1. Load your tour
 
-## Run it locally
+Get the GPX file of your route, for example from Komoot, Strava, Ride with GPS,
+Garmin or a tour website. On the iPhone, save it to the **Files** app first
+(*Share → Save to Files*).
 
-Open `index.html` in a browser (double-click works). Offline support and
-"Add to Home Screen" only work when the files are served over http(s), e.g.
+In GPX Weather tap **＋ Load GPX** and pick the file. The route, map and stages
+appear right away; the weather follows a few seconds later. The tour is saved
+on your phone, so you only do this once.
 
-```sh
-python3 -m http.server 8000
-# then open http://localhost:8000
-```
+### 2. Set up your days
 
-## Files
+Open **Settings** and choose:
 
-| File | Purpose |
-|---|---|
-| `index.html` | The whole app (HTML, CSS and JavaScript in one file) |
-| `sw.js` | Service worker: keeps the app usable offline |
-| `manifest.webmanifest`, `*.png` | App name and icons for the home screen |
-| `eurovelo6_wetter.py` | The original Colab/Jupyter script for a fixed EuroVelo 6 itinerary (Nantes → Basel), writes a static HTML report |
+- **Distance per day** – how many km you want to ride
+- **First stage on** – the day you start (today by default)
+- **Daily departure** – when you usually set off
+- **Travel speed incl. breaks** – used to work out when you will be where
+- **Weather models** – which forecasts to compare
 
-## Data sources and licences
+### 3. Update your position on the way
+
+Tap **📍 Update my position** and allow location access. The app finds where
+you are on the route and plans only the part still ahead of you. After the
+first time, your position is updated automatically whenever you open the app
+(you can switch this off in Settings).
+
+You can also tap the route on the map, or move the position slider.
+
+If you declined location access by mistake: iPhone **Settings → Privacy &
+Security → Location Services → Safari Websites → While Using the App**.
+
+### 4. Read the forecast
+
+- The green box at the top shows **today's stage**.
+- **Stages at a glance** lists all days; tap a row to jump to its details.
+- In each stage, tap **Model comparison and hour-by-hour** to see every
+  weather model side by side and hourly charts along the route.
+- **⬇ GPX of this stage** saves that day's route, or opens it directly in your
+  navigation app.
+
+### Several tours
+
+Every GPX you load is kept. Switch between tours in the list at the top; 🗑
+removes the selected tour from your phone.
+
+## Good to know
+
+- **Forecast range:** weather forecasts reach about 16 days ahead (some models
+  less). Stages further away show the route and distances, and get weather as
+  the date comes closer.
+- **Why the models differ:** each weather service calculates the forecast
+  differently. If they disagree a lot, the weather is hard to predict – check
+  again closer to the day.
+- **Gaps in the GPX:** some route files leave out parts, such as a ferry
+  crossing. These are drawn as dashed lines and counted as a straight line.
+- **Offline:** without a connection the app still opens with your tours and
+  the last weather. The map background needs a connection; the route itself is
+  always shown.
+- **Your data:** your GPX files and tours are stored only on your device and
+  are not uploaded anywhere. To get the weather, the app sends only the
+  coordinates of points along your route to the weather service.
+- **Unused for weeks?** Safari may clear data of websites that were not opened
+  for a long time. Tours in the home-screen app are kept.
+- This is not an official weather warning service. Always check local warnings
+  before heading into the mountains or bad weather.
+
+## Credits
 
 Weather data by [Open-Meteo.com](https://open-meteo.com/) (CC BY 4.0), based on
-ECMWF, DWD, NOAA, Météo-France and UK Met Office models. Elevation: Copernicus
-DEM via Open-Meteo. Map: CyclOSM, map data © OpenStreetMap contributors (ODbL).
-Not an official weather warning service.
+models from ECMWF, DWD, NOAA, Météo-France and the UK Met Office. Elevation
+data: Copernicus DEM via Open-Meteo. Place names: BigDataCloud. Map:
+[CyclOSM](https://www.cyclosm.org/), map data © OpenStreetMap contributors.
