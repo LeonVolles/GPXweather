@@ -265,8 +265,10 @@ await test("the stage details still offer a GPX file", async () => {
 });
 await test("tapping a coming day opens it in place, without jumping down", async () => {
   await ev(() => { $("sec-stages").open = false; window.scrollTo(0, 0); });
-  const row = page.locator(".day-row .dr-main").nth(1);
-  await row.scrollIntoViewIfNeeded();
+  const k = await ev(() => Number(document.querySelectorAll(".day-row")[1].dataset.openStage));
+  const row = page.locator(`.day-row[data-open-stage="${k}"] .dr-main`);   // re-found after every re-render
+  await ev((k) => document.querySelector(`.day-row[data-open-stage="${k}"]`).scrollIntoView({ block: "center" }), k);
+  await page.waitForTimeout(300);
   const y0 = await ev(() => window.scrollY);
   await row.click();
   await page.waitForTimeout(500);
