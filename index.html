@@ -229,6 +229,11 @@
   .day-row button { flex: none; flex-direction: column; gap: 0; min-width: 56px; padding: 4px 8px; font-size: 1.2rem; }
   .day-row button span { font-size: 0.72rem; color: var(--ink-2); }
   .wx-ico { font-size: 1.15rem; }
+  .day-row.open { border-bottom: none; }
+  .dr-chev { color: var(--muted); font-size: 0.9rem; flex: none; }
+  .day-detail { padding: 0 0 12px; border-bottom: 1px solid var(--grid); }
+  .day-inline { background: var(--surface-2); border-radius: 12px; padding: 12px; }
+  .day-inline .tile, .day-inline .hcell { background: var(--surface); }
   .day-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
   .offline { margin-top: 10px; padding: 8px 12px; border-radius: 10px; background: var(--night-bg);
              border-left: 4px solid var(--night-line); font-weight: 600; font-size: 0.92rem; }
@@ -497,7 +502,7 @@
 /* ---------- Configuration ---------- */
 
 // Bump with every release (and VERSION in sw.js): the app compares it with the published page to offer updates.
-const APP_VERSION = "2026-10-11.6";
+const APP_VERSION = "2026-10-11.7";
 
 // days = forecast_days requested from Open-Meteo, roughly the model's real horizon.
 const MODELS = [
@@ -2818,7 +2823,8 @@ function stageCard(st, k, w, compact) {
 }
 
 // The landing card for today (or the next stage): only what you need at a glance; the rest is one tap away.
-function todayCard(st, k, w) {
+// `inline`: the same card opened inside the coming-days list (the row above already names the day).
+function todayCard(st, k, w, inline = false) {
   const m = w.metrics;
   const v = w.ok.length ? verdict(w) : null;
   const sun = stageSun(st, w);
@@ -2834,8 +2840,8 @@ function todayCard(st, k, w) {
   const weatherTile = w.ok.length
     ? tile(`${icon} Weather`, `${fmt(m.tmin.med, 0)}–${fmt(m.tmax.med, 0)}°`, `☔ ${fmt(m.rain.med, 1)} mm${m.prob.med != null ? ` · ${fmt(m.prob.med, 0)} %` : ""} · ${text}`)
     : tile("🌦️ Weather", "–", pdfSafe(cellStatus(w)));
-  return `<section class="card next-card">
-    <div class="stage-head">
+  return `<section class="${inline ? "day-inline" : "card next-card"}" data-card="${k}">
+    ${inline ? `<p class="small muted" style="margin:0 0 4px">${stageTitle(st)} · ${fmtMinutes(st.dep)} → about ${fmtMinutes(st.arr)}${sun ? ` · sunset ${fmtMinutes(sun.set)}` : ""}</p>` : `<div class="stage-head">
       <div>
         <h3>${label} · Stage ${st.no}: ${stageTitle(st)}</h3>
         <p>${fmtMinutes(st.dep)} → about ${fmtMinutes(st.arr)}${sun ? ` · sunset ${fmtMinutes(sun.set)}` : ""}</p>
@@ -2844,7 +2850,7 @@ function todayCard(st, k, w) {
         ${v ? `<span class="badge ${v[0]}"><span class="dot"></span>${v[1]}</span>` : ""}
         ${w.ok.length ? badge(w.overall, true) : ""}
       </div>
-    </div>
+    </div>`}
     <div class="tiles" style="margin-top:12px">
       ${tile("📏 Distance", fmt(st.km, 1, " km"), `↑ ${fmt(st.up, 0)} m · ↓ ${fmt(st.down, 0)} m`)}
       ${tile("⏱️ On the road", fmtDuration(st.hours), `🚴 ${fmtDuration(st.moving)} + ☕ ${fmtDuration(st.hours - st.moving)}`)}
@@ -2858,7 +2864,8 @@ function todayCard(st, k, w) {
     ${(() => { const a = w.ok.length ? rainAdvice(st) : null; return a ? `<div class="advice">${a}</div>` : ""; })()}
     ${warnings.map((t) => `<div class="warn-line">${t}</div>`).join("")}
     <div class="btn-row icons">
-      <button type="button" data-gpx-copy="${k}" title="Copy this stage's GPX text, then paste it into your navigation app (e.g. Bergfex Touren)">📋<span>Copy GPX</span></button>
+      <button type="button" data-gpx="${k}" title="Open the share menu with this stage's GPX file – pick Bergfex Touren or your navigation app">📲<span>Open in app</span></button>
+      <button type="button" data-gpx-copy="${k}" title="Copy this stage's GPX text">📋<span>Copy GPX</span></button>
       <button type="button" data-camp-open="${k}" title="Campsites near the end of this stage">⛺<span>Campsites</span></button>
       ${st.dayOffset === 0 ? `<button type="button" data-end-day title="Save your current position as the end of today">🏁<span>End day</span></button>
       <label class="button" for="rideFile" title="Upload the GPX you recorded today">📤<span>Upload ride</span></label>` : ""}
@@ -2866,7 +2873,7 @@ function todayCard(st, k, w) {
     ${campSection(st, k)}
     ${st.dayOffset === 1 && todayClosed() ? `<div class="small muted" style="margin-top:10px">Today ended at km ${fmt(S.startKm, 1)}.
       <button type="button" data-reopen style="min-height:32px;padding:4px 10px">Undo</button></div>` : ""}
-    <details class="more">
+    <details class="more" data-more="${k}">
       <summary>ℹ️ More about this stage</summary>
       <div class="tiles" style="margin-top:10px">${surfaceTile(st)}
         ${tile("Elevation", `${fmt(st.lo, 0)}–${fmt(st.hi, 0)} m`, `${fmt(st.startEle, 0)} m → ${fmt(st.endEle, 0)} m`)}</div>
@@ -2883,17 +2890,22 @@ function todayCard(st, k, w) {
   </section>`;
 }
 
-let nextMoreOpen = false;
+const moreOpen = new Set();     // stages whose "More about this stage" is open
+const comingOpen = new Set();   // coming days expanded in place
 function renderNext(weather) {
   const k = S.stages.findIndex((st) => st.dayOffset >= 0);
   if (k < 0) { $("next").innerHTML = ""; return; }
-  const prev = $("next").querySelector("details.more");
-  if (prev) nextMoreOpen = prev.open;
+  $("next").querySelectorAll("details[data-more]").forEach((d) => {
+    if (d.open) moreOpen.add(Number(d.dataset.more)); else moreOpen.delete(Number(d.dataset.more));
+  });
   $("next").innerHTML = todayCard(S.stages[k], k, weather[k]) + comingDaysCard(weather, k + 1);
-  const more = $("next").querySelector("details.more");
-  more.open = nextMoreOpen;
-  const btn = $("next").querySelector("[data-goto]");
-  if (btn) btn.addEventListener("click", () => openStage(k));
+  $("next").querySelectorAll("details[data-more]").forEach((d) => { d.open = moreOpen.has(Number(d.dataset.more)); });
+}
+
+// Tapping a coming day opens (or closes) its full card right there in the list.
+function toggleComing(k) {
+  if (comingOpen.has(k)) comingOpen.delete(k); else comingOpen.add(k);
+  render();
 }
 
 const COMING_DAYS = 7;
@@ -2911,23 +2923,25 @@ function comingDaysCard(weather, k0) {
     const codes = w.ok.map((mm) => w.per[mm.id].code);
     const [icon, text] = wxInfo(codes.length ? Math.round(median(codes)) : null);
     const head = m.head.med == null ? "" : Math.abs(m.head.med) < 3 ? " · 💨 calm-ish"
-      : m.head.med > 0 ? ` · 💨 ${fmt(m.head.med, 0)} km/h headwind` : ` · 💨 ${fmt(-m.head.med, 0)} km/h tailwind`;
+      : m.head.med > 0 ? ` · 💨 ${fmt(m.head.med, 0)} km/h head` : ` · 💨 ${fmt(-m.head.med, 0)} km/h tail`;
     const wxText = w.ok.length
       ? `<span class="wx-ico" title="${esc(text)}">${icon}</span> <b class="num">${fmt(m.tmin.med, 0)}–${fmt(m.tmax.med, 0)}°</b>` +
         ` · <span class="${(m.rain.med ?? 0) >= 1 ? "rainy" : ""}">☔ ${fmt(m.rain.med, 1)} mm</span>${head}`
       : cellStatus(w);
-    return `<li class="day-row" data-open-stage="${k}" tabindex="0" role="button" aria-label="${dayLabel(st)}, stage ${st.no}: details">
+    const open = comingOpen.has(k);
+    return `<li class="day-row${open ? " open" : ""}" data-open-stage="${k}" tabindex="0" role="button" aria-expanded="${open}" aria-label="${dayLabel(st)}, stage ${st.no}: ${open ? "hide" : "show"} details">
       <div class="dr-main">
         <div><b>${dayLabel(st)}</b> <span class="small muted">· Stage ${st.no} · ${fmt(st.km, 0)} km · ↑ ${fmt(st.up, 0)} m</span></div>
         <div class="small">${wxText}</div>
         <div class="small muted dr-route">${stageTitle(st)}</div>
       </div>
-      <button type="button" data-gpx-copy="${k}" title="Copy the GPX text of this stage" aria-label="Copy GPX of stage ${st.no}">📋<span class="small">GPX</span></button>
-    </li>`;
+      <span class="dr-chev" aria-hidden="true">${open ? "▴" : "▾"}</span>
+      <button type="button" data-gpx="${k}" title="Open the share menu with this stage's GPX file (e.g. for Bergfex Touren)" aria-label="Share GPX of stage ${st.no}">📲<span class="small">GPX</span></button>
+    </li>${open ? `<li class="day-detail">${todayCard(st, k, w, true)}</li>` : ""}`;
   }).join("");
   const more = S.stages.length - k0 - list.length;
   return `<section class="card" id="coming">
-    <div class="map-head"><b>📅 Coming days</b><span class="small muted">tap a day for details</span></div>
+    <div class="map-head"><b>📅 Coming days</b><span class="small muted">tap a day to open it</span></div>
     <ul class="day-list">${rows}</ul>
     <div class="btn-row"><button type="button" data-all-stages>All ${S.stages.length} stages${more > 0 ? ` (${more} more)` : ""} ↓</button></div>
   </section>`;
@@ -3684,7 +3698,7 @@ async function saveFile(file) {
   if (touch && navigator.canShare && navigator.share) {
     try {
       if (navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: file.name });
+        await navigator.share({ files: [file] });   // file only – with a title, "Copy" copied just the name
         return;
       }
     } catch (e) {
@@ -4313,7 +4327,9 @@ function initControls() {
       $("sec-stages").scrollIntoView({ behavior: "smooth", block: "start" });
     }
     const row = e.target.closest("[data-open-stage]");
-    if (row && !gpx) openStage(Number(row.dataset.openStage));
+    if (row && !gpx) toggleComing(Number(row.dataset.openStage));
+    const go = e.target.closest("[data-goto]");
+    if (go) openStage(Number(go.dataset.goto));
     const del = e.target.closest("[data-del-day]");
     if (del) removeDay(del.dataset.delDay);
     const doneGpx = e.target.closest("[data-done-gpx]");
@@ -4386,7 +4402,7 @@ function initControls() {
   // Days in the coming-days list open with Enter or Space too.
   document.addEventListener("keydown", (e) => {
     const row = e.target.closest && e.target.closest("[data-open-stage]");
-    if (row && e.target === row && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); openStage(Number(row.dataset.openStage)); }
+    if (row && e.target === row && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); toggleComing(Number(row.dataset.openStage)); }
   });
   // Save right away when the app goes to the background – a pending save may otherwise never run.
   const flushSave = () => { if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; saveTourSettings(); } };

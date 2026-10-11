@@ -226,19 +226,35 @@ await test("the chosen start day survives a reload", async () => {
   await page.selectOption("#date", { index: 0 });
   await page.waitForTimeout(1000);
 });
-await test("the GPX button in the coming days copies the GPX text itself", async () => {
-  await page.locator(".day-row button[data-gpx-copy]").first().click();
+await test("the GPX button in the coming days hands over the GPX file (share menu on phones)", async () => {
+  const [dl] = await Promise.all([page.waitForEvent("download"), page.locator(".day-row button[data-gpx]").first().click()]);
+  const gpx = fs.readFileSync(await dl.path(), "utf8");
+  assert.match(dl.suggestedFilename(), /stage-\d+-\d{4}-\d\d-\d\d\.gpx$/);
+  assert.ok((gpx.match(/<trkpt/g) || []).length > 100);
+  assert.equal(await page.locator(".day-detail").count(), 0, "the GPX button must not open the day");
+});
+await test("on a phone the share menu gets only the file, no title (so 'Copy' isn't just the name)", async () => {
+  const shared = await ev(async () => {
+    let got = null;
+    const m = window.matchMedia;
+    window.matchMedia = (q) => (q === "(pointer: coarse)" ? { matches: true } : m.call(window, q));
+    navigator.canShare = () => true;
+    navigator.share = async (data) => { got = { keys: Object.keys(data).sort(), name: data.files[0].name, type: data.files[0].type, size: data.files[0].size }; };
+    await downloadStage(1);
+    window.matchMedia = m; delete navigator.share; delete navigator.canShare;
+    return got;
+  });
+  assert.deepEqual(shared.keys, ["files"]);
+  assert.match(shared.name, /\.gpx$/);
+  assert.equal(shared.type, "application/gpx+xml");
+  assert.ok(shared.size > 10000);
+});
+await test("the copy button copies the GPX text itself", async () => {
+  await page.locator("#next .next-card [data-gpx-copy]").click();
   await page.waitForTimeout(200);
   const text = await ev(() => navigator.clipboard.readText());
   assert.match(text, /^<\?xml[\s\S]*<gpx[\s\S]*<trkpt lat=[\s\S]*<\/gpx>\s*$/);
-  assert.ok((text.match(/<trkpt/g) || []).length > 100);
   assert.match(await page.textContent("#status"), /GPX of stage \d+ copied/);
-});
-await test("today's card copies the GPX text too", async () => {
-  await page.locator("#next .next-card [data-gpx-copy]").click();
-  await page.waitForTimeout(200);
-  const [first, text] = await ev(async () => [S.stages[0].no, await navigator.clipboard.readText()]);
-  assert.match(text, new RegExp(`Stage ${first}`));
 });
 await test("the stage details still offer a GPX file", async () => {
   await ev(() => { $("sec-stages").open = true; });
@@ -247,8 +263,28 @@ await test("the stage details still offer a GPX file", async () => {
   assert.match(dl.suggestedFilename(), /stage-\d+-\d{4}-\d\d-\d\d\.gpx$/);
   assert.ok((gpx.match(/<trkpt/g) || []).length > 100);
 });
-await test("tapping a coming day opens its card with hourly charts", async () => {
-  await page.locator(".day-row .dr-main").first().click();
+await test("tapping a coming day opens it in place, without jumping down", async () => {
+  await ev(() => { $("sec-stages").open = false; window.scrollTo(0, 0); });
+  const row = page.locator(".day-row .dr-main").nth(1);
+  await row.scrollIntoViewIfNeeded();
+  const y0 = await ev(() => window.scrollY);
+  await row.click();
+  await page.waitForTimeout(500);
+  assert.equal(await page.locator(".day-detail .day-inline").count(), 1);
+  assert.ok(Math.abs((await ev(() => window.scrollY)) - y0) < 5, "page scrolled");
+  assert.equal(await ev(() => $("sec-stages").open), false);
+  const detail = await page.locator(".day-detail").innerText();
+  assert.match(detail, /Distance/); assert.match(detail, /Open in app/); assert.match(detail, /Copy GPX/);
+  // stays open while the app re-renders (e.g. new weather), closes on a second tap
+  await ev(() => render());
+  assert.equal(await page.locator(".day-detail").count(), 1);
+  await page.locator(".day-row.open .dr-main").click();
+  await page.waitForTimeout(200);
+  assert.equal(await page.locator(".day-detail").count(), 0);
+});
+await test("Models & hourly still opens the full stage with its charts", async () => {
+  await page.locator("#next .next-card details.more summary").click();
+  await page.locator("#next .next-card [data-goto]").click();
   await page.waitForTimeout(800);
   assert.equal(await ev(() => $("sec-stages").open), true);
   assert.ok(await page.locator("[id^=h-temp-] .main-svg").count() > 0);

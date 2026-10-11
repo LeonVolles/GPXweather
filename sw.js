@@ -1,6 +1,6 @@
 // Offline support: keeps the app and its two libraries available without a connection.
 // Weather, elevation, place-name, campsite and map-tile requests are never cached here.
-const VERSION = "gpxweather-2026-10-11.6";   // same as APP_VERSION in index.html
+const VERSION = "gpxweather-2026-10-11.7";   // same as APP_VERSION in index.html
 const APP = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 const LIBS = [
   "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css",

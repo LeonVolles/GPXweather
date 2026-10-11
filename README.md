@@ -178,8 +178,8 @@ The start page only shows what you need for a quick check:
   left, the number of days to go and the expected arrival.
 - **Today's stage** (green box) – 📏 distance, ⏱️ time on the road (🚴 riding +
   ☕ breaks), weather and 💨 wind, your progress today and any warnings. Below
-  are four buttons: **📋 Copy GPX** (copies the GPX text of today's stage –
-  paste it into Bergfex Touren or your navigation app), **⛺ Campsites** near
+  are four buttons: **📲 Open in app** (share menu with today's GPX file – pick
+  Bergfex Touren or your navigation app), **📋 Copy GPX** (the GPX text), **⛺ Campsites** near
   tonight's stop, **🏁 End day** and **📤 Upload ride**. **More about this stage** opens the
   details: surface, elevation, time estimate, weather and night, campsites and
   the GPX.
@@ -198,8 +198,8 @@ The start page only shows what you need for a quick check:
     detour you choose (0.5–5 km).
 
 - **📅 Coming days** – the next days at a glance: weather along the way
-  (temperature, rain, head- or tailwind) and a **📋 GPX** button for each day that copies its GPX text.
-  Tap a day for its full card.
+  (temperature, rain, head- or tailwind) and a **📲 GPX** button for each day (share menu with the GPX file). Tap a
+  day to open its full card right there in the list; tap again to close it.
 
 Everything else is folded away and opens with a tap: **Upcoming stages** (table
 and all day cards), **Completed**, **Weather models compared**, **Elevation
