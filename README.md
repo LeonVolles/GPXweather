@@ -83,7 +83,8 @@ Open **Settings** and choose:
 - **Plan each day by** distance (**km per day**) or by **hours on the road per
   day** – with hours, each stage ends where your time is up, so hilly, gravel
   or headwind days get shorter and easy days longer
-- **First stage on** – the day you start (today by default)
+- **Next stage** – **Today**, **Tomorrow**, **In 2 days** … (today by default);
+  pick a later day if you start or continue the tour after a break
 - **Daily departure** – when you usually set off
 - **Your speed on flat asphalt** (without wind and breaks), your **breaks** in
   % and your **weight** with bike and luggage – the starting point for the
@@ -105,6 +106,11 @@ followed by **today** and the stages still to come. Today's stage is planned
 from where you set off in the morning, so updating your position during the
 ride shows your progress ("40 km ridden · 40 km to go") instead of moving
 today's goal.
+
+A day only counts as ridden when you ended it, uploaded its ride or the GPS
+saw you riding. If you just move the slider – for example to catch up with a
+tour you started without the app – that part shows as **not logged** in the
+Completed list and doesn't change your pace.
 
 If you declined location access by mistake: iPhone **Settings → Privacy &
 Security → Location Services → Safari Websites → While Using the App**.
@@ -184,6 +190,10 @@ The start page only shows what you need for a quick check:
   - **🛒 Supplies** – 💧 drinking water, 🛒 supermarkets, 🥖 bakeries, 🔧 bike
     shops and repair stations, 🚻 toilets along today's route, within the
     detour you choose (0.5–5 km).
+
+- **📅 Coming days** – the next days at a glance: weather along the way
+  (temperature, rain, head- or tailwind) and a **📲 GPX** button for each day.
+  Tap a day for its full card.
 
 Everything else is folded away and opens with a tap: **Upcoming stages** (table
 and all day cards), **Completed**, **Weather models compared**, **Elevation

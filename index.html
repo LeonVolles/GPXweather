@@ -14,8 +14,8 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script defer src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <style>
   :root {
     color-scheme: light;
@@ -218,6 +218,14 @@
   .camp-links button { min-height: 32px; padding: 4px 10px; font-size: 0.9rem; }
   .leaflet-div-icon.camp-pin { background: none; border: none; font-size: 20px; line-height: 24px; text-align: center;
                                filter: drop-shadow(0 1px 1px rgba(0,0,0,.5)); }
+  .day-list { list-style: none; padding: 0; margin: 0; }
+  .day-row { display: flex; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--grid); cursor: pointer; }
+  .day-row:last-child { border-bottom: none; }
+  .day-row .dr-main { flex: 1 1 auto; min-width: 0; }
+  .day-row .dr-route { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .day-row button { flex: none; flex-direction: column; gap: 0; min-width: 56px; padding: 4px 8px; font-size: 1.2rem; }
+  .day-row button span { font-size: 0.72rem; color: var(--ink-2); }
+  .wx-ico { font-size: 1.15rem; }
   footer { margin: 30px 0 10px; font-size: 0.82rem; color: var(--muted); }
   .hidden { display: none !important; }
   .leaflet-div-icon.stage-pin { background: none; border: none; }
@@ -308,8 +316,9 @@
         <div class="muted small">You can also tap the route on the map.</div>
       </div>
       <div class="ctl">
-        <label for="date">First stage on</label>
-        <input type="date" id="date">
+        <label for="date">Next stage</label>
+        <select id="date"></select>
+        <div class="muted small">Pick a later day if you start the tour (or continue it) after a break.</div>
       </div>
       <div class="ctl">
         <label for="dep">Daily departure</label>
@@ -632,7 +641,10 @@ function unstore(key) {
   try { localStorage.removeItem(STORE + key); } catch (e) { /* ignore */ }
 }
 
-function setStatus(text) { $("status").textContent = text; }
+let statusAt = 0;
+function setStatus(text) { $("status").textContent = text; statusAt = Date.now(); }
+// Background info (weather age) never hides a message you just got, e.g. "Ride added".
+function softStatus(text) { if (Date.now() - statusAt > 5000) setStatus(text); }
 
 /* Tiny IndexedDB key/value store: saved tours and cached forecasts (localStorage is too small). */
 const idb = (() => {
@@ -1085,9 +1097,19 @@ function logPosition(prevKm, nextKm, gps = false) {
   if (S.date > d) return;      // the tour hasn't started yet: moving the position is planning, not riding
   const e = S.days[d];
   if (e && e.closed) return;   // the day was already ended; later position changes don't alter it
+  // Moving further than a day's ride in one go, or back behind where today started, is catching up with the
+  // tour (or a train), not riding: today starts again from the new position. What lies behind shows as "not logged".
+  const limit = gps ? Math.max(200, 2.5 * planPerDay()) : Math.max(60, 1.5 * planPerDay());
+  const jump = nextKm - prevKm > limit || (e && nextKm < e.start);
+  if (jump && !(e && e.rec)) { S.days[d] = { start: nextKm, end: nextKm }; return; }
   if (e) e.end = nextKm;
   else S.days[d] = { start: prevKm, end: nextKm };
-  if (gps) S.days[d].gps = true;
+  if (gps && nextKm - S.days[d].start > 0.5) S.days[d].gps = true;
+}
+
+// A day counts as ridden when you ended it, uploaded its ride or GPS saw you moving – not when you only moved the slider.
+function realDay(e) {
+  return !!(e && (e.closed || e.rec || e.gps));
 }
 
 function todayClosed() {
@@ -1108,7 +1130,7 @@ function completedDays() {
   const today = todayStr();
   const closed = todayClosed();
   const endKm = closed || S.date !== today ? S.startKm : todayStartKm();
-  const logged = Object.keys(S.days).filter((d) => d < today || (d === today && closed)).sort()
+  const logged = Object.keys(S.days).filter((d) => (d < today || (d === today && closed)) && realDay(S.days[d])).sort()
     .map((d) => ({ date: d, a: S.days[d].start * 1000, b: Math.min(S.days[d].end, Math.max(endKm, S.days[d].end)) * 1000 }))
     .filter((r) => r.b - r.a > 50 || S.days[r.date].closed);
   const out = [];
@@ -1130,10 +1152,7 @@ function completedDays() {
 /* Your pace from the completed days (recent ones count): km per day and travel speed incl. breaks.
    Only days you really rode count: ended days, uploaded rides or GPS positions – not just moving the slider. */
 function rideHistory() {
-  const days = completedDays().filter((d) => {
-    const e = d.no && S.days[d.date];
-    return e && d.km >= 5 && (e.closed || e.rec || e.gps);
-  }).slice(-7);
+  const days = completedDays().filter((d) => d.no && d.km >= 5).slice(-7);
   if (!days.length) return null;
   const timed = days.filter((d) => d.rec && d.rec.elapsedH > 0.3);
   const hours = sum(timed.map((d) => d.rec.elapsedH));
@@ -1788,7 +1807,7 @@ async function loadWeatherOnce(force) {
   loadPlaces();
   render();
   if (!work.length) {
-    setStatus([weatherStatusText(), ...messages].filter(Boolean).join(" · "));
+    softStatus([weatherStatusText(), ...messages].filter(Boolean).join(" · "));
     return;
   }
 
@@ -2129,6 +2148,7 @@ let mapView = restore("mapView") === "all" ? "all" : "today";
 
 function render() {
   renderTourSelect();
+  renderDateOptions();
   if (!S.track) { $("content").classList.add("hidden"); return; }
   $("content").classList.remove("hidden");
   $("settingsSummary").textContent =
@@ -2806,11 +2826,48 @@ function renderNext(weather) {
   if (k < 0) { $("next").innerHTML = ""; return; }
   const prev = $("next").querySelector("details.more");
   if (prev) nextMoreOpen = prev.open;
-  $("next").innerHTML = todayCard(S.stages[k], k, weather[k]);
+  $("next").innerHTML = todayCard(S.stages[k], k, weather[k]) + comingDaysCard(weather, k + 1);
   const more = $("next").querySelector("details.more");
   more.open = nextMoreOpen;
   const btn = $("next").querySelector("[data-goto]");
   if (btn) btn.addEventListener("click", () => openStage(k));
+}
+
+const COMING_DAYS = 7;
+
+function dayLabel(st) {
+  return st.dayOffset === 0 ? "Today" : st.dayOffset === 1 ? "Tomorrow" : fmtDate(st.date);
+}
+
+// The days after today's stage at a glance: weather along the way and the GPX for each day.
+function comingDaysCard(weather, k0) {
+  const list = S.stages.slice(k0, k0 + COMING_DAYS);
+  if (!list.length) return "";
+  const rows = list.map((st, i) => {
+    const k = k0 + i, w = weather[k], m = w.metrics;
+    const codes = w.ok.map((mm) => w.per[mm.id].code);
+    const [icon, text] = wxInfo(codes.length ? Math.round(median(codes)) : null);
+    const head = m.head.med == null ? "" : Math.abs(m.head.med) < 3 ? " · 💨 calm-ish"
+      : m.head.med > 0 ? ` · 💨 ${fmt(m.head.med, 0)} km/h headwind` : ` · 💨 ${fmt(-m.head.med, 0)} km/h tailwind`;
+    const wxText = w.ok.length
+      ? `<span class="wx-ico" title="${esc(text)}">${icon}</span> <b class="num">${fmt(m.tmin.med, 0)}–${fmt(m.tmax.med, 0)}°</b>` +
+        ` · <span class="${(m.rain.med ?? 0) >= 1 ? "rainy" : ""}">☔ ${fmt(m.rain.med, 1)} mm</span>${head}`
+      : cellStatus(w);
+    return `<li class="day-row" data-open-stage="${k}">
+      <div class="dr-main">
+        <div><b>${dayLabel(st)}</b> <span class="small muted">· Stage ${st.no} · ${fmt(st.km, 0)} km · ↑ ${fmt(st.up, 0)} m</span></div>
+        <div class="small">${wxText}</div>
+        <div class="small muted dr-route">${stageTitle(st)}</div>
+      </div>
+      <button type="button" data-gpx="${k}" title="GPX of this stage for your navigation app" aria-label="GPX of stage ${st.no}">📲<span class="small">GPX</span></button>
+    </li>`;
+  }).join("");
+  const more = S.stages.length - k0 - list.length;
+  return `<section class="card" id="coming">
+    <div class="map-head"><b>📅 Coming days</b><span class="small muted">tap a day for details</span></div>
+    <ul class="day-list">${rows}</ul>
+    <div class="btn-row"><button type="button" data-all-stages>All ${S.stages.length} stages${more > 0 ? ` (${more} more)` : ""} ↓</button></div>
+  </section>`;
 }
 
 // Collapsed list of the days already ridden (shown above the overview and above the stage cards).
@@ -3979,12 +4036,30 @@ function saveGlobalSettings() {
   store("settings", { models: [...S.models], autoGps: S.autoGps, useHistory: S.useHistory });
 }
 
+// "Today", "Tomorrow", "In 2 days" … – the plan always starts relative to the current day.
+function relDayLabel(date) {
+  const n = dayDiff(todayStr(), date);
+  const rel = n === 0 ? (todayClosed() ? "Today (ended – plan starts tomorrow)" : "Today")
+    : n === 1 ? "Tomorrow" : `In ${n} days`;
+  return `${rel} · ${fmtDate(date)}`;
+}
+
+let dateOptionsHtml = "";
+function renderDateOptions() {
+  const today = todayStr();
+  const dates = Array.from({ length: 15 }, (_, i) => addDays(today, i));
+  if (!dates.includes(S.date)) dates.push(S.date);
+  const html = dates.map((d) => `<option value="${d}" ${d === S.date ? "selected" : ""}>${relDayLabel(d)}</option>`).join("");
+  if (html === dateOptionsHtml) return;   // don't rebuild (and close) the list while it is open
+  dateOptionsHtml = html;
+  $("date").innerHTML = html;
+}
+
 function syncInputs() {
   $("perDay").value = Math.min(250, S.perDay);
   $("perDayNum").value = S.perDay;
   $("perDayOut").textContent = S.perDay;
-  $("date").value = S.date;
-  $("date").min = todayStr();
+  renderDateOptions();
   $("dep").value = S.dep;
   $("flatSpeed").value = S.flatSpeed;
   for (const r of document.querySelectorAll('input[name="planMode"]')) r.checked = r.value === S.planMode;
@@ -4067,7 +4142,6 @@ function initControls() {
   $("startKmNum").addEventListener("change", (e) => setStartKm(Number(e.target.value) || 0));
   $("resetPos").addEventListener("click", () => setStartKm(0));
   $("date").addEventListener("change", (e) => {
-    // Some date pickers (iOS) send an empty value while scrolling or on "Reset" – keep the date you had.
     if (!e.target.value) { e.target.value = S.date; return; }
     S.date = e.target.value;
     recompute({ weatherDelay: 300 });
@@ -4110,6 +4184,12 @@ function initControls() {
     if (e.target.closest("[data-end-day]")) endToday();
     if (e.target.closest("[data-rest-day]")) restDay();
     if (e.target.closest("[data-reopen]")) reopenToday();
+    if (e.target.closest("[data-all-stages]")) {
+      $("sec-stages").open = true;
+      $("sec-stages").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    const row = e.target.closest("[data-open-stage]");
+    if (row && !gpx) openStage(Number(row.dataset.openStage));
     const doneGpx = e.target.closest("[data-done-gpx]");
     if (doneGpx) downloadDone(Number(doneGpx.dataset.doneGpx));
     const campBtn = e.target.closest("[data-camp-open]");
@@ -4271,7 +4351,9 @@ if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
   window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => { /* offline support is optional */ }));
 }
 
-init();
+// The map and chart libraries load deferred; they are ready when the document is.
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+else init();
 </script>
 </body>
 </html>
