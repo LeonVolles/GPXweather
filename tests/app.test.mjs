@@ -185,6 +185,72 @@ await test("PDF of the whole forecast", async () => {
   const [dl] = await Promise.all([page.waitForEvent("download", { timeout: 60000 }), page.click("#pdfBtn")]);
   assert.match(dl.suggestedFilename(), /forecast.*\.pdf$/);
 });
+await test("your exact case: old 'use my average' setting + 33 km days, distance set to 110", async () => {
+  await ev(() => {
+    localStorage.setItem("gpxweather.v1.settings", JSON.stringify({ models: [...S.models], autoGps: false, useHistory: true }));
+    S.perDay = 110;
+    S.days = { [addDays(todayStr(), -3)]: { start: 0, end: 33, closed: true }, [addDays(todayStr(), -2)]: { start: 33, end: 66, closed: true },
+               [addDays(todayStr(), -1)]: { start: 66, end: 99, closed: true } };
+    S.startKm = 99;
+    return saveTourSettings();
+  });
+  await page.reload();
+  await page.waitForFunction(() => S.stages.length > 0);
+  await page.waitForTimeout(500);
+  assert.equal(await ev(() => planPerDay()), 110);
+  assert.match(await page.textContent("#settingsSummary"), /110 km\/day/);
+  const kms = await ev(() => S.stages.slice(0, -1).map((s) => Math.round(s.km)));
+  assert.ok(kms.every((k) => k === 110), "stage km: " + kms);
+  assert.match(await page.locator("#next .next-card").innerText(), /110\.0 km/);
+  assert.match(await page.locator(".day-row").first().innerText(), /110 km/);
+});
+
+// Every setting must change the plan and every view of it (today card, coming days, table, summary).
+const snapshot = () => ev(() => JSON.stringify({
+  stages: S.stages.map((s) => [Math.round(s.a), Math.round(s.b), s.date, Math.round(s.hours * 60), Math.round(s.dep)]),
+  today: $("next").innerText, table: $("overview").textContent, summary: $("settingsSummary").textContent,
+  progress: $("progress").innerText, stagesHtml: $("stages").textContent.length,
+}));
+async function changes(name, act, check) {
+  await test(`changing "${name}" updates the plan and every view`, async () => {
+    await ev(() => { $("settings").open = true; $("moreSettings").open = true; });
+    const before = JSON.parse(await snapshot());
+    await act();
+    await page.waitForTimeout(250);
+    const after = JSON.parse(await snapshot());
+    for (const key of ["stages", "today", "table"]) assert.notDeepEqual(after[key], before[key], `${key} did not change`);
+    if (check) await check(after);
+  });
+}
+const setNum = async (sel, v) => { await page.fill(sel, String(v)); await page.dispatchEvent(sel, "change"); };
+await changes("distance per day", () => setNum("#perDayNum", 70), (a) => assert.match(a.summary, /70 km\/day/));
+await changes("distance slider", () => ev(() => { const r = $("perDay"); r.value = 95; r.dispatchEvent(new Event("input", { bubbles: true })); }),
+  (a) => assert.match(a.summary, /95 km\/day/));
+await changes("departure", () => setNum("#dep", "07:00"), (a) => assert.match(a.today, /07:00/));
+await changes("flat speed", () => setNum("#flatSpeed", 26));
+await changes("breaks", () => setNum("#breaks", 60));
+await changes("weight", () => setNum("#mass", 140));
+await changes("next stage day", () => page.selectOption("#date", { index: 2 }), (a) => assert.match(a.today, /Tue|Wed|Thu|Fri|Sat|Sun|Mon/));
+await page.selectOption("#date", { index: 0 });
+await changes("plan by hours", () => page.click('label:has(input[name="planMode"][value="hours"])'), (a) => assert.match(a.summary, /h\/day/));
+await changes("hours per day", () => setNum("#hoursNum", 4), (a) => assert.match(a.summary, /4 h\/day/));
+await page.click('label:has(input[name="planMode"][value="km"])');
+await test("weather models: the count and the comparison follow the choice", async () => {
+  const n = await ev(() => S.models.size);
+  await page.locator('#models input').first().uncheck();
+  await page.waitForTimeout(200);
+  assert.match(await page.textContent("#settingsSummary"), new RegExp(`${n - 1} models`));
+  await page.locator('#models input').first().check();
+});
+await test("settings are kept after a reload", async () => {
+  await setNum("#perDayNum", 123);
+  await page.waitForTimeout(600);
+  await page.reload();
+  await page.waitForFunction(() => S.stages.length > 0);
+  assert.equal(await ev(() => S.perDay), 123);
+  assert.equal(await ev(() => Math.round(S.stages[0].km)), 123);
+});
+
 await test("no errors in the console", async () => assert.deepEqual(errors, []));
 
 await browser.close();

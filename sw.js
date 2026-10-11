@@ -1,6 +1,6 @@
 // Offline support: keeps the app and its two libraries available without a connection.
 // Weather, elevation, place-name, campsite and map-tile requests are never cached here.
-const VERSION = "gpxweather-v3";
+const VERSION = "gpxweather-2026-10-11.4";   // same as APP_VERSION in index.html
 const APP = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 const LIBS = [
   "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css",
@@ -37,7 +37,8 @@ self.addEventListener("fetch", (event) => {
   if (url.origin === self.location.origin) {
     event.respondWith((async () => {
       try {
-        const res = await fetch(req);
+        // Skip the browser's HTTP cache (GitHub Pages lets it keep pages for 10 min), so updates arrive at once.
+        const res = await fetch(req.url, { cache: "no-store", credentials: "same-origin" });
         if (res.ok) (await caches.open(VERSION)).put(req, res.clone());
         return res;
       } catch (e) {

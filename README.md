@@ -271,6 +271,12 @@ data: Copernicus DEM via Open-Meteo. Routing: BRouter. Place names: BigDataCloud
 supplies: OpenStreetMap via the Overpass API. Rain radar: RainViewer. Map:
 [CyclOSM](https://www.cyclosm.org/), map data © OpenStreetMap contributors.
 
+## Updates
+
+The app checks for a newer version whenever you open it or bring it back to
+the foreground, and shows **🔄 A new version is available – tap to update**.
+The version you run is shown at the bottom of the page.
+
 ## Tests
 
 `tests/` has a browser test that runs the app in Chromium with all outside

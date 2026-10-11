@@ -283,6 +283,7 @@
     <button type="button" id="refresh" title="Refresh weather" aria-label="Refresh weather">🔄</button>
   </div>
   <div id="offline" class="offline hidden" role="status"></div>
+  <button type="button" id="updateBtn" class="primary hidden" style="width:100%;margin-top:10px">🔄 A new version is available – tap to update</button>
   <div id="status" class="small muted" role="status"></div>
 
   <details class="settings" id="settings">
@@ -484,7 +485,7 @@
   Map: <a href="https://www.cyclosm.org/">CyclOSM</a>, data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors.
   The weather is read along the route at the time you are expected to be there.
   Headwind &gt; 0 means wind from the front, &lt; 0 tailwind. Not an official warning service.
-  Your tours are stored only in this browser.
+  Your tours are stored only in this browser. · Version <span id="appVersion"></span>
 </footer>
 </main>
 
@@ -492,6 +493,9 @@
 "use strict";
 
 /* ---------- Configuration ---------- */
+
+// Bump with every release (and VERSION in sw.js): the app compares it with the published page to offer updates.
+const APP_VERSION = "2026-10-11.4";
 
 // days = forecast_days requested from Open-Meteo, roughly the model's real horizon.
 const MODELS = [
@@ -2189,8 +2193,9 @@ function render() {
   renderDateOptions();
   if (!S.track) { $("content").classList.add("hidden"); return; }
   $("content").classList.remove("hidden");
+  const usingAvg = S.useHistory && S.planMode === "km" && planPerDay() !== S.perDay;
   $("settingsSummary").textContent =
-    `· ${S.planMode === "hours" ? `${fmt(S.hoursPerDay, S.hoursPerDay % 1 ? 1 : 0)} h/day` : `${planPerDay()} km/day`} · ${S.dep} · ${S.models.size} models`;
+    `· ${S.planMode === "hours" ? `${fmt(S.hoursPerDay, S.hoursPerDay % 1 ? 1 : 0)} h/day` : `${planPerDay()} km/day${usingAvg ? " (your average)" : ""}`} · ${S.dep} · ${S.models.size} models`;
   const mp = modelParams();
   const hist = rideHistory();
   $("perDayNote").textContent = S.useHistory && hist && S.planMode === "km"
@@ -4399,6 +4404,7 @@ function setTrack(track, startKm, fetchWeather = true) {
 /* ---------- Start-up ---------- */
 
 async function init() {
+  $("appVersion").textContent = APP_VERSION;
   initControls();
   initPlanner();
   loadSavedPlaces();
@@ -4418,6 +4424,28 @@ async function init() {
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
   window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => { /* offline support is optional */ }));
 }
+
+/* Updates: a home-screen app can stay open for days, so look for a newer published version
+   whenever the app comes to the foreground, and offer a one-tap update. */
+async function checkForUpdate() {
+  if (!location.protocol.startsWith("http") || navigator.onLine === false) return;
+  try {
+    const res = await fetch("./index.html?v=" + Date.now(), { cache: "no-store" });
+    const m = /const APP_VERSION = "([^"]+)"/.exec(await res.text());
+    if (m && m[1] !== APP_VERSION) $("updateBtn").classList.remove("hidden");
+  } catch (e) { /* offline – try again next time */ }
+  try { const reg = navigator.serviceWorker && (await navigator.serviceWorker.getRegistration()); if (reg) reg.update(); } catch (e) { /* optional */ }
+}
+
+$("updateBtn").addEventListener("click", async () => {
+  await saveTourSettings();
+  try {
+    for (const reg of (navigator.serviceWorker ? await navigator.serviceWorker.getRegistrations() : [])) await reg.update();
+  } catch (e) { /* the reload below still fetches the new page */ }
+  location.reload();
+});
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") checkForUpdate(); });
+window.addEventListener("load", () => setTimeout(checkForUpdate, 3000));
 
 // The map and chart libraries load deferred; they are ready when the document is.
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
