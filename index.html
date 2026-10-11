@@ -89,6 +89,7 @@
   .btn-row.icons > * { flex: 1 1 0; flex-direction: column; gap: 2px; font-size: 1.35rem; padding: 6px 4px; min-height: 58px; }
   .btn-row.icons span { font-size: 0.72rem; color: var(--ink-2); line-height: 1.1; }
   details.more > summary { margin-top: 10px; }
+  .ctl input[type=time] { -webkit-appearance: none; appearance: none; text-align: left; display: block; min-width: 0; }
   select, .ctl input[type=number], .ctl input[type=date], .ctl input[type=time] {
     width: 100%; min-height: 44px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--axis);
     background: var(--surface); color: var(--ink); font: inherit; }
@@ -226,6 +227,9 @@
   .day-row button { flex: none; flex-direction: column; gap: 0; min-width: 56px; padding: 4px 8px; font-size: 1.2rem; }
   .day-row button span { font-size: 0.72rem; color: var(--ink-2); }
   .wx-ico { font-size: 1.15rem; }
+  .day-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
+  .offline { margin-top: 10px; padding: 8px 12px; border-radius: 10px; background: var(--night-bg);
+             border-left: 4px solid var(--night-line); font-weight: 600; font-size: 0.92rem; }
   footer { margin: 30px 0 10px; font-size: 0.82rem; color: var(--muted); }
   .hidden { display: none !important; }
   .leaflet-div-icon.stage-pin { background: none; border: none; }
@@ -278,6 +282,7 @@
     <button type="button" class="primary" id="locate" title="Find your position on the route (GPS)">📍 Where am I?</button>
     <button type="button" id="refresh" title="Refresh weather" aria-label="Refresh weather">🔄</button>
   </div>
+  <div id="offline" class="offline hidden" role="status"></div>
   <div id="status" class="small muted" role="status"></div>
 
   <details class="settings" id="settings">
@@ -324,41 +329,46 @@
         <label for="dep">Daily departure</label>
         <input type="time" id="dep" value="09:00" step="900">
       </div>
-      <div class="ctl">
-        <label for="flatSpeed">Your speed on flat asphalt, no wind (km/h)</label>
-        <input type="number" id="flatSpeed" min="8" max="40" step="0.5" value="20" inputmode="decimal">
-        <div class="muted small">Climbs, road surface and wind are worked out from this for every part of the route.</div>
-      </div>
-      <div class="ctl">
-        <label for="breaks">Breaks (% on top of the riding time)</label>
-        <input type="number" id="breaks" min="0" max="150" step="5" value="25" inputmode="numeric">
-      </div>
-      <div class="ctl">
-        <label for="mass">Weight: you + bike + luggage (kg)</label>
-        <input type="number" id="mass" min="50" max="250" step="1" value="100" inputmode="numeric">
-      </div>
-      <div class="ctl">
-        <label>Weather models</label>
-        <div class="models" id="models"></div>
-      </div>
-      <div class="ctl">
-        <label>Your pace</label>
-        <label class="check"><input type="checkbox" id="useHistory"> Plan with my average from completed days</label>
-        <div class="muted small" id="historyInfo"></div>
-      </div>
-      <div class="ctl">
-        <label>Backup</label>
-        <div class="btn-row" style="margin-top:0">
-          <button type="button" id="backupBtn" title="Save all tours, positions and ride logs to a file">💾 Backup</button>
-          <label class="button" for="restoreFile" title="Restore tours from a backup file">📥 Restore</label>
-        </div>
-        <input type="file" id="restoreFile" class="file-input" accept=".json,application/json">
-      </div>
-      <div class="ctl">
-        <label>When the app opens</label>
-        <label class="check"><input type="checkbox" id="autoGps"> Update my position from GPS</label>
-      </div>
     </div>
+    <details class="more" id="moreSettings">
+      <summary>More settings <span class="muted small">pace, weather models, speed, weight, backup</span></summary>
+      <div class="controls">
+        <div class="ctl">
+          <label>Your pace</label>
+          <label class="check"><input type="checkbox" id="useHistory"> Plan with my average from completed days</label>
+          <div class="muted small" id="historyInfo"></div>
+        </div>
+        <div class="ctl">
+          <label>Weather models</label>
+          <div class="models" id="models"></div>
+        </div>
+        <div class="ctl">
+          <label for="flatSpeed">Your speed on flat asphalt, no wind (km/h)</label>
+          <input type="number" id="flatSpeed" min="8" max="40" step="0.5" value="20" inputmode="decimal">
+          <div class="muted small">Climbs, road surface and wind are worked out from this for every part of the route.</div>
+        </div>
+        <div class="ctl">
+          <label for="breaks">Breaks (% on top of the riding time)</label>
+          <input type="number" id="breaks" min="0" max="150" step="5" value="25" inputmode="numeric">
+        </div>
+        <div class="ctl">
+          <label for="mass">Weight: you + bike + luggage (kg)</label>
+          <input type="number" id="mass" min="50" max="250" step="1" value="100" inputmode="numeric">
+        </div>
+        <div class="ctl">
+          <label>When the app opens</label>
+          <label class="check"><input type="checkbox" id="autoGps"> Update my position from GPS</label>
+        </div>
+        <div class="ctl">
+          <label>Backup</label>
+          <div class="btn-row" style="margin-top:0">
+            <button type="button" id="backupBtn" title="Save all tours, positions and ride logs to a file">💾 Backup</button>
+            <label class="button" for="restoreFile" title="Restore tours from a backup file">📥 Restore</label>
+          </div>
+          <input type="file" id="restoreFile" class="file-input" accept=".json,application/json">
+        </div>
+      </div>
+    </details>
   </details>
 </div>
 
@@ -468,7 +478,8 @@
 </div>
 
 <footer>
-  Weather: <a href="https://open-meteo.com/">Open-Meteo</a> (ECMWF, DWD ICON, NOAA GFS, Météo-France, UK Met Office).
+  <a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a>
+  (<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>; ECMWF, DWD ICON, NOAA GFS, Météo-France, UK Met Office).
   Elevation if missing in the GPX: Open-Meteo Elevation API (Copernicus DEM). Place names: BigDataCloud. Campsites: OpenStreetMap via the Overpass API.
   Map: <a href="https://www.cyclosm.org/">CyclOSM</a>, data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors.
   The weather is read along the route at the time you are expected to be there.
@@ -641,8 +652,16 @@ function unstore(key) {
   try { localStorage.removeItem(STORE + key); } catch (e) { /* ignore */ }
 }
 
-let statusAt = 0;
-function setStatus(text) { $("status").textContent = text; statusAt = Date.now(); }
+let statusAt = 0, undoFn = null;
+function setStatus(text) { $("status").textContent = text; statusAt = Date.now(); undoFn = null; }
+
+// A message with an Undo button, for changes that are easy to make by mistake.
+function offerUndo(text, fn) {
+  $("status").innerHTML = `${esc(text)} <button type="button" class="chip" id="undoBtn">↶ Undo</button>`;
+  statusAt = Date.now();
+  undoFn = fn;
+  $("undoBtn").addEventListener("click", () => { const f = undoFn; setStatus("Undone."); if (f) f(); });
+}
 // Background info (weather age) never hides a message you just got, e.g. "Ride added".
 function softStatus(text) { if (Date.now() - statusAt > 5000) setStatus(text); }
 
@@ -739,7 +758,7 @@ const S = {
   mass: DEFAULTS.mass,             // kg, rider + bike + luggage
   models: new Set(MODELS.filter((m) => m.on).map((m) => m.id)),
   autoGps: false,
-  useHistory: true,       // plan future stages with the pace of the completed days
+  useHistory: false,      // plan future stages with the pace of the completed days (opt-in; your settings win otherwise)
   days: {},               // ride log: "YYYY-MM-DD" -> { start, end } in km
   stages: [],
   tours: [],              // [{ id, name, total }]
@@ -1179,6 +1198,15 @@ function endToday() {
   S.days[d] = { ...prev, start: prev.start ?? S.startKm, end: S.startKm, closed: true };
   setStatus(`Today ended at km ${fmt(S.startKm, 1)}. The next stage starts tomorrow from here.`);
   recompute({ weatherDelay: 300 });
+}
+
+function removeDay(date) {
+  const e = S.days[date];
+  if (!e) return;
+  const before = JSON.stringify(S.days);
+  delete S.days[date];
+  recompute({ weatherDelay: 300 });
+  offerUndo(`${fmtDate(date)} removed from the ride log.`, () => { S.days = JSON.parse(before); recompute({ weatherDelay: 300 }); });
 }
 
 function reopenToday() {
@@ -2146,7 +2174,17 @@ let map = null, mapLayers = null, fittedFor = null;
 let fittedKey = null;
 let mapView = restore("mapView") === "all" ? "all" : "today";
 
+// A clear banner when there is no connection, with the age of the weather shown.
+function renderOffline() {
+  const off = navigator.onLine === false;
+  $("offline").classList.toggle("hidden", !off);
+  if (!off) return;
+  const t = S.track ? weatherAge() : null;
+  $("offline").textContent = "📴 Offline" + (t ? ` – weather from ${fmtClock(t)} (${fmtAge(Date.now() - t)})` : " – weather updates when you are back online");
+}
+
 function render() {
+  renderOffline();
   renderTourSelect();
   renderDateOptions();
   if (!S.track) { $("content").classList.add("hidden"); return; }
@@ -2352,7 +2390,7 @@ function renderMap() {
 function pickOnMap(lat, lon) {
   const n = nearestKm(S.track, lat, lon);
   setStartKm(n.km);
-  setStatus(n.offset > 2000
+  softStatus(n.offset > 2000
     ? `Position set (nearest track point is ${fmt(n.offset / 1000, 1, " km")} away).`
     : "Position set.");
 }
@@ -2853,7 +2891,7 @@ function comingDaysCard(weather, k0) {
       ? `<span class="wx-ico" title="${esc(text)}">${icon}</span> <b class="num">${fmt(m.tmin.med, 0)}–${fmt(m.tmax.med, 0)}°</b>` +
         ` · <span class="${(m.rain.med ?? 0) >= 1 ? "rainy" : ""}">☔ ${fmt(m.rain.med, 1)} mm</span>${head}`
       : cellStatus(w);
-    return `<li class="day-row" data-open-stage="${k}">
+    return `<li class="day-row" data-open-stage="${k}" tabindex="0" role="button" aria-label="${dayLabel(st)}, stage ${st.no}: details">
       <div class="dr-main">
         <div><b>${dayLabel(st)}</b> <span class="small muted">· Stage ${st.no} · ${fmt(st.km, 0)} km · ↑ ${fmt(st.up, 0)} m</span></div>
         <div class="small">${wxText}</div>
@@ -2884,14 +2922,15 @@ function renderDone() {
     <td class="r num opt">${fmt(d.down, 0)}</td>
     <td class="r num">${d.rec && d.rec.elapsedH ? fmtDuration(d.rec.elapsedH) : d.km < 0.05 ? "rest day" : "–"}</td>
     <td class="r num opt">${d.rec && d.rec.elapsedH ? fmt(d.km / d.rec.elapsedH, 1) : "–"}</td>
-    <td class="r">${d.km >= 0.05 ? `<button type="button" data-done-gpx="${i}" title="Download the GPX of this part" style="min-height:32px;padding:4px 10px;font-size:.85rem">⬇ GPX</button>` : ""}</td>
+    <td class="r">${d.km >= 0.05 ? `<button type="button" data-done-gpx="${i}" title="Download the GPX of this part" style="min-height:32px;padding:4px 10px;font-size:.85rem">⬇ GPX</button>` : ""}
+      ${d.date ? `<button type="button" data-del-day="${d.date}" title="Remove this day from the ride log" aria-label="Remove ${fmtDate(d.date)}" style="min-height:32px;padding:4px 10px;font-size:.85rem">✕</button>` : ""}</td>
   </tr>`).join("");
   host.innerHTML = `<div class="table-wrap"><table>
       <thead><tr><th>#</th><th>Date</th><th class="opt">Route</th><th class="r">km</th><th class="r">↑ m</th><th class="r opt">↓ m</th>
         <th class="r" title="time on the road (recorded rides)">Time</th><th class="r opt">km/h</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
     <div class="small muted" style="margin-top:8px">km and climb along the planned route. Time and speed come from rides you uploaded
-      (first to last point, incl. breaks).</div>
+      (first to last point, incl. breaks). ✕ removes a day from the log, e.g. one you ended by mistake.</div>
     <div class="btn-row"><label class="button" for="rideFile">📤 Add a ridden day (GPX of your ride)</label></div>`;
 }
 
@@ -3422,7 +3461,7 @@ function hourStrip(st) {
       <div class="hico">${wxInfo(code == null ? null : Math.round(code))[0]}</div>
       <div><b>${fmt(temp, 0)}°</b></div>
       <div class="small ${rain >= 0.1 ? "rainy" : "muted"}">${rain >= 0.1 ? "☔" + fmt(rain, 1) : "–"}</div>
-      <div class="small muted" title="${head > 0 ? "headwind" : "tailwind"}">${Math.abs(head) < 3 ? "·" : head > 0 ? "↓" + fmt(head, 0) : "↑" + fmt(-head, 0)}</div>
+      <div class="small muted" title="${head > 0 ? "headwind" : "tailwind"}" aria-label="${Math.abs(head) < 3 ? "hardly any wind from front or behind" : `${fmt(Math.abs(head), 0)} km/h ${head > 0 ? "headwind" : "tailwind"}`}">${Math.abs(head) < 3 ? "·" : head > 0 ? "↓" + fmt(head, 0) : "↑" + fmt(-head, 0)}</div>
       <div class="small muted">km ${fmt(d / 1000, 0)}</div></div>`);
   }
   return cells.length > 1 ? `<div class="hstrip" aria-label="Hour by hour along the route">${cells.join("")}</div>` : "";
@@ -4033,7 +4072,7 @@ function recompute({ weatherDelay = 800 } = {}) {
 }
 
 function saveGlobalSettings() {
-  store("settings", { models: [...S.models], autoGps: S.autoGps, useHistory: S.useHistory });
+  store("settings", { models: [...S.models], autoGps: S.autoGps, usePace: S.useHistory });
 }
 
 // "Today", "Tomorrow", "In 2 days" … – the plan always starts relative to the current day.
@@ -4074,12 +4113,20 @@ function syncInputs() {
   $("useHistory").checked = S.useHistory;
 }
 
-function setStartKm(km, force = false, log = true, gps = false) {
+// `from`: where a slider drag started – the whole drag is logged as one move when you let go.
+function setStartKm(km, force = false, log = true, gps = false, from = null) {
   const T = S.track;
   if (!T) return;
   const next = Math.max(0, Math.min(T.total / 1000, Math.round(km * 10) / 10));
-  if (next === S.startKm && !force) return;
-  if (log) logPosition(S.startKm, next, gps);
+  const prev = from ?? S.startKm;
+  if (next === prev && !force) { if (from != null) recompute(); return; }
+  if (log) {
+    const before = JSON.stringify(S.days);
+    logPosition(prev, next, gps);
+    if (!gps && Math.abs(next - prev) >= 10) {
+      offerUndo(`Position set to km ${fmt(next, 1)}.`, () => { S.days = JSON.parse(before); setStartKm(prev, true, false); });
+    }
+  }
   S.startKm = next;
   $("startKm").value = S.startKm;
   $("startKmNum").value = S.startKm;
@@ -4089,8 +4136,9 @@ function setStartKm(km, force = false, log = true, gps = false) {
 
 function setPerDay(km) {
   const next = Math.max(5, Math.min(400, Math.round(km)));
-  if (next === S.perDay) return;
+  if (next === S.perDay && !S.useHistory) return;
   S.perDay = next;
+  if (S.useHistory) { S.useHistory = false; saveGlobalSettings(); setStatus(`Planning with ${next} km/day (your average is switched off).`); }
   syncInputs();
   recompute();
 }
@@ -4122,7 +4170,8 @@ function initControls() {
   if (saved) {
     if (Array.isArray(saved.models)) S.models = new Set(saved.models.filter((id) => MODELS.some((m) => m.id === id)));
     S.autoGps = !!saved.autoGps;
-    if (saved.useHistory === false) S.useHistory = false;
+    // Earlier versions switched "plan with my average" on by default – it overrode the distance you set. Now it's opt-in.
+    S.useHistory = saved.usePace === true;
   }
   syncInputs();
   $("settings").open = false;
@@ -4138,7 +4187,17 @@ function initControls() {
 
   $("perDay").addEventListener("input", (e) => setPerDay(Number(e.target.value)));
   $("perDayNum").addEventListener("change", (e) => setPerDay(Number(e.target.value) || DEFAULTS.perDay));
-  $("startKm").addEventListener("input", (e) => setStartKm(Number(e.target.value)));
+  // While dragging only the view follows; the move is logged once when you let go.
+  let dragFrom = null;
+  $("startKm").addEventListener("input", (e) => {
+    if (dragFrom == null) dragFrom = S.startKm;
+    setStartKm(Number(e.target.value), false, false);
+  });
+  $("startKm").addEventListener("change", (e) => {
+    const from = dragFrom ?? S.startKm;
+    dragFrom = null;
+    setStartKm(Number(e.target.value), false, true, false, from);
+  });
   $("startKmNum").addEventListener("change", (e) => setStartKm(Number(e.target.value) || 0));
   $("resetPos").addEventListener("click", () => setStartKm(0));
   $("date").addEventListener("change", (e) => {
@@ -4163,8 +4222,9 @@ function initControls() {
   }));
   const setHours = (v) => {
     const h = Math.max(1, Math.min(16, Math.round((Number(v) || DEFAULTS.hoursPerDay) * 2) / 2));
-    if (h === S.hoursPerDay) return;
+    if (h === S.hoursPerDay && !S.useHistory) return;
     S.hoursPerDay = h;
+    if (S.useHistory) { S.useHistory = false; saveGlobalSettings(); setStatus(`Planning with ${h} h/day (your average is switched off).`); }
     syncInputs();
     recompute();
   };
@@ -4190,6 +4250,8 @@ function initControls() {
     }
     const row = e.target.closest("[data-open-stage]");
     if (row && !gpx) openStage(Number(row.dataset.openStage));
+    const del = e.target.closest("[data-del-day]");
+    if (del) removeDay(del.dataset.delDay);
     const doneGpx = e.target.closest("[data-done-gpx]");
     if (doneGpx) downloadDone(Number(doneGpx.dataset.doneGpx));
     const campBtn = e.target.closest("[data-camp-open]");
@@ -4255,7 +4317,13 @@ function initControls() {
   // Re-colour charts when the OS theme flips; update when the app comes back to the foreground.
   const mq = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
   if (mq && mq.addEventListener) mq.addEventListener("change", () => render());
-  window.addEventListener("online", () => scheduleWeather(0));
+  window.addEventListener("online", () => { renderOffline(); scheduleWeather(0); });
+  window.addEventListener("offline", renderOffline);
+  // Days in the coming-days list open with Enter or Space too.
+  document.addEventListener("keydown", (e) => {
+    const row = e.target.closest && e.target.closest("[data-open-stage]");
+    if (row && e.target === row && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); openStage(Number(row.dataset.openStage)); }
+  });
   // Save right away when the app goes to the background – a pending save may otherwise never run.
   const flushSave = () => { if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; saveTourSettings(); } };
   window.addEventListener("pagehide", flushSave);

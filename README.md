@@ -110,7 +110,8 @@ today's goal.
 A day only counts as ridden when you ended it, uploaded its ride or the GPS
 saw you riding. If you just move the slider – for example to catch up with a
 tour you started without the app – that part shows as **not logged** in the
-Completed list and doesn't change your pace.
+Completed list and doesn't change your pace. Big position changes can be
+undone with **↶ Undo** right after.
 
 If you declined location access by mistake: iPhone **Settings → Privacy &
 Security → Location Services → Safari Websites → While Using the App**.
@@ -134,9 +135,12 @@ You have two ways to close a day:
 
 From your completed days the app learns how far you really ride per day (last
 seven riding days). From uploaded rides it also learns how strong you ride and
-how long your breaks are – see below. With **Plan with my average from completed
-days** switched on in Settings (default), the coming stages, riding times and
-the arrival date use this instead of the values you set. "Your pace" in
+how long your breaks are – see below. Only if you switch on **Plan with my
+average from completed days** (Settings → More settings) do the coming stages,
+riding times and the arrival date use this instead of the values you set.
+Changing the distance or hours per day switches it off again – what you set
+always wins. A day that shouldn't count can be removed with **✕** in the
+Completed list. "Your pace" in
 *What's ahead* shows the numbers.
 
 ### How riding times are estimated
@@ -266,3 +270,12 @@ models from ECMWF, DWD, NOAA, Météo-France and the UK Met Office. Elevation
 data: Copernicus DEM via Open-Meteo. Routing: BRouter. Place names: BigDataCloud. Campsites and
 supplies: OpenStreetMap via the Overpass API. Rain radar: RainViewer. Map:
 [CyclOSM](https://www.cyclosm.org/), map data © OpenStreetMap contributors.
+
+## Tests
+
+`tests/` has a browser test that runs the app in Chromium with all outside
+services mocked (weather, place names, OpenStreetMap, map tiles):
+
+```
+cd tests && npm install && npm test
+```

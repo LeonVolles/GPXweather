@@ -1,0 +1,14 @@
+{
+  "name": "gpxweather-tests",
+  "private": true,
+  "type": "module",
+  "description": "Browser test of GPX Weather with mocked weather, map and chart services.",
+  "scripts": { "test": "node app.test.mjs" },
+  "devDependencies": {
+    "jspdf": "4.2.1",
+    "jspdf-autotable": "5.0.8",
+    "leaflet": "1.9.4",
+    "playwright": "1.56.1",
+    "plotly.js-dist-min": "2.35.2"
+  }
+}
