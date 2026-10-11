@@ -101,9 +101,11 @@
   .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
               gap: 14px 20px; margin-top: 12px; }
   .ctl label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 4px; }
+  .ctl label.check { font-weight: 400; margin-top: 6px; }
   .ctl input[type=range] { width: 100%; accent-color: var(--accent); min-height: 32px; }
   .range-row { display: flex; gap: 10px; align-items: center; }
   .range-row input[type=number] { width: 96px; flex: none; }
+  #ctl-speed .range-row input[type=number] { width: 84px; }
   .models { display: flex; flex-wrap: wrap; gap: 6px 14px; }
   .models label, .check { font-weight: 400; display: inline-flex; align-items: center; gap: 8px; margin: 0; min-height: 32px; }
   .models input, .check input { width: 20px; height: 20px; accent-color: var(--accent); }
@@ -292,8 +294,8 @@
       <div class="ctl">
         <label>Plan each day by</label>
         <div class="seg" role="radiogroup">
-          <label><input type="radio" name="planMode" value="km"> distance</label>
-          <label><input type="radio" name="planMode" value="hours"> hours on the road</label>
+          <label><input type="radio" name="planMode" value="hours"> riding time</label>
+          <label><input type="radio" name="planMode" value="km"> fixed distance</label>
         </div>
       </div>
       <div class="ctl" id="ctl-hours">
@@ -302,7 +304,19 @@
           <input type="range" id="hoursPerDay" min="1" max="12" step="0.5" value="6">
           <input type="number" id="hoursNum" min="1" max="16" step="0.5" value="6" inputmode="decimal" aria-label="Hours per day">
         </div>
-        <div class="muted small">Each stage ends where the riding-time model says this time is up – shorter on hilly or gravel days.</div>
+        <div class="muted small">Each day ends where this time is up – worked out from your speed, the climbs, the road surface
+          and the forecast wind. Hilly, gravel or headwind days get shorter, easy days longer.</div>
+      </div>
+      <div class="ctl" id="ctl-speed">
+        <label for="flatSpeed">Your speed on flat asphalt, no wind (km/h)</label>
+        <div class="range-row">
+          <input type="number" id="flatSpeed" min="8" max="40" step="0.5" value="20" inputmode="decimal" aria-label="Speed on flat asphalt in km/h">
+          <label for="breaks" class="small" style="font-weight:400;margin:0">Breaks</label>
+          <input type="number" id="breaks" min="0" max="150" step="5" value="25" inputmode="numeric" aria-label="Breaks in % of the riding time">
+          <span class="small">%</span>
+        </div>
+        <label class="check"><input type="checkbox" id="useRides"> Use speed and breaks measured from my uploaded rides</label>
+        <div class="muted small" id="speedNote"></div>
       </div>
       <div class="ctl" id="ctl-km">
         <label for="perDay">Distance per day: <span id="perDayOut" class="num">80</span> km</label>
@@ -311,6 +325,8 @@
           <input type="number" id="perDayNum" min="5" max="400" step="1" value="80" inputmode="numeric" aria-label="Distance per day in km">
         </div>
         <div class="muted small" id="perDayNote"></div>
+        <label class="check"><input type="checkbox" id="useHistory"> Plan with my average km/day from completed days</label>
+        <div class="muted small" id="historyInfo"></div>
       </div>
       <div class="ctl">
         <label for="startKm">Current position: km <span id="startKmOut" class="num">0</span> of <span id="totalOut" class="num">–</span></label>
@@ -332,25 +348,11 @@
       </div>
     </div>
     <details class="more" id="moreSettings">
-      <summary>More settings <span class="muted small">pace, weather models, speed, weight, backup</span></summary>
+      <summary>More settings <span class="muted small">weather models, weight, GPS, backup</span></summary>
       <div class="controls">
-        <div class="ctl">
-          <label>Your pace</label>
-          <label class="check"><input type="checkbox" id="useHistory"> Plan with my average from completed days</label>
-          <div class="muted small" id="historyInfo"></div>
-        </div>
         <div class="ctl">
           <label>Weather models</label>
           <div class="models" id="models"></div>
-        </div>
-        <div class="ctl">
-          <label for="flatSpeed">Your speed on flat asphalt, no wind (km/h)</label>
-          <input type="number" id="flatSpeed" min="8" max="40" step="0.5" value="20" inputmode="decimal">
-          <div class="muted small">Climbs, road surface and wind are worked out from this for every part of the route.</div>
-        </div>
-        <div class="ctl">
-          <label for="breaks">Breaks (% on top of the riding time)</label>
-          <input type="number" id="breaks" min="0" max="150" step="5" value="25" inputmode="numeric">
         </div>
         <div class="ctl">
           <label for="mass">Weight: you + bike + luggage (kg)</label>
@@ -495,7 +497,7 @@
 /* ---------- Configuration ---------- */
 
 // Bump with every release (and VERSION in sw.js): the app compares it with the published page to offer updates.
-const APP_VERSION = "2026-10-11.4";
+const APP_VERSION = "2026-10-11.5";
 
 // days = forecast_days requested from Open-Meteo, roughly the model's real horizon.
 const MODELS = [
@@ -746,7 +748,7 @@ function wxInfo(code) {
 
 /* ---------- State ---------- */
 
-const DEFAULTS = { perDay: 80, dep: "09:00", flatSpeed: 20, breaks: 25, mass: 100, planMode: "km", hoursPerDay: 6 };
+const DEFAULTS = { perDay: 80, dep: "09:00", flatSpeed: 20, breaks: 25, mass: 100, planMode: "hours", hoursPerDay: 6 };
 
 const S = {
   tourId: null,
@@ -762,7 +764,9 @@ const S = {
   mass: DEFAULTS.mass,             // kg, rider + bike + luggage
   models: new Set(MODELS.filter((m) => m.on).map((m) => m.id)),
   autoGps: false,
-  useHistory: false,      // plan future stages with the pace of the completed days (opt-in; your settings win otherwise)
+  useHistory: false,      // distance mode: plan with the average km/day of the completed days (opt-in)
+  useRides: true,         // speed and breaks measured from uploaded rides instead of the entered ones
+  planModeChosen: false,  // distance mode only sticks when picked on purpose (riding time is the default)
   days: {},               // ride log: "YYYY-MM-DD" -> { start, end } in km
   stages: [],
   tours: [],              // [{ id, name, total }]
@@ -994,7 +998,7 @@ function unpackTrack(t) {
 }
 
 function tourSettings() {
-  return { startKm: S.startKm, perDay: S.perDay, date: S.date, dep: S.dep, planMode: S.planMode, hoursPerDay: S.hoursPerDay, flatSpeed: S.flatSpeed, breaks: S.breaks, mass: S.mass, days: S.days, savedAt: Date.now() };
+  return { startKm: S.startKm, perDay: S.perDay, date: S.date, dep: S.dep, planMode: S.planMode, planModeChosen: S.planModeChosen, hoursPerDay: S.hoursPerDay, flatSpeed: S.flatSpeed, breaks: S.breaks, mass: S.mass, days: S.days, savedAt: Date.now() };
 }
 
 let saveTimer = null;
@@ -1048,7 +1052,9 @@ async function openTour(id) {
   store("current", id);
   S.perDay = settings.perDay || DEFAULTS.perDay;
   S.dep = settings.dep || DEFAULTS.dep;
-  S.planMode = settings.planMode === "hours" ? "hours" : "km";
+  // Riding time is the default; earlier versions saved "km" without you choosing it, so only a picked distance mode is kept.
+  S.planModeChosen = !!settings.planModeChosen;
+  S.planMode = settings.planMode === "km" && S.planModeChosen ? "km" : "hours";
   S.hoursPerDay = settings.hoursPerDay || DEFAULTS.hoursPerDay;
   S.flatSpeed = settings.flatSpeed || DEFAULTS.flatSpeed;
   S.breaks = settings.breaks ?? DEFAULTS.breaks;
@@ -1186,6 +1192,15 @@ function rideHistory() {
     speed: hours ? sum(timed.map((d) => d.km)) / hours : null,                         // route km per hour on the road
     movingSpeed: timed.length ? sum(timed.map((d) => d.rec.km)) / sum(timed.map((d) => d.rec.movingH || d.rec.elapsedH)) : null,
   };
+}
+
+// About how far a day goes: the fixed distance, or in riding-time mode the average of the planned days.
+function typicalKmPerDay() {
+  if (S.planMode !== "hours") return planPerDay();
+  const full = S.stages.slice(0, -1);
+  if (full.length) return Math.round(sum(full.map((st) => st.km)) / full.length);
+  const mp = modelParams();
+  return Math.round((flatSpeed(mp.P, mp.mass) * S.hoursPerDay) / mp.breaks);
 }
 
 // Distance per day and speed used for planning: your history (if switched on and available) or the settings.
@@ -1415,7 +1430,7 @@ function calibration() {
 }
 
 function modelParams() {
-  const cal = S.useHistory ? calibration() : null;
+  const cal = S.useRides ? calibration() : null;
   return {
     mass: S.mass,
     P: cal ? cal.P : flatPower(S.flatSpeed, S.mass),
@@ -2194,17 +2209,21 @@ function render() {
   if (!S.track) { $("content").classList.add("hidden"); return; }
   $("content").classList.remove("hidden");
   const usingAvg = S.useHistory && S.planMode === "km" && planPerDay() !== S.perDay;
-  $("settingsSummary").textContent =
-    `· ${S.planMode === "hours" ? `${fmt(S.hoursPerDay, S.hoursPerDay % 1 ? 1 : 0)} h/day` : `${planPerDay()} km/day${usingAvg ? " (your average)" : ""}`} · ${S.dep} · ${S.models.size} models`;
   const mp = modelParams();
+  const speedText = mp.cal ? `${fmt(mp.cal.flat, 1)} km/h measured` : `${fmt(S.flatSpeed, S.flatSpeed % 1 ? 1 : 0)} km/h`;
+  $("settingsSummary").textContent = S.planMode === "hours"
+    ? `· ${fmt(S.hoursPerDay, S.hoursPerDay % 1 ? 1 : 0)} h/day at ${speedText} · from ${S.dep}`
+    : `· ${planPerDay()} km/day${usingAvg ? " (your average)" : ""} · from ${S.dep}`;
+  const calAll = calibration();
+  $("speedNote").textContent = calAll
+    ? `From ${calAll.days} uploaded ride${calAll.days > 1 ? "s" : ""}: you ride like ${fmt(calAll.flat, 1)} km/h on flat asphalt` +
+      (calAll.breaks ? `, breaks +${fmt((calAll.breaks - 1) * 100, 0)} %` : "") + (S.useRides ? " – used for planning." : " – not used, your entries above are.")
+    : "No uploaded rides yet – planning uses the speed and breaks above. Upload a recorded ride (GPX) and the app measures them.";
   const hist = rideHistory();
   $("perDayNote").textContent = S.useHistory && hist && S.planMode === "km"
-    ? `Planning uses your average of ${planPerDay()} km/day (see "Your pace" below).` : "";
-  $("historyInfo").textContent = !hist ? "No completed days yet – using the distance and speed set above."
-    : `Your last ${hist.days} day${hist.days > 1 ? "s" : ""}: ${fmt(hist.perDay, 0)} km/day` +
-      (mp.cal ? `; riding like ${fmt(mp.cal.flat, 1)} km/h on flat asphalt` + (mp.cal.breaks ? `, breaks +${fmt((mp.cal.breaks - 1) * 100, 0)} %` : "") +
-        ` (from ${mp.cal.days} recorded ride${mp.cal.days > 1 ? "s" : ""})` : "; upload recorded rides to measure your speed") +
-      (S.useHistory ? "." : " – not used for planning.");
+    ? `Planning uses your average of ${planPerDay()} km/day.` : "Every day gets this distance, whatever the terrain – riding time adapts to climbs and wind.";
+  $("historyInfo").textContent = !hist ? "No completed days yet."
+    : `Your last ${hist.days} day${hist.days > 1 ? "s" : ""}: ${fmt(hist.perDay, 0)} km/day` + (S.useHistory ? " – used for planning." : ".");
   let weather = [];
   try {
     weather = S.stages.map((st) => {
@@ -2300,7 +2319,7 @@ function renderTotals(weather) {
   const mp = modelParams();
   if (hist) tiles.push(["Your pace", `${fmt(hist.perDay, 0)} km/day`,
     `last ${hist.days} day${hist.days > 1 ? "s" : ""}` + (mp.cal ? ` · like ${fmt(mp.cal.flat, 1)} km/h on flat asphalt` : "") +
-    (S.useHistory ? ", used for planning" : "")]);
+    (S.useRides && mp.cal ? ", speed used for planning" : "")]);
   $("totals").innerHTML = tiles.map(([k, v, s]) =>
     `<div class="tile"><div class="k">${k}</div><div class="v num">${v}</div><div class="s">${s}</div></div>`).join("");
 }
@@ -3285,12 +3304,12 @@ function renderPlan() {
   $("planOpts").classList.toggle("hidden", plan.profile !== "trekking");
   const km = sum(plan.legs.map((l) => l.km));
   const up = sum(plan.legs.map((l) => l.ascend || 0));
-  const days = km ? Math.max(1, Math.round(km / planPerDay())) : 0;
+  const days = km ? Math.max(1, Math.round(km / typicalKmPerDay())) : 0;
   $("planInfo").innerHTML = plan.busy ? "Calculating route with BRouter …"
     : plan.error ? `<span style="color:var(--critical)">${esc(plan.error)}</span>`
     : plan.points.length === 0 ? "Tap the map to set the start."
     : plan.points.length === 1 ? "Now tap the destination. Add more taps for via points."
-    : `<b>${fmt(km, 1)} km</b>${up ? ` · ↑ ${fmt(up, 0)} m` : ""} · ${plan.points.length - 2} via point${plan.points.length === 3 ? "" : "s"} · about ${days} day${days > 1 ? "s" : ""} at ${planPerDay()} km/day`;
+    : `<b>${fmt(km, 1)} km</b>${up ? ` · ↑ ${fmt(up, 0)} m` : ""} · ${plan.points.length - 2} via point${plan.points.length === 3 ? "" : "s"} · about ${days} day${days > 1 ? "s" : ""} at ~${typicalKmPerDay()} km/day`;
   for (const id of ["planUse", "planGpx"]) $(id).disabled = !plan.legs.length || plan.busy;
   $("planUndo").disabled = !plan.points.length;
   $("planWeb").href = brouterWebLink();
@@ -3935,7 +3954,8 @@ async function downloadPdf() {
     // Title and summary
     write(`GPX Weather – ${T.name || "Tour"}`, 18, "bold");
     write(`Created ${new Date().toLocaleString(LOCALE)} · ${weatherStatusText() || "no weather data"}`, 9, "normal", grey);
-    write(`From km ${fmt(S.startKm, 1)}: ${fmt(rest, 0)} km left, ${fmt(up, 0)} m climbing, ${st0.length} stages of about ${planPerDay()} km` +
+    write(`From km ${fmt(S.startKm, 1)}: ${fmt(rest, 0)} km left, ${fmt(up, 0)} m climbing, ${st0.length} stages of ` +
+      (S.planMode === "hours" ? `${fmt(S.hoursPerDay, 1)} h on the road (about ${typicalKmPerDay()} km)` : `about ${planPerDay()} km`) +
       (st0.length ? `, arrival ${fmtDate(st0[st0.length - 1].date, { weekday: "short", day: "numeric", month: "short", year: "numeric" })}` : "") +
       `. Departure ${S.dep}. Riding times use climbs, road surface and wind` +
       (modelParams().cal ? `, calibrated on your recorded rides` : `, ${fmt(S.flatSpeed, 1)} km/h on flat asphalt, ${S.breaks} % breaks`) + `. Models: ${activeModels().map((m) => m.name).join(", ")}.`, 10);
@@ -4077,7 +4097,7 @@ function recompute({ weatherDelay = 800 } = {}) {
 }
 
 function saveGlobalSettings() {
-  store("settings", { models: [...S.models], autoGps: S.autoGps, usePace: S.useHistory });
+  store("settings", { models: [...S.models], autoGps: S.autoGps, usePace: S.useHistory, useRides: S.useRides });
 }
 
 // "Today", "Tomorrow", "In 2 days" … – the plan always starts relative to the current day.
@@ -4116,6 +4136,7 @@ function syncInputs() {
   $("mass").value = S.mass;
   $("autoGps").checked = S.autoGps;
   $("useHistory").checked = S.useHistory;
+  $("useRides").checked = S.useRides;
 }
 
 // `from`: where a slider drag started – the whole drag is logged as one move when you let go.
@@ -4177,6 +4198,7 @@ function initControls() {
     S.autoGps = !!saved.autoGps;
     // Earlier versions switched "plan with my average" on by default – it overrode the distance you set. Now it's opt-in.
     S.useHistory = saved.usePace === true;
+    S.useRides = saved.useRides !== false;
   }
   syncInputs();
   $("settings").open = false;
@@ -4220,16 +4242,20 @@ function initControls() {
     recompute({ weatherDelay: 300 });
   });
   num("flatSpeed", "flatSpeed", 8, 40);
+  for (const id of ["flatSpeed", "breaks"]) $(id).addEventListener("change", () => {
+    if (S.useRides && calibration()) { S.useRides = false; saveGlobalSettings(); syncInputs(); recompute({ weatherDelay: 300 });
+      setStatus("Planning with the speed and breaks you entered (measured values switched off)."); }
+  });
   document.querySelectorAll('input[name="planMode"]').forEach((r) => r.addEventListener("change", () => {
     S.planMode = r.value;
+    S.planModeChosen = true;
     syncInputs();
     recompute({ weatherDelay: 300 });
   }));
   const setHours = (v) => {
     const h = Math.max(1, Math.min(16, Math.round((Number(v) || DEFAULTS.hoursPerDay) * 2) / 2));
-    if (h === S.hoursPerDay && !S.useHistory) return;
+    if (h === S.hoursPerDay) return;
     S.hoursPerDay = h;
-    if (S.useHistory) { S.useHistory = false; saveGlobalSettings(); setStatus(`Planning with ${h} h/day (your average is switched off).`); }
     syncInputs();
     recompute();
   };
@@ -4238,6 +4264,7 @@ function initControls() {
   num("breaks", "breaks", 0, 150);
   num("mass", "mass", 50, 250);
   $("autoGps").addEventListener("change", (e) => { S.autoGps = e.target.checked; saveGlobalSettings(); });
+  $("useRides").addEventListener("change", (e) => { S.useRides = e.target.checked; saveGlobalSettings(); recompute({ weatherDelay: 300 }); });
   $("useHistory").addEventListener("change", (e) => { S.useHistory = e.target.checked; saveGlobalSettings(); recompute({ weatherDelay: 300 }); });
   $("rideFile").addEventListener("change", (e) => { if (e.target.files[0]) uploadRide(e.target.files[0]); e.target.value = ""; });
   $("refresh").addEventListener("click", () => loadWeather(true));

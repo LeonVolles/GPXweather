@@ -88,7 +88,7 @@ page.on("console", (m) => { if (m.type() === "error") errors.push(m.text()); });
 const ev = (fn, arg) => page.evaluate(fn, arg);
 let failed = 0;
 async function test(name, fn) {
-  try { await fn(); console.log("✓", name); } catch (e) { failed++; console.log("✗", name, "\n   ", e.message.split("\n")[0]); }
+  try { await fn(); console.log("✓", name); } catch (e) { failed++; console.log("✗", name, "\n   ", e.message.split("\n").filter(Boolean).slice(0, 8).join(" ")); }
 }
 
 await page.goto(base);
@@ -96,6 +96,70 @@ await page.setInputFiles("#file", gpxFile);
 await page.waitForFunction(() => S.stages.length > 0 && S.tourId);
 await page.waitForTimeout(1500);
 
+await test("days are planned by riding time with the entered speed by default", async () => {
+  assert.equal(await ev(() => S.planMode), "hours");
+  assert.match(await page.textContent("#settingsSummary"), /6 h\/day at 20 km\/h/);
+  assert.match(await page.textContent("#speedNote"), /No uploaded rides yet/);
+  // 6 h incl. 25 % breaks = 4.8 h riding: less than 20 km/h × 4.8 h because of the climbs and the (mocked) headwind
+  const st = await ev(() => S.stages.slice(0, -1).map((s) => [s.km, s.hours]));
+  for (const [km, h] of st) { assert.ok(Math.abs(h - 6) < 0.1, "hours " + h); assert.ok(km > 40 && km < 96, "km " + km); }
+});
+await test("hilly days are shorter than flat ones", async () => {
+  const r = await ev(() => S.stages.slice(0, -1).map((s) => ({ km: s.km, upPerKm: s.up / s.km })));
+  const hilly = r.reduce((x, y) => (y.upPerKm > x.upPerKm ? y : x)), flat = r.reduce((x, y) => (y.upPerKm < x.upPerKm ? y : x));
+  assert.ok(hilly.km < flat.km, JSON.stringify(r));
+});
+await test("a faster entered speed makes the days longer", async () => {
+  await ev(() => { $("settings").open = true; });
+  const before = await ev(() => S.stages[0].km);
+  await page.fill("#flatSpeed", "25"); await page.dispatchEvent("#flatSpeed", "change");
+  assert.ok((await ev(() => S.stages[0].km)) > before + 10);
+  assert.match(await page.textContent("#settingsSummary"), /25 km\/h/);
+  await page.fill("#flatSpeed", "20"); await page.dispatchEvent("#flatSpeed", "change");
+});
+await test("an uploaded ride measures your speed and breaks and is used for planning", async () => {
+  // 40 km of the route in 3:30 h (3 h moving) yesterday – much slower than 20 km/h on the flat
+  const now = Date.now(), n = 400; let trk = "";
+  for (let i = 0; i <= n; i++) {
+    const f = (i / n) * (40 / 375);
+    const t = now - 86400000 + (i < 200 ? i * 0.45 : 30 + i * 0.45) * 60000;
+    trk += `<trkpt lat="${(47.56 + 0.6 * f + 0.05 * Math.sin(f * 40)).toFixed(6)}" lon="${(7.59 - 4.5 * f).toFixed(6)}"><time>${new Date(t).toISOString()}</time></trkpt>`;
+  }
+  const ride = path.join(tmp, "ride.gpx");
+  fs.writeFileSync(ride, `<gpx><trk><trkseg>${trk}</trkseg></trk></gpx>`);
+  try {
+  await page.setInputFiles("#rideFile", ride);
+  await page.waitForTimeout(500);
+  assert.match(await page.textContent("#speedNote"), /From 1 uploaded ride.*used for planning/);
+  assert.match(await page.textContent("#settingsSummary"), /km\/h measured/);
+  // the measured values drive the plan: 16–18 km/h on the flat instead of the entered 20
+  const flat = await ev(() => flatSpeed(modelParams().P, S.mass));
+  assert.ok(flat > 15 && flat < 19, "measured flat speed " + flat);
+  assert.ok(Math.abs((await ev(() => modelParams().breaks)) - 1.17) < 0.05);
+  await page.uncheck("#useRides");
+  assert.ok(Math.abs((await ev(() => flatSpeed(modelParams().P, S.mass))) - 20) < 0.2, "unticked: back to the entered 20 km/h");
+  assert.equal(await ev(() => modelParams().breaks), 1.25);
+  await page.check("#useRides");
+  await page.fill("#breaks", "30"); await page.dispatchEvent("#breaks", "change");
+  assert.equal(await ev(() => S.useRides), false, "entering breaks by hand switches the measured values off");
+  } finally {
+    await ev(() => { S.days = {}; S.breaks = 25; S.useRides = true; saveGlobalSettings(); syncInputs(); setStartKm(0, true, false); return saveTourSettings(); });
+  }
+});
+await test("old saved tours switch to riding time", async () => {
+  await ev(async () => { const st = await idb.get("set|" + S.tourId); st.planMode = "km"; delete st.planModeChosen; await idb.set("set|" + S.tourId, st); });
+  await page.reload();
+  await page.waitForFunction(() => S.stages.length > 0);
+  assert.equal(await ev(() => S.planMode), "hours");
+});
+await test("fixed distance can still be chosen and is kept", async () => {
+  await ev(() => { $("settings").open = true; });
+  await page.click('label:has(input[name="planMode"][value="km"])');
+  await page.waitForTimeout(600);
+  await page.reload();
+  await page.waitForFunction(() => S.stages.length > 0);
+  assert.equal(await ev(() => S.planMode), "km");
+});
 await test("stages use the distance you set", async () => {
   assert.match(await page.textContent("#settingsSummary"), /80 km\/day/);
   assert.equal(await ev(() => S.stages[0].km.toFixed(0)), "80");
@@ -239,7 +303,7 @@ await test("weather models: the count and the comparison follow the choice", asy
   const n = await ev(() => S.models.size);
   await page.locator('#models input').first().uncheck();
   await page.waitForTimeout(200);
-  assert.match(await page.textContent("#settingsSummary"), new RegExp(`${n - 1} models`));
+  assert.equal(await ev(() => S.models.size), n - 1);
   await page.locator('#models input').first().check();
 });
 await test("settings are kept after a reload", async () => {

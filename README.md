@@ -80,14 +80,19 @@ on your phone, so you only do this once.
 
 Open **Settings** and choose:
 
-- **Plan each day by** distance (**km per day**) or by **hours on the road per
-  day** – with hours, each stage ends where your time is up, so hilly, gravel
-  or headwind days get shorter and easy days longer
+- **Plan each day by** **riding time** (default) or a **fixed distance**. With
+  riding time you set the **hours on the road per day** (incl. breaks); each day
+  ends where that time is up, worked out from your speed, the climbs, the road
+  surface and the forecast wind – hilly, gravel or headwind days get shorter,
+  easy days longer
+- **Your speed on flat asphalt** (no wind) and your **breaks** in %. Once you
+  upload recorded rides, the app measures both from them and plans with those
+  (tick box underneath; typing a speed or breaks yourself switches back to
+  your values)
 - **Next stage** – **Today**, **Tomorrow**, **In 2 days** … (today by default);
   pick a later day if you start or continue the tour after a break
 - **Daily departure** – when you usually set off
-- **Your speed on flat asphalt** (without wind and breaks), your **breaks** in
-  % and your **weight** with bike and luggage – the starting point for the
+- **Weight** with bike and luggage (under More settings) – used by the
   riding-time estimate (see *How riding times are estimated*)
 - **Weather models** – which forecasts to compare
 
@@ -121,8 +126,7 @@ Security → Location Services → Safari Websites → While Using the App**.
 You have two ways to close a day:
 
 - **🏁 End today here** (on today's card) saves your current position as the
-  end of today. The plan then continues tomorrow from there with your daily
-  distance. Tapped too early? **Undo** reopens the day.
+  end of today. The plan then continues tomorrow from there. Tapped too early? **Undo** reopens the day.
 - **📤 Upload today's ride (GPX)** – load the track you recorded with your
   bike computer, watch or phone app (Garmin, Wahoo, Komoot, Strava …). The app
   finds where the ride lies on your route, ends that day there and adds the
@@ -133,15 +137,13 @@ You have two ways to close a day:
 
 ### Your pace
 
-From your completed days the app learns how far you really ride per day (last
-seven riding days). From uploaded rides it also learns how strong you ride and
-how long your breaks are – see below. Only if you switch on **Plan with my
-average from completed days** (Settings → More settings) do the coming stages,
-riding times and the arrival date use this instead of the values you set.
-Changing the distance or hours per day switches it off again – what you set
-always wins. A day that shouldn't count can be removed with **✕** in the
-Completed list. "Your pace" in
-*What's ahead* shows the numbers.
+From uploaded rides the app measures how fast you really ride (as a speed on
+flat asphalt without wind) and how long your breaks are, and plans the coming
+days with that – as long as **Use speed and breaks measured from my uploaded
+rides** is ticked. Without uploaded rides it uses the speed and breaks you
+entered. In fixed-distance mode you can also plan with your average km/day
+from completed days (opt-in). A day that shouldn't count can be removed with
+**✕** in the Completed list.
 
 ### How riding times are estimated
 
