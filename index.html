@@ -497,7 +497,7 @@
 /* ---------- Configuration ---------- */
 
 // Bump with every release (and VERSION in sw.js): the app compares it with the published page to offer updates.
-const APP_VERSION = "2026-10-11.5";
+const APP_VERSION = "2026-10-11.6";
 
 // days = forecast_days requested from Open-Meteo, roughly the model's real horizon.
 const MODELS = [
@@ -2811,7 +2811,8 @@ function stageCard(st, k, w, compact) {
       <button type="button" data-reopen style="min-height:32px;padding:4px 10px">Undo</button></div>` : ""}
     <div class="btn-row">
       ${compact ? `<button type="button" data-goto="${k}">Details, models and hourly charts ↓</button>` : ""}
-      <button type="button" data-gpx="${k}">⬇ GPX of this stage</button>
+      <button type="button" data-gpx-copy="${k}" title="Copy the GPX text of this stage, to paste it into your navigation app">📋 Copy GPX</button>
+      <button type="button" data-gpx="${k}" title="Save this stage as a GPX file">⬇ GPX file</button>
     </div>
   </section>`;
 }
@@ -2857,7 +2858,7 @@ function todayCard(st, k, w) {
     ${(() => { const a = w.ok.length ? rainAdvice(st) : null; return a ? `<div class="advice">${a}</div>` : ""; })()}
     ${warnings.map((t) => `<div class="warn-line">${t}</div>`).join("")}
     <div class="btn-row icons">
-      <button type="button" data-gpx="${k}" title="Send this stage's GPX to your navigation app (e.g. Bergfex Touren)">📲<span>To nav app</span></button>
+      <button type="button" data-gpx-copy="${k}" title="Copy this stage's GPX text, then paste it into your navigation app (e.g. Bergfex Touren)">📋<span>Copy GPX</span></button>
       <button type="button" data-camp-open="${k}" title="Campsites near the end of this stage">⛺<span>Campsites</span></button>
       ${st.dayOffset === 0 ? `<button type="button" data-end-day title="Save your current position as the end of today">🏁<span>End day</span></button>
       <label class="button" for="rideFile" title="Upload the GPX you recorded today">📤<span>Upload ride</span></label>` : ""}
@@ -2921,7 +2922,7 @@ function comingDaysCard(weather, k0) {
         <div class="small">${wxText}</div>
         <div class="small muted dr-route">${stageTitle(st)}</div>
       </div>
-      <button type="button" data-gpx="${k}" title="GPX of this stage for your navigation app" aria-label="GPX of stage ${st.no}">📲<span class="small">GPX</span></button>
+      <button type="button" data-gpx-copy="${k}" title="Copy the GPX text of this stage" aria-label="Copy GPX of stage ${st.no}">📋<span class="small">GPX</span></button>
     </li>`;
   }).join("");
   const more = S.stages.length - k0 - list.length;
@@ -3700,6 +3701,36 @@ async function saveFile(file) {
   setTimeout(() => URL.revokeObjectURL(url), 30000);
 }
 
+// Puts text on the clipboard; the old textarea trick covers browsers without the Clipboard API.
+async function copyText(text) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(text); return true; }
+  } catch (e) { /* fall back below */ }
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.setAttribute("readonly", "");
+  ta.style.cssText = "position:fixed;top:0;left:0;opacity:0;font-size:16px";
+  document.body.appendChild(ta);
+  ta.select();
+  ta.setSelectionRange(0, text.length);
+  let ok = false;
+  try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+  ta.remove();
+  return ok;
+}
+
+// The GPX itself as text (not a file): paste it into a navigation app's import.
+async function copyStageGpx(k) {
+  const st = S.stages[k];
+  if (!st) return;
+  const text = stageGpx(st, k);
+  if (await copyText(text)) {
+    setStatus(`📋 GPX of stage ${st.no} copied (${fmt(st.km, 0)} km, ${numFmt(Math.round(text.length / 1024))} KB of text) – paste it into your navigation app.`);
+  } else {
+    setStatus("Copying didn't work here – use “⬇ GPX file” in the stage details instead.");
+  }
+}
+
 async function downloadStage(k) {
   const st = S.stages[k];
   if (!st) return;
@@ -4271,8 +4302,9 @@ function initControls() {
   $("locate").addEventListener("click", () => locate());
   $("deleteTour").addEventListener("click", deleteTour);
   document.addEventListener("click", (e) => {
-    const gpx = e.target.closest("[data-gpx]");
-    if (gpx) downloadStage(Number(gpx.dataset.gpx));
+    const gpx = e.target.closest("[data-gpx], [data-gpx-copy]");
+    if (gpx && gpx.dataset.gpxCopy != null) copyStageGpx(Number(gpx.dataset.gpxCopy));
+    else if (gpx) downloadStage(Number(gpx.dataset.gpx));
     if (e.target.closest("[data-end-day]")) endToday();
     if (e.target.closest("[data-rest-day]")) restDay();
     if (e.target.closest("[data-reopen]")) reopenToday();

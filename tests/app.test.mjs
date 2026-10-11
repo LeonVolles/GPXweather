@@ -70,7 +70,8 @@ const gpxFile = path.join(tmp, "tour.gpx");
 fs.writeFileSync(gpxFile, tourGpx());
 
 const browser = await chromium.launch();
-const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, timezoneId: "Europe/Berlin", acceptDownloads: true, serviceWorkers: "block" });
+const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, timezoneId: "Europe/Berlin", acceptDownloads: true, serviceWorkers: "block",
+  permissions: ["clipboard-read", "clipboard-write"] });
 await ctx.route("**/*", (route) => {
   const url = route.request().url();
   if (url.startsWith("http://127.0.0.1")) return route.continue();
@@ -225,8 +226,23 @@ await test("the chosen start day survives a reload", async () => {
   await page.selectOption("#date", { index: 0 });
   await page.waitForTimeout(1000);
 });
-await test("GPX download from the coming days list", async () => {
-  const [dl] = await Promise.all([page.waitForEvent("download"), page.locator(".day-row button[data-gpx]").first().click()]);
+await test("the GPX button in the coming days copies the GPX text itself", async () => {
+  await page.locator(".day-row button[data-gpx-copy]").first().click();
+  await page.waitForTimeout(200);
+  const text = await ev(() => navigator.clipboard.readText());
+  assert.match(text, /^<\?xml[\s\S]*<gpx[\s\S]*<trkpt lat=[\s\S]*<\/gpx>\s*$/);
+  assert.ok((text.match(/<trkpt/g) || []).length > 100);
+  assert.match(await page.textContent("#status"), /GPX of stage \d+ copied/);
+});
+await test("today's card copies the GPX text too", async () => {
+  await page.locator("#next .next-card [data-gpx-copy]").click();
+  await page.waitForTimeout(200);
+  const [first, text] = await ev(async () => [S.stages[0].no, await navigator.clipboard.readText()]);
+  assert.match(text, new RegExp(`Stage ${first}`));
+});
+await test("the stage details still offer a GPX file", async () => {
+  await ev(() => { $("sec-stages").open = true; });
+  const [dl] = await Promise.all([page.waitForEvent("download"), page.locator("#stages [data-gpx]").first().click()]);
   const gpx = fs.readFileSync(await dl.path(), "utf8");
   assert.match(dl.suggestedFilename(), /stage-\d+-\d{4}-\d\d-\d\d\.gpx$/);
   assert.ok((gpx.match(/<trkpt/g) || []).length > 100);
