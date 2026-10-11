@@ -965,7 +965,7 @@ function tourSettings() {
 let saveTimer = null;
 function saveTourSoon() {
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(saveTourSettings, 400);
+  saveTimer = setTimeout(() => { saveTimer = null; saveTourSettings(); }, 400);
 }
 
 async function saveTourSettings() {
@@ -1080,12 +1080,14 @@ function rangeStats(a, b) {
 
 /* Ride log: for every day the position where it started and where it ended (km). */
 
-function logPosition(prevKm, nextKm) {
+function logPosition(prevKm, nextKm, gps = false) {
   const d = todayStr();
+  if (S.date > d) return;      // the tour hasn't started yet: moving the position is planning, not riding
   const e = S.days[d];
   if (e && e.closed) return;   // the day was already ended; later position changes don't alter it
   if (e) e.end = nextKm;
   else S.days[d] = { start: prevKm, end: nextKm };
+  if (gps) S.days[d].gps = true;
 }
 
 function todayClosed() {
@@ -1125,9 +1127,13 @@ function completedDays() {
   }));
 }
 
-/* Your pace from the completed days (recent ones count): km per day and travel speed incl. breaks. */
+/* Your pace from the completed days (recent ones count): km per day and travel speed incl. breaks.
+   Only days you really rode count: ended days, uploaded rides or GPS positions – not just moving the slider. */
 function rideHistory() {
-  const days = completedDays().filter((d) => d.no && d.km >= 5).slice(-7);
+  const days = completedDays().filter((d) => {
+    const e = d.no && S.days[d.date];
+    return e && d.km >= 5 && (e.closed || e.rec || e.gps);
+  }).slice(-7);
   if (!days.length) return null;
   const timed = days.filter((d) => d.rec && d.rec.elapsedH > 0.3);
   const hours = sum(timed.map((d) => d.rec.elapsedH));
@@ -3993,12 +3999,12 @@ function syncInputs() {
   $("useHistory").checked = S.useHistory;
 }
 
-function setStartKm(km, force = false, log = true) {
+function setStartKm(km, force = false, log = true, gps = false) {
   const T = S.track;
   if (!T) return;
   const next = Math.max(0, Math.min(T.total / 1000, Math.round(km * 10) / 10));
   if (next === S.startKm && !force) return;
-  if (log) logPosition(S.startKm, next);
+  if (log) logPosition(S.startKm, next, gps);
   S.startKm = next;
   $("startKm").value = S.startKm;
   $("startKmNum").value = S.startKm;
@@ -4020,7 +4026,7 @@ function locate({ silent = false } = {}) {
   setStatus("Getting your location …");
   navigator.geolocation.getCurrentPosition((pos) => {
     const n = nearestKm(S.track, pos.coords.latitude, pos.coords.longitude);
-    setStartKm(n.km);
+    setStartKm(n.km, false, true, true);
     setStatus(n.offset > 2000
       ? `You are ${fmt(n.offset / 1000, 1, " km")} away from the route – nearest point: km ${fmt(n.km, 1)}.`
       : `Location found: km ${fmt(n.km, 1)} of the route.`);
@@ -4061,8 +4067,12 @@ function initControls() {
   $("startKmNum").addEventListener("change", (e) => setStartKm(Number(e.target.value) || 0));
   $("resetPos").addEventListener("click", () => setStartKm(0));
   $("date").addEventListener("change", (e) => {
-    S.date = e.target.value || todayStr();
+    // Some date pickers (iOS) send an empty value while scrolling or on "Reset" – keep the date you had.
+    if (!e.target.value) { e.target.value = S.date; return; }
+    S.date = e.target.value;
     recompute({ weatherDelay: 300 });
+    clearTimeout(saveTimer);
+    saveTourSettings();
   });
   $("dep").addEventListener("change", (e) => { S.dep = e.target.value || DEFAULTS.dep; recompute({ weatherDelay: 300 }); });
   const num = (id, key, lo, hi) => $(id).addEventListener("change", (e) => {
@@ -4166,7 +4176,11 @@ function initControls() {
   const mq = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
   if (mq && mq.addEventListener) mq.addEventListener("change", () => render());
   window.addEventListener("online", () => scheduleWeather(0));
+  // Save right away when the app goes to the background – a pending save may otherwise never run.
+  const flushSave = () => { if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; saveTourSettings(); } };
+  window.addEventListener("pagehide", flushSave);
   document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") flushSave();
     if (document.visibilityState !== "visible" || !S.track) return;
     if (S.date < todayStr()) { S.date = todayStr(); syncInputs(); recompute(); }
     if (S.autoGps) locate({ silent: true });
