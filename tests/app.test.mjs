@@ -37,7 +37,7 @@ function forecast(url) {
   const seed = u.searchParams.get("models").length, now = new Date();
   const out = lats.map(() => {
     const h = { time: [], temperature_2m: [], apparent_temperature: [], precipitation: [], precipitation_probability: [],
-      weather_code: [], wind_speed_10m: [], wind_direction_10m: [], wind_gusts_10m: [], sunshine_duration: [] };
+      weather_code: [], wind_speed_10m: [], wind_direction_10m: [], wind_gusts_10m: [], sunshine_duration: [], cloud_cover: [] };
     for (let i = 0; i < days * 24; i++) {
       const d = new Date(now.getFullYear(), now.getMonth(), now.getDate(), i), hr = i % 24, day = Math.floor(i / 24);
       const rain = day % 3 === 1 && hr > 12 && hr < 16 ? 1.2 + (seed % 2) : 0;
@@ -51,6 +51,7 @@ function forecast(url) {
       h.wind_direction_10m.push(250 + seed * 3);
       h.wind_gusts_10m.push(30 + (seed % 7));
       h.sunshine_duration.push(hr > 8 && hr < 17 && !rain ? 3000 : 0);
+      h.cloud_cover.push(rain ? 95 : 20 + (seed % 4) * 10);
     }
     return { utc_offset_seconds: 7200, hourly: h };
   });
@@ -104,6 +105,25 @@ await test("days are planned by riding time with the entered speed by default", 
   // 6 h incl. 25 % breaks = 4.8 h riding: less than 20 km/h × 4.8 h because of the climbs and the (mocked) headwind
   const st = await ev(() => S.stages.slice(0, -1).map((s) => [s.km, s.hours]));
   for (const [km, h] of st) { assert.ok(Math.abs(h - 6) < 0.1, "hours " + h); assert.ok(km > 40 && km < 96, "km " + km); }
+});
+await test("page order: GPS button, tour overview, completed, today, today's map, coming days", async () => {
+  assert.match(await page.textContent("#locate"), /Get current GPS location/);
+  const order = await ev(() => ["overviewCard", "sec-done", "next", "mapCard", "coming"].map((id) => $(id).getBoundingClientRect().top));
+  for (let i = 1; i < order.length; i++) assert.ok(order[i] >= order[i - 1], "order " + order);
+  assert.equal(await ev(() => !!document.querySelector("#sec-stages, #sec-models, #sec-profile, #sec-route")), false, "old sections gone");
+  assert.equal(await ev(() => $("sec-tour").open), false);
+  assert.equal(await page.locator(".day-detail").count(), 0, "only today is open");
+});
+await test("the tour overview folds out map, elevation profile and route details", async () => {
+  await page.locator("#sec-tour summary").click();
+  await page.waitForTimeout(800);
+  assert.equal(await page.locator("#tourMap.leaflet-container").count(), 1);
+  assert.ok(await page.locator("#profile .main-svg").count() > 0);
+  assert.match(await page.textContent("#preview"), /Length/);
+  await page.locator("#sec-tour summary").click();
+});
+await test("clothing advice for the day", async () => {
+  assert.match(await page.textContent("#next .wear"), /👕 .+/);
 });
 await test("hilly days are shorter than flat ones", async () => {
   const r = await ev(() => S.stages.slice(0, -1).map((s) => ({ km: s.km, upPerKm: s.up / s.km })));
@@ -256,15 +276,14 @@ await test("the copy button copies the GPX text itself", async () => {
   assert.match(text, /^<\?xml[\s\S]*<gpx[\s\S]*<trkpt lat=[\s\S]*<\/gpx>\s*$/);
   assert.match(await page.textContent("#status"), /GPX of stage \d+ copied/);
 });
-await test("the stage details still offer a GPX file", async () => {
-  await ev(() => { $("sec-stages").open = true; });
-  const [dl] = await Promise.all([page.waitForEvent("download"), page.locator("#stages [data-gpx]").first().click()]);
+await test("today's card offers the GPX file too", async () => {
+  const [dl] = await Promise.all([page.waitForEvent("download"), page.locator("#next [data-gpx]").first().click()]);
   const gpx = fs.readFileSync(await dl.path(), "utf8");
   assert.match(dl.suggestedFilename(), /stage-\d+-\d{4}-\d\d-\d\d\.gpx$/);
   assert.ok((gpx.match(/<trkpt/g) || []).length > 100);
 });
-await test("tapping a coming day opens it in place, without jumping down", async () => {
-  await ev(() => { $("sec-stages").open = false; window.scrollTo(0, 0); });
+await test("tapping a coming day opens it in place with its own route map, without jumping down", async () => {
+  await ev(() => window.scrollTo(0, 0));
   const k = await ev(() => Number(document.querySelectorAll(".day-row")[1].dataset.openStage));
   const row = page.locator(`.day-row[data-open-stage="${k}"] .dr-main`);   // re-found after every re-render
   await ev((k) => document.querySelector(`.day-row[data-open-stage="${k}"]`).scrollIntoView({ block: "center" }), k);
@@ -274,22 +293,29 @@ await test("tapping a coming day opens it in place, without jumping down", async
   await page.waitForTimeout(500);
   assert.equal(await page.locator(".day-detail .day-inline").count(), 1);
   assert.ok(Math.abs((await ev(() => window.scrollY)) - y0) < 5, "page scrolled");
-  assert.equal(await ev(() => $("sec-stages").open), false);
   const detail = await page.locator(".day-detail").innerText();
-  assert.match(detail, /Distance/); assert.match(detail, /Open in app/); assert.match(detail, /Copy GPX/);
-  // stays open while the app re-renders (e.g. new weather), closes on a second tap
+  assert.match(detail, /Distance/); assert.match(detail, /Open in app/); assert.match(detail, /Copy GPX/); assert.match(detail, /👕/);
+  assert.equal(await page.locator(".day-detail .day-map-el.leaflet-container").count(), 1, "route map of the day");
+  // the map element survives re-renders (no reload of tiles), the day stays open; a second tap closes it
+  const mapId = await ev(() => document.querySelector(".day-detail .day-map-el")._leaflet_id);
   await ev(() => render());
   assert.equal(await page.locator(".day-detail").count(), 1);
+  assert.equal(await ev(() => document.querySelector(".day-detail .day-map-el")._leaflet_id), mapId);
   await page.locator(".day-row.open .dr-main").click();
   await page.waitForTimeout(200);
   assert.equal(await page.locator(".day-detail").count(), 0);
 });
-await test("Models & hourly still opens the full stage with its charts", async () => {
-  await page.locator("#next .next-card details.more summary").click();
-  await page.locator("#next .next-card [data-goto]").click();
+await test("each day has the weather model comparison folded in, with hourly charts", async () => {
+  const det = page.locator("#next details[data-models]");
+  await det.locator("summary").click();
   await page.waitForTimeout(800);
-  assert.equal(await ev(() => $("sec-stages").open), true);
-  assert.ok(await page.locator("[id^=h-temp-] .main-svg").count() > 0);
+  const txt = await det.innerText();
+  assert.match(txt, /ECMWF/); assert.match(txt, /Median/); assert.match(txt, /Cloud cover/);
+  assert.ok(await det.locator("[id^=h-temp-] .main-svg").count() > 0);
+  await ev(() => render());   // stays open with charts after a re-render
+  assert.equal(await ev(() => document.querySelector("#next details[data-models]").open), true);
+  assert.ok(await page.locator("#next [id^=h-temp-] .main-svg").count() > 0);
+  await page.locator("#next details[data-models] summary").click();
 });
 await test("offline banner", async () => {
   await ctx.setOffline(true);
@@ -300,6 +326,7 @@ await test("offline banner", async () => {
   assert.equal(await ev(() => $("offline").classList.contains("hidden")), true);
 });
 await test("PDF of the whole forecast", async () => {
+  await ev(() => { $("sec-tour").open = true; });
   const [dl] = await Promise.all([page.waitForEvent("download", { timeout: 60000 }), page.click("#pdfBtn")]);
   assert.match(dl.suggestedFilename(), /forecast.*\.pdf$/);
 });
@@ -326,8 +353,8 @@ await test("your exact case: old 'use my average' setting + 33 km days, distance
 // Every setting must change the plan and every view of it (today card, coming days, table, summary).
 const snapshot = () => ev(() => JSON.stringify({
   stages: S.stages.map((s) => [Math.round(s.a), Math.round(s.b), s.date, Math.round(s.hours * 60), Math.round(s.dep)]),
-  today: $("next").innerText, table: $("overview").textContent, summary: $("settingsSummary").textContent,
-  progress: $("progress").innerText, stagesHtml: $("stages").textContent.length,
+  today: $("next").innerText, table: $("coming").textContent, summary: $("settingsSummary").textContent,
+  progress: $("progress").innerText,
 }));
 async function changes(name, act, check) {
   await test(`changing "${name}" updates the plan and every view`, async () => {

@@ -172,47 +172,36 @@ breaks – so a slow day in the hills is not mistaken for being slow in general.
 
 ### 4. Read the forecast
 
-The start page only shows what you need for a quick check:
+The page runs in the order of your tour – only today is open, everything else
+opens with a tap:
 
-- **Tour progress** – how much of the whole route you have ridden, what is
-  left, the number of days to go and the expected arrival.
-- **Today's stage** (green box) – 📏 distance, ⏱️ time on the road (🚴 riding +
-  ☕ breaks), weather and 💨 wind, your progress today and any warnings. Below
-  are four buttons: **📲 Open in app** (share menu with today's GPX file – pick
-  Bergfex Touren or your navigation app), **📋 Copy GPX** (the GPX text), **⛺ Campsites** near
-  tonight's stop, **🏁 End day** and **📤 Upload ride**. **More about this stage** opens the
-  details: surface, elevation, time estimate, weather and night, campsites and
-  the GPX.
-- **Hour by hour** – a small strip on today's card: for every hour where you
-  will be (km), the weather there, rain and head-/tailwind (↓ headwind,
-  ↑ tailwind).
-- **💡 Rain advice** – only when rain is expected on your way: when and where,
-  and whether starting earlier/later, taking a break or riding a bit faster or
-  slower would keep you dry.
-- **The map**, zoomed to today's route; switch to **Whole tour** for the
-  overview. Two optional overlays:
-  - **🌧️ Radar** – live rain radar (RainViewer) with a time slider; for each
-    radar time a 🚴 shows where you will be.
-  - **🛒 Supplies** – 💧 drinking water, 🛒 supermarkets, 🥖 bakeries, 🔧 bike
-    shops and repair stations, 🚻 toilets along today's route, within the
-    detour you choose (0.5–5 km).
-
-- **📅 Coming days** – the next days at a glance: weather along the way
-  (temperature, rain, head- or tailwind) and a **📲 GPX** button for each day (share menu with the GPX file). Tap a
-  day to open its full card right there in the list; tap again to close it.
-
-Everything else is folded away and opens with a tap: **Upcoming stages** (table
-and all day cards), **Completed**, **Weather models compared**, **Elevation
-profile** and **Route details**.
-
-- In each stage, tap **Model comparison and hour-by-hour** to see every
-  weather model side by side and hourly charts along the route.
-- **📋 Copy GPX** copies that day's route as GPX text; **⬇ GPX file** saves it
-  as a file (or opens the share sheet on a phone).
+1. **Tour overview** – how much you have ridden (dark green), today's stage
+   (light green), what is left, days to go and the expected arrival.
+   **🗺️ Whole tour** folds out the map of the whole route, the elevation
+   profile, the route details and the PDF.
+2. **✓ Completed** – the days behind you with km, climb, time and a GPX of
+   each; this is also where you **📤 upload** a ride you recorded.
+3. **Today** (green box) – 📏 distance, ⏱️ time on the road (🚴 riding +
+   ☕ breaks), weather with ☁️ cloud cover and 💨 wind, **👕 what to wear**,
+   an **hour-by-hour** strip (where you will be and the weather there),
+   **💡 rain advice** when rain is expected, and warnings. Buttons:
+   **📲 Open in app** (share menu with the GPX file – pick Bergfex Touren or
+   your navigation app), **📋 Copy GPX** (the GPX text), **⛺ Campsites** and
+   **🏁 End day**. **More about this day** has surface, elevation, the time
+   estimate, day and night weather, **📤 Upload today's ride** and **😴 Rest
+   day**. **🌦️ Weather models compared** shows what every model expects, with
+   hourly charts.
+4. **Today's route** on the map; switch to **Whole tour** any time. Optional
+   overlays: **🌧️ Radar** (live rain radar with a time slider and a 🚴 where
+   you will be) and **🛒 Supplies** (water, shops, bakeries, bike repair,
+   toilets along today's route).
+5. **📅 Coming days** – one line per day: distance, time on the road and the
+   weather (temperature, rain, head- ↓ or tailwind ↑). Tap a day to open it in
+   place: the same card as today plus a map of that day's route.
 
 ### Rest days
 
-Not riding today? Open **More about this stage** and tap **😴 Rest day** – the
+Not riding today? Open **More about this day** and tap **😴 Rest day** – the
 plan simply continues tomorrow.
 
 ### 5. Find a campsite for the night

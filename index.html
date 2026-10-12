@@ -225,11 +225,18 @@
   .day-row { display: flex; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--grid); cursor: pointer; }
   .day-row:last-child { border-bottom: none; }
   .day-row .dr-main { flex: 1 1 auto; min-width: 0; }
+  .day-row .dr-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .day-row .dr-route { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .day-row button { flex: none; flex-direction: column; gap: 0; min-width: 56px; padding: 4px 8px; font-size: 1.2rem; }
   .day-row button span { font-size: 0.72rem; color: var(--ink-2); }
   .wx-ico { font-size: 1.15rem; }
   .day-row.open { border-bottom: none; }
+  .tour-map { height: 320px; border-radius: 12px; margin-top: 10px; z-index: 0; }
+  .day-map-el { height: 240px; border-radius: 12px; margin-top: 12px; z-index: 0; }
+  .wear { margin-top: 10px; padding: 8px 12px; border-radius: 10px; background: var(--surface-2); font-size: 0.92rem; }
+  .day-inline .wear { background: var(--surface); }
+  #pdf-charts { position: absolute; left: -10000px; top: 0; width: 1000px; }
+  details[data-models] .table-wrap { margin-top: 6px; }
   .dr-chev { color: var(--muted); font-size: 0.9rem; flex: none; }
   .day-detail { padding: 0 0 12px; border-bottom: 1px solid var(--grid); }
   .day-inline { background: var(--surface-2); border-radius: 12px; padding: 12px; }
@@ -286,7 +293,7 @@
   </label>
 
   <div class="btn-row quick">
-    <button type="button" class="primary" id="locate" title="Find your position on the route (GPS)">📍 Where am I?</button>
+    <button type="button" class="primary" id="locate" title="Find your position on the route (GPS)">📍 Get current GPS location</button>
     <button type="button" id="refresh" title="Refresh weather" aria-label="Refresh weather">🔄</button>
   </div>
   <div id="offline" class="offline hidden" role="status"></div>
@@ -411,10 +418,30 @@
 </div>
 
 <div id="content" class="hidden">
-  <div class="card" id="progress"></div>
+  <!-- 1. The whole tour at a glance; map, elevation and route details fold out -->
+  <div class="card" id="overviewCard">
+    <div id="progress"></div>
+    <details class="more" id="sec-tour">
+      <summary>🗺️ Whole tour: map, elevation &amp; details <span class="muted small" id="sum-route"></span></summary>
+      <div id="tourMap" class="tour-map"></div>
+      <div id="profile" class="chart" style="margin-top:10px"></div>
+      <div class="tiles" id="preview" style="margin-top:10px"></div>
+      <div id="gap-note" class="small muted" style="margin-top:10px"></div>
+      <div class="tiles" id="totals" style="margin-top:10px"></div>
+      <div class="btn-row"><button type="button" id="pdfBtn">📄 Whole forecast as PDF</button></div>
+    </details>
+  </div>
+
+  <!-- 2. What is behind you: collapsed, with the ride upload -->
+  <details class="card section" id="sec-done">
+    <summary>✓ Completed <span class="muted small" id="sum-done"></span></summary>
+    <div id="done-list"></div>
+  </details>
+
+  <!-- 3. Today (or the next riding day), then today's route -->
   <div id="next"></div>
 
-  <div class="card">
+  <div class="card" id="mapCard">
     <div class="map-head">
       <b id="mapTitle">Today's route</b>
       <div class="seg" role="group" aria-label="Map view">
@@ -445,43 +472,14 @@
     </div>
   </div>
 
-  <details class="card section" id="sec-stages">
-    <summary>📅 Upcoming stages <span class="muted small" id="sum-stages"></span></summary>
-    <div class="table-wrap"><table id="overview"></table></div>
-    <div id="stages"></div>
-  </details>
+  <!-- 4. The days after today, in order; each one opens in place -->
+  <div id="coming"></div>
 
-  <details class="card section" id="sec-done">
-    <summary>✓ Completed <span class="muted small" id="sum-done"></span></summary>
-    <div id="done-list"></div>
-  </details>
-
-  <details class="card section" id="sec-models">
-    <summary>🌦️ Weather models compared</summary>
-    <p class="small muted">Each dot is one weather model, the bar is the median.
-      Dots far apart mean the models disagree and the forecast is uncertain.</p>
-    <div id="cmp-legend" class="models small"></div>
-    <div id="cmp-empty" class="muted small hidden" style="padding:12px 0">No weather data yet.</div>
-    <div id="cmp-temp" class="chart"></div>
-    <div id="cmp-rain" class="chart"></div>
-    <div id="cmp-head" class="chart"></div>
-    <div id="cmp-gust" class="chart"></div>
-  </details>
-
-  <details class="card section" id="sec-profile">
-    <summary>⛰️ Elevation profile</summary>
-    <div id="profile" class="chart"></div>
-  </details>
-
-  <details class="card section" id="sec-route">
-    <summary>ℹ️ Route details <span class="muted small" id="sum-route"></span></summary>
-    <div class="tiles" id="preview"></div>
-    <div id="gap-note" class="small muted" style="margin-top:10px"></div>
-    <div class="tiles" id="totals" style="margin-top:10px"></div>
-  </details>
-
-  <div class="card">
-    <button type="button" id="pdfBtn" style="width:100%">📄 Download the whole forecast as PDF</button>
+  <!-- Charts for the PDF only (drawn off-screen when a PDF is made) -->
+  <div id="pdf-charts" aria-hidden="true">
+    <div id="cmp-legend"></div><div id="cmp-empty" class="hidden"></div>
+    <div id="cmp-temp" class="chart"></div><div id="cmp-rain" class="chart"></div>
+    <div id="cmp-head" class="chart"></div><div id="cmp-gust" class="chart"></div>
   </div>
 </div>
 
@@ -502,7 +500,7 @@
 /* ---------- Configuration ---------- */
 
 // Bump with every release (and VERSION in sw.js): the app compares it with the published page to offer updates.
-const APP_VERSION = "2026-10-11.7";
+const APP_VERSION = "2026-10-12.1";
 
 // days = forecast_days requested from Open-Meteo, roughly the model's real horizon.
 const MODELS = [
@@ -515,7 +513,7 @@ const MODELS = [
 
 const HOURLY = [
   "temperature_2m", "apparent_temperature", "precipitation", "precipitation_probability",
-  "weather_code", "wind_speed_10m", "wind_direction_10m", "wind_gusts_10m", "sunshine_duration",
+  "weather_code", "wind_speed_10m", "wind_direction_10m", "wind_gusts_10m", "sunshine_duration", "cloud_cover",
 ].join(",");
 
 // Weather is fetched on a fixed grid along the track, so moving sliders reuses cached points.
@@ -2062,6 +2060,7 @@ function analyze(stage, model) {
       speed, dir,
       head: speed != null && dir != null ? speed * Math.cos((dir - brg) * rad) : null,
       gust: valueAt(e, "wind_gusts_10m", key),
+      cloud: valueAt(e, "cloud_cover", key),
       sun: sun == null ? null : (sun / 3600) * weight,
     });
   }
@@ -2099,6 +2098,7 @@ function analyze(stage, model) {
     dir: meanDir(hours.map((h) => h.dir), hours.map((h) => (h.speed || 0) * h.weight)),
     head: wavg("head"),
     gust: gusts.length ? Math.max(...gusts) : null,
+    cloud: wavg("cloud"),
     sun: suns.length ? sum(suns) : null,
     code: codes.length ? Math.max(...codes) : null,
     nightMin: nt.length ? Math.min(...nt) : null,
@@ -2135,6 +2135,7 @@ function stageWeather(stage) {
     head: { label: "Avg. headwind", unit: " km/h", d: 0, vals: vals("head") },
     gust: { label: "Max. gusts", unit: " km/h", d: 0, vals: vals("gust") },
     sun: { label: "Sunshine while riding", unit: " h", d: 1, vals: vals("sun") },
+    cloud: { label: "Cloud cover while riding", unit: " %", d: 0, vals: vals("cloud") },
     nightMin: { label: "Night low at destination", unit: " °C", d: 0, vals: vals("nightMin") },
   };
   for (const [key, m] of Object.entries(metrics)) {
@@ -2164,6 +2165,7 @@ function agreement(key, m, all) {
     case "prob": return s <= 25 ? 0 : s <= 50 ? 1 : 2;
     case "speed": case "head": return s <= 5 ? 0 : s <= 10 ? 1 : 2;
     case "gust": return s <= 10 ? 0 : s <= 20 ? 1 : 2;
+    case "cloud": return s <= 25 ? 0 : s <= 50 ? 1 : 2;
     case "dir": {
       if ((all.speed.med ?? 0) < 8) return null;   // direction barely matters in light wind
       return s <= 45 ? 0 : s <= 90 ? 1 : 2;
@@ -2238,10 +2240,11 @@ function render() {
   } catch (e) { console.error(e); }
   // Each part renders on its own, so a failure in one (e.g. a CDN library missing) never hides the route.
   // Charts in closed sections are drawn when the section is opened.
+  lastWeather = weather;
   const parts = [
-    () => renderProgress(), () => renderNext(weather), () => renderMap(), () => renderSummaries(),
-    () => renderPreview(), () => renderTotals(weather), () => renderDone(), () => renderOverview(weather), () => renderStages(weather),
-    () => { if ($("sec-profile").open) renderProfile(); }, () => { if ($("sec-models").open) renderComparison(weather); },
+    () => renderProgress(), () => renderSummaries(), () => renderDone(), () => renderNext(weather), () => renderMap(),
+    () => renderComing(weather), () => renderPreview(), () => renderTotals(weather),
+    () => { if ($("sec-tour").open) { renderTourMap(); renderProfile(); } },
   ];
   for (const part of parts) {
     try { part(); } catch (e) { console.error(e); }
@@ -2274,9 +2277,7 @@ function renderProgress() {
 function renderSummaries() {
   const st = S.stages, T = S.track;
   const last = st[st.length - 1];
-  $("sum-stages").textContent = st.length ? `· ${st.length} · arrival ${fmtDate(last.date)}` : "· none left";
   const done = completedDays();
-  $("sec-done").classList.toggle("hidden", !done.length);
   const dated = done.filter((d) => d.no).length;
   $("sum-done").textContent = done.length
     ? `· ${dated ? `${dated} day${dated > 1 ? "s" : ""} · ` : ""}${fmt(sum(done.map((d) => d.km)), 0)} km` : "";
@@ -2562,52 +2563,6 @@ function cellStatus(w) {
   return `<span class="muted">no weather data yet</span>`;
 }
 
-function renderOverview(weather) {
-  const head = `<thead><tr>
-    <th>#</th><th>Date</th><th class="opt">Route</th><th class="r">km</th><th class="r">↑ m</th><th class="r opt">↓ m</th>
-    <th class="r opt">Time</th><th>Weather</th><th class="r">°C</th><th class="r">Rain</th><th class="r opt">Prob.</th>
-    <th class="opt">Wind</th><th class="r">Head/tail</th><th class="r opt">Gusts</th><th class="opt">Agreement</th></tr></thead>`;
-  const rows = S.stages.map((st, k) => {
-    const w = weather[k], m = w.metrics;
-    const codes = w.ok.map((mm) => w.per[mm.id].code);
-    const [icon, text] = wxInfo(codes.length ? Math.round(median(codes)) : null);
-    const rv = clean(m.rain.vals);
-    const rainRange = rv.length > 1 ? ` <span class="muted opt">(${fmt(Math.min(...rv), 1)}–${fmt(Math.max(...rv), 1)})</span>` : "";
-    const ht = m.head.med == null ? "–" : Math.abs(m.head.med) < 3 ? "±0" : m.head.med > 0 ? `↓ ${fmt(m.head.med, 0)}` : `↑ ${fmt(-m.head.med, 0)}`;
-    return `<tr class="click" data-stage="${k}">
-      <td><b>${st.no}</b></td>
-      <td>${st.dayOffset === 0 ? "<b>Today</b>" : fmtDate(st.date)}</td>
-      <td class="opt">${stageTitle(st)}${st.gapKm > 0.5 ? ` <span class="muted small" title="gap in the GPX">(┄ ${fmt(st.gapKm, 0)} km)</span>` : ""}</td>
-      <td class="r num">${fmt(st.km, 0)}</td>
-      <td class="r num">${fmt(st.up, 0)}</td>
-      <td class="r num opt">${fmt(st.down, 0)}</td>
-      <td class="r num opt">${fmtDuration(st.hours)}</td>
-      <td title="${text}">${w.ok.length ? icon + `<span class="opt"> ${text}</span>` : "–"}</td>
-      <td class="r num">${m.tmin.med != null ? fmt(m.tmin.med, 0) + "–" + fmt(m.tmax.med, 0) : "–"}</td>
-      <td class="r num">${fmt(m.rain.med, 1)}${rainRange}</td>
-      <td class="r num opt">${fmt(m.prob.med, 0, " %")}</td>
-      <td class="opt">${m.speed.med != null ? `${arrow(m.dir.med)} ${fmt(m.speed.med, 0)} km/h ${compass(m.dir.med)}` : "–"}</td>
-      <td class="r num" title="km/h; ↓ headwind, ↑ tailwind">${ht}</td>
-      <td class="r num opt">${fmt(m.gust.med, 0, " km/h")}</td>
-      <td class="opt">${cellStatus(w)}</td>
-    </tr>`;
-  }).join("");
-  $("overview").innerHTML = head + `<tbody>${rows}</tbody>` +
-    `<caption class="small muted" style="caption-side:bottom;text-align:left;padding-top:8px;white-space:normal">Temperature in °C and rain in mm while riding (median of the models).
-     Head/tail: average km/h, ↓ = headwind, ↑ = tailwind. Tap a row for details.</caption>`;
-  $("overview").querySelectorAll("tr.click").forEach((tr) => tr.addEventListener("click", () => openStage(Number(tr.dataset.stage))));
-}
-
-function openStage(k) {
-  $("sec-stages").open = true;
-  openCards.add(k);
-  const el = $("stage-" + k);
-  if (!el) return;
-  const d = el.querySelector("details");
-  if (d) d.open = true;
-  el.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
 function headText(v) {
   if (v == null) return "–";
   if (Math.abs(v) < 3) return `<span class="muted">hardly any head- or tailwind</span>`;
@@ -2753,78 +2708,38 @@ function surfaceTile(st) {
   return `<div class="tile"><div class="k">Surface</div><div class="v num">${fmt(v0 * 100, 0)} % ${SURFACES[k0].key === "paved" ? "paved" : SURFACES[k0].label}</div><div class="s">${rest || "&nbsp;"}</div></div>`;
 }
 
-// One stage card. `compact` is the highlighted "today / next stage" box at the top.
-function stageCard(st, k, w, compact) {
-  const m = w.metrics;
-  const v = w.ok.length ? verdict(w) : null;
-  const sun = stageSun(st, w);
+const moreOpen = new Set();     // days whose "More about this day" is open
+const modelsOpen = new Set();   // days whose weather model comparison is open
+const comingOpen = new Set();   // coming days opened in place
+let lastWeather = [];
 
-  const warnings = stageWarnings(st, w, sun);
-  const codes = w.ok.map((mm) => w.per[mm.id].code);
-
-  const { day: daySummary, night: nightSummary } = stageSummaries(st, w);
-  const headTile = m.head.med == null
-    ? ["Head-/tailwind", "–", "no weather data"]
-    : [m.head.med < 0 ? "Avg. tailwind" : "Avg. headwind", fmt(Math.abs(m.head.med), 0, " km/h"),
-       Math.abs(m.head.med) < 3 ? "hardly noticeable" : m.head.med < 0 ? "pushing from behind" : "slowing you down"];
-  const rv = clean(m.rain.vals);
-  const label = compact ? (st.dayOffset === 0 ? "Today · " : st.dayOffset === 1 ? "Tomorrow · " : "Next · ") : "";
-
-  return `<section class="card ${compact ? "next-card" : ""}" ${compact ? "" : `id="stage-${k}"`}>
-    <div class="stage-head">
-      <div>
-        <h3>${label}Stage ${st.no}: ${stageTitle(st)}</h3>
-        <p>${fmtDate(st.date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })} ·
-           ${fmtMinutes(st.dep)} → about ${fmtMinutes(st.arr)}
-           ${sun ? ` · sun ${fmtMinutes(sun.rise)}–${fmtMinutes(sun.set)}` : ""}
-           ${st.section ? `<br><span class="small muted">GPX section: ${esc(st.section)}</span>` : ""}</p>
-      </div>
-      <div class="stage-badges">
-        ${v ? `<span class="badge ${v[0]}"><span class="dot"></span>${v[1]}</span>` : ""}
-        ${w.ok.length ? badge(w.overall) : ""}
-        <span class="badge muted">${w.ok.length}/${S.models.size} models</span>
-      </div>
-    </div>
-    <div class="tiles" style="margin-top:12px">
-      <div class="tile"><div class="k">Distance</div><div class="v num">${fmt(st.km, 1, " km")}</div><div class="s">km ${fmt(st.a / 1000, 0)}–${fmt(st.b / 1000, 0)}</div></div>
-      <div class="tile"><div class="k">Climb</div><div class="v num">↑ ${fmt(st.up, 0, " m")}</div><div class="s">descent ↓ ${fmt(st.down, 0, " m")}</div></div>
-      <div class="tile"><div class="k">Time on the road</div><div class="v num">${fmtDuration(st.hours)}</div><div class="s">${fmtDuration(st.moving)} riding + breaks · avg. ${fmt(st.km / (st.moving || 1), 1)} km/h</div></div>
-      ${surfaceTile(st)}
-      <div class="tile"><div class="k">Rain (median)</div><div class="v num">${fmt(m.rain.med, 1, " mm")}</div><div class="s">${rv.length > 1 ? `range ${fmt(Math.min(...rv), 1)}–${fmt(Math.max(...rv), 1)} mm` : ""}</div></div>
-      <div class="tile"><div class="k">${headTile[0]}</div><div class="v num">${headTile[1]}</div><div class="s">${headTile[2]}</div></div>
-    </div>
-    ${st.done > 0.05 && st.dayOffset === 0 ? `<div class="progress" title="ridden today">
-        <div class="progress-bar" style="width:${Math.min(100, (100 * st.done) / (st.km || 1)).toFixed(1)}%"></div></div>
-      <div class="small">Ridden today: <b>${fmt(st.done, 1)} km</b> · ${fmt(Math.max(0, st.km - st.done), 1)} km to go</div>` : ""}
-    ${sparkline(st)}
-    <div class="small muted" style="margin-top:6px">${timeText(st)}</div>
-    <div class="summary-box day-summary">${daySummary}</div>
-    ${nightSummary ? `<div class="summary-box night-summary">${nightSummary}</div>` : ""}
-    ${warnings.map((t) => `<div class="warn-line">${t}</div>`).join("")}
-    ${w.errors.length ? `<div class="warn-line muted small">${esc(w.errors.join(" · "))}</div>` : ""}
-    ${!compact && w.ok.length ? `<details data-stage="${k}" ${openCards.has(k) ? "open" : ""}>
-      <summary>Model comparison and hour-by-hour</summary>
-      ${comparisonTable(w)}
-      <div id="hourly-${k}"></div>
-    </details>` : ""}
-    ${campSection(st, k)}
-    ${compact && st.dayOffset === 0 ? `<div class="btn-row">
-      <button type="button" data-end-day>🏁 End today here (km ${fmt(S.startKm, 1)})</button>
-      <label class="button" for="rideFile">📤 Upload today's ride (GPX)</label>
-    </div>` : ""}
-    ${compact && st.dayOffset === 1 && todayClosed() ? `<div class="small muted" style="margin-top:10px">Today ended at km ${fmt(S.startKm, 1)}.
-      <button type="button" data-reopen style="min-height:32px;padding:4px 10px">Undo</button></div>` : ""}
-    <div class="btn-row">
-      ${compact ? `<button type="button" data-goto="${k}">Details, models and hourly charts ↓</button>` : ""}
-      <button type="button" data-gpx-copy="${k}" title="Copy the GPX text of this stage, to paste it into your navigation app">📋 Copy GPX</button>
-      <button type="button" data-gpx="${k}" title="Save this stage as a GPX file">⬇ GPX file</button>
-    </div>
-  </section>`;
+function dayLabel(st) {
+  return st.dayOffset === 0 ? "Today" : st.dayOffset === 1 ? "Tomorrow" : fmtDate(st.date);
 }
 
-// The landing card for today (or the next stage): only what you need at a glance; the rest is one tap away.
-// `inline`: the same card opened inside the coming-days list (the row above already names the day).
-function todayCard(st, k, w, inline = false) {
+// What to wear: from the coldest "feels like" while riding, the warmest hour, rain, wind and sun.
+function clothing(w) {
+  if (!w.ok.length) return null;
+  const m = w.metrics;
+  const cold = median(w.ok.map((mm) => w.per[mm.id].feelMin)) ?? m.tmin.med, warm = m.tmax.med;
+  if (cold == null || warm == null) return null;
+  let kit;
+  if (cold >= 18) kit = "short sleeves and shorts";
+  else if (cold >= 13) kit = "short sleeves, arm warmers or a light layer for the cool part";
+  else if (cold >= 8) kit = "long sleeves, knee warmers or long shorts, light gloves";
+  else if (cold >= 3) kit = "thermal jersey, windproof jacket, long tights, full-finger gloves";
+  else kit = "winter kit: thermal layers, winter gloves, overshoes, a buff or cap under the helmet";
+  const extra = [];
+  if (warm - cold >= 9) extra.push(`layers you can take off (${fmt(cold, 0)} → ${fmt(warm, 0)} °C)`);
+  if ((m.rain.med ?? 0) >= 1 || (m.prob.med ?? 0) >= 60) extra.push(cold < 12 ? "rain jacket and overshoes" : "rain jacket");
+  else if ((m.prob.med ?? 0) >= 30) extra.push("pack the rain jacket");
+  if (cold < 15 && ((m.gust.med ?? 0) >= 40 || (m.head.med ?? 0) >= 12)) extra.push("a windproof layer");
+  if (warm >= 24 && (m.sun.med ?? 0) >= 3) extra.push("sunscreen and extra water");
+  return `👕 ${kit.charAt(0).toUpperCase() + kit.slice(1)}${extra.length ? " · " + extra.join(" · ") : ""}.`;
+}
+
+// One riding day. `inline`: opened inside the coming-days list (the row above already names the day).
+function dayCard(st, k, w, inline = false) {
   const m = w.metrics;
   const v = w.ok.length ? verdict(w) : null;
   const sun = stageSun(st, w);
@@ -2832,49 +2747,55 @@ function todayCard(st, k, w, inline = false) {
   const codes = w.ok.map((mm) => w.per[mm.id].code);
   const [icon, text] = wxInfo(codes.length ? Math.round(median(codes)) : null);
   const { day: daySummary, night: nightSummary } = stageSummaries(st, w);
-  const label = st.dayOffset === 0 ? "Today" : st.dayOffset === 1 ? "Tomorrow" : fmtDate(st.date);
   const tile = (k2, v2, s2) => `<div class="tile"><div class="k">${k2}</div><div class="v num">${v2}</div><div class="s">${s2}</div></div>`;
   const windTile = m.head.med == null ? tile("💨 Wind", "–", "no forecast yet")
     : tile("💨 Wind", `${fmt(m.speed.med, 0)} km/h ${compass(m.dir.med)}`, Math.abs(m.head.med) < 3 ? "hardly head- or tailwind"
       : m.head.med > 0 ? `${fmt(m.head.med, 0)} km/h headwind` : `${fmt(-m.head.med, 0)} km/h tailwind`);
   const weatherTile = w.ok.length
-    ? tile(`${icon} Weather`, `${fmt(m.tmin.med, 0)}–${fmt(m.tmax.med, 0)}°`, `☔ ${fmt(m.rain.med, 1)} mm${m.prob.med != null ? ` · ${fmt(m.prob.med, 0)} %` : ""} · ${text}`)
+    ? tile(`${icon} Weather`, `${fmt(m.tmin.med, 0)}–${fmt(m.tmax.med, 0)}°`,
+      `☔ ${fmt(m.rain.med, 1)} mm${m.prob.med != null ? ` · ${fmt(m.prob.med, 0)} %` : ""}${m.cloud.med != null ? ` · ☁️ ${fmt(m.cloud.med, 0)} %` : ""} · ${text}`)
     : tile("🌦️ Weather", "–", pdfSafe(cellStatus(w)));
-  return `<section class="${inline ? "day-inline" : "card next-card"}" data-card="${k}">
-    ${inline ? `<p class="small muted" style="margin:0 0 4px">${stageTitle(st)} · ${fmtMinutes(st.dep)} → about ${fmtMinutes(st.arr)}${sun ? ` · sunset ${fmtMinutes(sun.set)}` : ""}</p>` : `<div class="stage-head">
+  const wear = clothing(w);
+  const today = st.dayOffset === 0;
+  const head = inline
+    ? `<p class="small muted" style="margin:0 0 4px">${stageTitle(st)} · ${fmtMinutes(st.dep)} → about ${fmtMinutes(st.arr)}${sun ? ` · sunset ${fmtMinutes(sun.set)}` : ""}</p>`
+    : `<div class="stage-head">
       <div>
-        <h3>${label} · Stage ${st.no}: ${stageTitle(st)}</h3>
+        <h3>${dayLabel(st)} · Stage ${st.no}: ${stageTitle(st)}</h3>
         <p>${fmtMinutes(st.dep)} → about ${fmtMinutes(st.arr)}${sun ? ` · sunset ${fmtMinutes(sun.set)}` : ""}</p>
       </div>
       <div class="stage-badges">
         ${v ? `<span class="badge ${v[0]}"><span class="dot"></span>${v[1]}</span>` : ""}
         ${w.ok.length ? badge(w.overall, true) : ""}
       </div>
-    </div>`}
+    </div>`;
+  return `<section class="${inline ? "day-inline" : "card next-card"}" data-card="${k}">
+    ${head}
     <div class="tiles" style="margin-top:12px">
       ${tile("📏 Distance", fmt(st.km, 1, " km"), `↑ ${fmt(st.up, 0)} m · ↓ ${fmt(st.down, 0)} m`)}
       ${tile("⏱️ On the road", fmtDuration(st.hours), `🚴 ${fmtDuration(st.moving)} + ☕ ${fmtDuration(st.hours - st.moving)}`)}
       ${weatherTile}
       ${windTile}
     </div>
-    ${st.done > 0.05 && st.dayOffset === 0 ? `<div class="progress" title="ridden today">
+    ${wear ? `<div class="wear">${wear}</div>` : ""}
+    ${st.done > 0.05 && today ? `<div class="progress" title="ridden today">
         <div class="progress-bar" style="width:${Math.min(100, (100 * st.done) / (st.km || 1)).toFixed(1)}%"></div></div>
       <div class="small">Ridden today: <b>${fmt(st.done, 1)} km</b> · ${fmt(Math.max(0, st.km - st.done), 1)} km to go</div>` : ""}
     ${w.ok.length ? hourStrip(st) : ""}
     ${(() => { const a = w.ok.length ? rainAdvice(st) : null; return a ? `<div class="advice">${a}</div>` : ""; })()}
     ${warnings.map((t) => `<div class="warn-line">${t}</div>`).join("")}
     <div class="btn-row icons">
-      <button type="button" data-gpx="${k}" title="Open the share menu with this stage's GPX file – pick Bergfex Touren or your navigation app">📲<span>Open in app</span></button>
-      <button type="button" data-gpx-copy="${k}" title="Copy this stage's GPX text">📋<span>Copy GPX</span></button>
-      <button type="button" data-camp-open="${k}" title="Campsites near the end of this stage">⛺<span>Campsites</span></button>
-      ${st.dayOffset === 0 ? `<button type="button" data-end-day title="Save your current position as the end of today">🏁<span>End day</span></button>
-      <label class="button" for="rideFile" title="Upload the GPX you recorded today">📤<span>Upload ride</span></label>` : ""}
+      <button type="button" data-gpx="${k}" title="Open the share menu with this day's GPX file – pick Bergfex Touren or your navigation app">📲<span>Open in app</span></button>
+      <button type="button" data-gpx-copy="${k}" title="Copy this day's GPX text">📋<span>Copy GPX</span></button>
+      <button type="button" data-camp-open="${k}" title="Campsites near the end of this day">⛺<span>Campsites</span></button>
+      ${today ? `<button type="button" data-end-day title="Save your current position as the end of today">🏁<span>End day</span></button>` : ""}
     </div>
     ${campSection(st, k)}
     ${st.dayOffset === 1 && todayClosed() ? `<div class="small muted" style="margin-top:10px">Today ended at km ${fmt(S.startKm, 1)}.
       <button type="button" data-reopen style="min-height:32px;padding:4px 10px">Undo</button></div>` : ""}
-    <details class="more" data-more="${k}">
-      <summary>ℹ️ More about this stage</summary>
+    ${inline ? `<div class="day-map" data-daymap="${k}"></div>` : ""}
+    <details class="more" data-more="${k}" ${moreOpen.has(k) ? "open" : ""}>
+      <summary>ℹ️ More about this day</summary>
       <div class="tiles" style="margin-top:10px">${surfaceTile(st)}
         ${tile("Elevation", `${fmt(st.lo, 0)}–${fmt(st.hi, 0)} m`, `${fmt(st.startEle, 0)} m → ${fmt(st.endEle, 0)} m`)}</div>
       ${sparkline(st)}
@@ -2882,76 +2803,152 @@ function todayCard(st, k, w, inline = false) {
       <div class="summary-box day-summary">${daySummary}</div>
       ${nightSummary ? `<div class="summary-box night-summary">${nightSummary}</div>` : ""}
       ${st.section ? `<div class="small muted" style="margin-top:8px">GPX section: ${esc(st.section)}</div>` : ""}
-      <div class="btn-row">
-        <button type="button" data-goto="${k}">📊 Models & hourly</button>
-        ${st.dayOffset === 0 ? `<button type="button" data-rest-day title="Stay here today – the plan continues tomorrow">😴 Rest day</button>` : ""}
-      </div>
+      ${today ? `<div class="btn-row">
+        <label class="button" for="rideFile" title="Upload the GPX you recorded today">📤 Upload today's ride</label>
+        <button type="button" data-rest-day title="Stay here today – the plan continues tomorrow">😴 Rest day</button>
+      </div>` : ""}
     </details>
+    ${w.ok.length ? `<details class="more" data-models="${k}" ${modelsOpen.has(k) ? "open" : ""}>
+      <summary>🌦️ Weather models compared <span class="small">${badge(w.overall, true)}</span></summary>
+      <p class="small muted">What each model expects while you ride (at the place you are at each hour). Far apart = uncertain forecast.</p>
+      ${comparisonTable(w)}
+      <div id="hourly-${k}"></div>
+    </details>` : ""}
   </section>`;
 }
 
-const moreOpen = new Set();     // stages whose "More about this stage" is open
-const comingOpen = new Set();   // coming days expanded in place
+// Today (or the next riding day): open, with everything you need for the day.
 function renderNext(weather) {
   const k = S.stages.findIndex((st) => st.dayOffset >= 0);
-  if (k < 0) { $("next").innerHTML = ""; return; }
-  $("next").querySelectorAll("details[data-more]").forEach((d) => {
-    if (d.open) moreOpen.add(Number(d.dataset.more)); else moreOpen.delete(Number(d.dataset.more));
-  });
-  $("next").innerHTML = todayCard(S.stages[k], k, weather[k]) + comingDaysCard(weather, k + 1);
-  $("next").querySelectorAll("details[data-more]").forEach((d) => { d.open = moreOpen.has(Number(d.dataset.more)); });
+  $("next").innerHTML = k < 0 ? `<div class="card next-card"><h3 style="margin:0">🎉 You have arrived – no stages left.</h3></div>`
+    : dayCard(S.stages[k], k, weather[k]);
+  if (k >= 0 && modelsOpen.has(k)) renderHourly(k, weather[k]);
 }
 
-// Tapping a coming day opens (or closes) its full card right there in the list.
+// The days after today, in order: length, time and weather at a glance; tap to open a day in place.
+function renderComing(weather) {
+  const k0 = S.stages.findIndex((st) => st.dayOffset >= 0) + 1;
+  const list = k0 > 0 ? S.stages.slice(k0) : [];
+  if (!list.length) { $("coming").innerHTML = ""; attachDayMaps(); return; }
+  const rows = list.map((st, i) => {
+    const k = k0 + i, w = weather[k], m = w.metrics;
+    const codes = w.ok.map((mm) => w.per[mm.id].code);
+    const [icon, text] = wxInfo(codes.length ? Math.round(median(codes)) : null);
+    const head = m.head.med == null ? "" : Math.abs(m.head.med) < 3 ? " · 💨 calm"
+      : m.head.med > 0 ? ` · <span title="headwind">💨 ↓${fmt(m.head.med, 0)}</span>` : ` · <span title="tailwind">💨 ↑${fmt(-m.head.med, 0)}</span>`;
+    const wxText = w.ok.length
+      ? `<span class="wx-ico" title="${esc(text)}">${icon}</span> <b class="num">${fmt(m.tmin.med, 0)}–${fmt(m.tmax.med, 0)}°</b>` +
+        ` · <span class="${(m.rain.med ?? 0) >= 1 ? "rainy" : ""}">☔ ${fmt(m.rain.med, 1)}</span>${head}`
+      : cellStatus(w);
+    const open = comingOpen.has(k);
+    return `<li class="day-row${open ? " open" : ""}" data-open-stage="${k}" tabindex="0" role="button" aria-expanded="${open}" aria-label="${dayLabel(st)}, stage ${st.no}: ${open ? "hide" : "show"} details">
+      <div class="dr-main">
+        <div class="dr-line"><b>${dayLabel(st)}</b> <span class="small"><b class="num">${fmt(st.km, 0)} km</b> · ⏱ ${fmtDuration(st.hours)}</span></div>
+        <div class="small dr-line">${wxText}</div>
+        <div class="small muted dr-route">Stage ${st.no} · ${stageTitle(st)} · ↑ ${fmt(st.up, 0)} m</div>
+      </div>
+      <span class="dr-chev" aria-hidden="true">${open ? "▴" : "▾"}</span>
+      <button type="button" data-gpx="${k}" title="Open the share menu with this day's GPX file (e.g. for Bergfex Touren)" aria-label="Share GPX of stage ${st.no}">📲<span class="small">GPX</span></button>
+    </li>${open ? `<li class="day-detail">${dayCard(st, k, w, true)}</li>` : ""}`;
+  }).join("");
+  const last = list[list.length - 1];
+  $("coming").innerHTML = `<section class="card">
+    <div class="map-head"><b>📅 Coming days</b><span class="small muted">${list.length} · arrival ${fmtDate(last.date)}</span></div>
+    <ul class="day-list">${rows}</ul>
+  </section>`;
+  for (const k of modelsOpen) if (comingOpen.has(k)) renderHourly(k, weather[k]);
+  attachDayMaps();
+}
+
 function toggleComing(k) {
   if (comingOpen.has(k)) comingOpen.delete(k); else comingOpen.add(k);
   render();
 }
 
-const COMING_DAYS = 7;
-
-function dayLabel(st) {
-  return st.dayOffset === 0 ? "Today" : st.dayOffset === 1 ? "Tomorrow" : fmtDate(st.date);
+// Jump to a day: today's card, or open a coming day in place.
+function openStage(k) {
+  const first = S.stages.findIndex((st) => st.dayOffset >= 0);
+  if (k === first) { $("next").scrollIntoView({ behavior: "smooth", block: "start" }); return; }
+  comingOpen.add(k);
+  render();
+  const row = document.querySelector(`.day-row[data-open-stage="${k}"]`);
+  if (row) row.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-// The days after today's stage at a glance: weather along the way and the GPX for each day.
-function comingDaysCard(weather, k0) {
-  const list = S.stages.slice(k0, k0 + COMING_DAYS);
-  if (!list.length) return "";
-  const rows = list.map((st, i) => {
-    const k = k0 + i, w = weather[k], m = w.metrics;
-    const codes = w.ok.map((mm) => w.per[mm.id].code);
-    const [icon, text] = wxInfo(codes.length ? Math.round(median(codes)) : null);
-    const head = m.head.med == null ? "" : Math.abs(m.head.med) < 3 ? " · 💨 calm-ish"
-      : m.head.med > 0 ? ` · 💨 ${fmt(m.head.med, 0)} km/h head` : ` · 💨 ${fmt(-m.head.med, 0)} km/h tail`;
-    const wxText = w.ok.length
-      ? `<span class="wx-ico" title="${esc(text)}">${icon}</span> <b class="num">${fmt(m.tmin.med, 0)}–${fmt(m.tmax.med, 0)}°</b>` +
-        ` · <span class="${(m.rain.med ?? 0) >= 1 ? "rainy" : ""}">☔ ${fmt(m.rain.med, 1)} mm</span>${head}`
-      : cellStatus(w);
-    const open = comingOpen.has(k);
-    return `<li class="day-row${open ? " open" : ""}" data-open-stage="${k}" tabindex="0" role="button" aria-expanded="${open}" aria-label="${dayLabel(st)}, stage ${st.no}: ${open ? "hide" : "show"} details">
-      <div class="dr-main">
-        <div><b>${dayLabel(st)}</b> <span class="small muted">· Stage ${st.no} · ${fmt(st.km, 0)} km · ↑ ${fmt(st.up, 0)} m</span></div>
-        <div class="small">${wxText}</div>
-        <div class="small muted dr-route">${stageTitle(st)}</div>
-      </div>
-      <span class="dr-chev" aria-hidden="true">${open ? "▴" : "▾"}</span>
-      <button type="button" data-gpx="${k}" title="Open the share menu with this stage's GPX file (e.g. for Bergfex Touren)" aria-label="Share GPX of stage ${st.no}">📲<span class="small">GPX</span></button>
-    </li>${open ? `<li class="day-detail">${todayCard(st, k, w, true)}</li>` : ""}`;
-  }).join("");
-  const more = S.stages.length - k0 - list.length;
-  return `<section class="card" id="coming">
-    <div class="map-head"><b>📅 Coming days</b><span class="small muted">tap a day to open it</span></div>
-    <ul class="day-list">${rows}</ul>
-    <div class="btn-row"><button type="button" data-all-stages>All ${S.stages.length} stages${more > 0 ? ` (${more} more)` : ""} ↓</button></div>
-  </section>`;
+/* Small route maps inside opened days. The map elements survive re-renders (moved into the new
+   markup), so tiles don't reload every time the weather updates. */
+const dayMaps = new Map();   // k -> { el, map, key }
+function attachDayMaps() {
+  const slots = [...document.querySelectorAll("[data-daymap]")];
+  const want = new Set(slots.map((el) => Number(el.dataset.daymap)));
+  for (const [k, dm] of dayMaps) if (!want.has(k)) { dm.map.remove(); dayMaps.delete(k); }
+  for (const slot of slots) {
+    const k = Number(slot.dataset.daymap), st = S.stages[k];
+    if (!st) continue;
+    if (typeof L === "undefined") { slot.innerHTML = `<div class="small muted">Map not available (offline?).</div>`; continue; }
+    const key = `${S.tourId}|${Math.round(st.a)}|${Math.round(st.b)}`;
+    let dm = dayMaps.get(k);
+    if (dm && dm.key !== key) { dm.map.remove(); dayMaps.delete(k); dm = null; }
+    if (dm) { slot.replaceWith(dm.el); setTimeout(() => dm.map.invalidateSize(), 0); continue; }
+    const el = document.createElement("div");
+    el.className = "day-map-el";
+    slot.replaceWith(el);
+    const m = L.map(el, { scrollWheelZoom: false, zoomSnap: 0.25, attributionControl: true });
+    L.tileLayer("https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png", {
+      maxZoom: 20, subdomains: "abc", attribution: '<a href="https://www.cyclosm.org/">CyclOSM</a> | © OpenStreetMap',
+    }).addTo(m);
+    const T = S.track, ll = (p) => [p.lat, p.lon];
+    const pts = [];
+    for (const r of runs(T, idxAt(T, st.a), idxAt(T, st.b))) {
+      L.polyline(r.pts.map(ll), r.gap ? { color: css("--ridden"), weight: 2, dashArray: "4 8" } : { color: css("--route-a"), weight: 5, opacity: 0.9 }).addTo(m);
+      pts.push(...r.pts);
+    }
+    L.circleMarker(ll(st.startPt), { radius: 6, color: "#fff", weight: 2, fillColor: css("--good"), fillOpacity: 1 }).bindTooltip("Start").addTo(m);
+    L.circleMarker(ll(st.endPt), { radius: 6, color: "#fff", weight: 2, fillColor: css("--critical"), fillOpacity: 1 }).bindTooltip("End").addTo(m);
+    if (pts.length) m.fitBounds(L.latLngBounds(pts.map(ll)), { padding: [16, 16] });
+    dayMaps.set(k, { el, map: m, key });
+    setTimeout(() => m.invalidateSize(), 0);
+  }
+}
+
+/* The whole tour on its own map in the overview (drawn when that part is opened). */
+let tourMap = null, tourLayer = null, tourFitted = null;
+function renderTourMap() {
+  if (!$("sec-tour").open) return;
+  if (typeof L === "undefined") { $("tourMap").innerHTML = `<div class="small muted">Map not available (offline?).</div>`; return; }
+  const T = S.track, ll = (p) => [p.lat, p.lon];
+  if (!tourMap) {
+    tourMap = L.map("tourMap", { scrollWheelZoom: false, zoomSnap: 0.25 });
+    L.tileLayer("https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png", {
+      maxZoom: 20, subdomains: "abc", attribution: '<a href="https://www.cyclosm.org/">CyclOSM</a> | © OpenStreetMap',
+    }).addTo(tourMap);
+    tourLayer = L.layerGroup().addTo(tourMap);
+  }
+  tourLayer.clearLayers();
+  const startI = idxAt(T, S.startKm * 1000);
+  for (const r of runs(T, 0, startI)) L.polyline(r.pts.map(ll), { color: css("--ridden"), weight: r.gap ? 2 : 4, opacity: 0.8 }).addTo(tourLayer);
+  S.stages.forEach((st, k) => {
+    for (const r of runs(T, Math.max(idxAt(T, st.a), startI), idxAt(T, st.b))) {
+      L.polyline(r.pts.map(ll), r.gap ? { color: css("--ridden"), weight: 2, dashArray: "4 8" } : { color: stageColor(k), weight: 4 })
+        .bindTooltip(`Stage ${st.no} · ${dayLabel(st)} · ${fmt(st.km, 0)} km`, { sticky: true }).addTo(tourLayer);
+    }
+  });
+  L.marker(ll(T.pts[startI]), { icon: L.divIcon({ className: "pos-pin", html: "<span></span>", iconSize: [18, 18], iconAnchor: [9, 9] }) })
+    .bindTooltip(`You · km ${fmt(S.startKm, 1)}`).addTo(tourLayer);
+  if (tourFitted !== T) { tourMap.fitBounds(L.latLngBounds(T.pts.map(ll)), { padding: [16, 16] }); tourFitted = T; }
+  setTimeout(() => tourMap.invalidateSize(), 0);
 }
 
 // Collapsed list of the days already ridden (shown above the overview and above the stage cards).
 function renderDone() {
   const days = completedDays();
   const host = $("done-list");
-  if (!days.length) { host.innerHTML = ""; return; }
+  if (!days.length) {
+    host.innerHTML = `<p class="small muted" style="margin:12px 0 0">Nothing ridden yet. After a day, upload the GPX you recorded –
+      the app then knows how fast you ride and plans the next days with it.</p>
+      <div class="btn-row"><label class="button" for="rideFile">📤 Upload a ridden day (GPX)</label></div>`;
+    return;
+  }
   const rows = days.map((d, i) => `<tr>
     <td>${d.no ? `<b>${d.no}</b>` : ""}</td>
     <td>${d.date ? fmtDate(d.date) : `<span class="muted">not logged</span>`}</td>
@@ -2978,23 +2975,6 @@ async function downloadDone(i) {
   if (!d) return;
   const name = `${slugify(S.track.name)}-${d.no ? `stage-${d.no}-${d.date}` : "ridden-earlier"}.gpx`;
   await saveFile(new File([stageGpx(d, -1)], name, { type: "application/gpx+xml" }));
-}
-
-function renderStages(weather) {
-  // Keep whichever detail panels the user has open across re-renders.
-  $("stages").querySelectorAll("details[data-stage]").forEach((d) => {
-    const k = Number(d.dataset.stage);
-    if (d.open) openCards.add(k); else openCards.delete(k);
-  });
-  const html = S.stages.map((st, k) => stageCard(st, k, weather[k], false)).join("");
-  $("stages").innerHTML = html || `<div class="card muted">You have arrived – no stages left. 🎉</div>`;
-  $("stages").querySelectorAll("details[data-stage]").forEach((d) => {
-    const k = Number(d.dataset.stage);
-    d.addEventListener("toggle", () => {
-      if (d.open) { openCards.add(k); renderHourly(k, weather[k]); } else openCards.delete(k);
-    });
-    if (d.open) renderHourly(k, weather[k]);
-  });
 }
 
 function comparisonTable(w) {
@@ -4322,10 +4302,6 @@ function initControls() {
     if (e.target.closest("[data-end-day]")) endToday();
     if (e.target.closest("[data-rest-day]")) restDay();
     if (e.target.closest("[data-reopen]")) reopenToday();
-    if (e.target.closest("[data-all-stages]")) {
-      $("sec-stages").open = true;
-      $("sec-stages").scrollIntoView({ behavior: "smooth", block: "start" });
-    }
     const row = e.target.closest("[data-open-stage]");
     if (row && !gpx) toggleComing(Number(row.dataset.openStage));
     const go = e.target.closest("[data-goto]");
@@ -4378,9 +4354,17 @@ function initControls() {
     store("mapView", mapView);
     renderMap();
   }));
-  for (const id of ["sec-profile", "sec-models"]) {
-    $(id).addEventListener("toggle", (e) => { if (e.target.open) setTimeout(render, 0); });
-  }
+  $("sec-tour").addEventListener("toggle", (e) => { if (e.target.open) setTimeout(() => { renderTourMap(); renderProfile(); }, 0); });
+  // Remember which parts of each day are open; the model charts are drawn when opened.
+  document.addEventListener("toggle", (e) => {
+    const d = e.target;
+    if (!d.matches) return;
+    if (d.matches("details[data-more]")) { const k = Number(d.dataset.more); if (d.open) moreOpen.add(k); else moreOpen.delete(k); }
+    if (d.matches("details[data-models]")) {
+      const k = Number(d.dataset.models);
+      if (d.open) { modelsOpen.add(k); renderHourly(k, lastWeather[k]); } else modelsOpen.delete(k);
+    }
+  }, true);
   $("tourSelect").addEventListener("change", async (e) => {
     if (e.target.value && e.target.value !== S.tourId) {
       await saveTourSettings();
