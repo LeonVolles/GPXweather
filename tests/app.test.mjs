@@ -246,12 +246,34 @@ await test("the chosen start day survives a reload", async () => {
   await page.selectOption("#date", { index: 0 });
   await page.waitForTimeout(1000);
 });
-await test("the GPX button in the coming days hands over the GPX file (share menu on phones)", async () => {
-  const [dl] = await Promise.all([page.waitForEvent("download"), page.locator(".day-row button[data-gpx]").first().click()]);
+await test("the GPX button in the coming days opens a preview of the GPX, without opening the day", async () => {
+  await page.locator(".day-row button[data-gpx]").first().click();
+  assert.equal(await ev(() => $("gpxSheet").open), true);
+  assert.match(await page.textContent("#gpxSheetText"), /^<\?xml[\s\S]*<trkpt lat=[\s\S]*more lines$/);
+  assert.match(await page.textContent("#gpxSheetInfo"), /stage-\d+-\d{4}-\d\d-\d\d\.gpx · .* km · .* track points/);
+  assert.equal(await page.locator(".day-detail").count(), 0, "the GPX button must not open the day");
+});
+await test("the preview's Share button hands over the GPX file (download off phones)", async () => {
+  const [dl] = await Promise.all([page.waitForEvent("download"), page.click("#gpxSheetShare")]);
   const gpx = fs.readFileSync(await dl.path(), "utf8");
   assert.match(dl.suggestedFilename(), /stage-\d+-\d{4}-\d\d-\d\d\.gpx$/);
   assert.ok((gpx.match(/<trkpt/g) || []).length > 100);
-  assert.equal(await page.locator(".day-detail").count(), 0, "the GPX button must not open the day");
+});
+await test("the preview's Copy button copies the GPX text itself", async () => {
+  await page.click("#gpxSheetCopy");
+  await page.waitForTimeout(200);
+  const text = await ev(() => navigator.clipboard.readText());
+  assert.match(text, /^<\?xml[\s\S]*<gpx[\s\S]*<trkpt lat=[\s\S]*<\/gpx>\s*$/);
+  assert.match(await page.textContent("#status"), /GPX of stage \d+ copied/);
+  assert.match(await page.textContent("#gpxSheetCopy"), /Copied/);
+});
+await test("the preview closes with ✕ and with a tap on the backdrop", async () => {
+  await page.click("#gpxSheetClose");
+  assert.equal(await ev(() => $("gpxSheet").open), false);
+  await page.locator("#next [data-gpx]").click();
+  assert.equal(await ev(() => $("gpxSheet").open), true);
+  await page.mouse.click(195, 20);
+  assert.equal(await ev(() => $("gpxSheet").open), false);
 });
 await test("on a phone the share menu gets only the file, no title (so 'Copy' isn't just the name)", async () => {
   const shared = await ev(async () => {
@@ -260,27 +282,29 @@ await test("on a phone the share menu gets only the file, no title (so 'Copy' is
     window.matchMedia = (q) => (q === "(pointer: coarse)" ? { matches: true } : m.call(window, q));
     navigator.canShare = () => true;
     navigator.share = async (data) => { got = { keys: Object.keys(data).sort(), name: data.files[0].name, type: data.files[0].type, size: data.files[0].size }; };
-    await downloadStage(1);
+    openGpxSheet(1);
+    const label = $("gpxSheetShare").textContent;
+    $("gpxSheetShare").click();
+    await new Promise((r) => setTimeout(r, 100));
+    $("gpxSheet").close();
     window.matchMedia = m; delete navigator.share; delete navigator.canShare;
-    return got;
+    return { ...got, label };
   });
+  assert.match(shared.label, /Share/);
   assert.deepEqual(shared.keys, ["files"]);
   assert.match(shared.name, /\.gpx$/);
   assert.equal(shared.type, "application/gpx+xml");
   assert.ok(shared.size > 10000);
 });
-await test("the copy button copies the GPX text itself", async () => {
-  await page.locator("#next .next-card [data-gpx-copy]").click();
-  await page.waitForTimeout(200);
-  const text = await ev(() => navigator.clipboard.readText());
-  assert.match(text, /^<\?xml[\s\S]*<gpx[\s\S]*<trkpt lat=[\s\S]*<\/gpx>\s*$/);
-  assert.match(await page.textContent("#status"), /GPX of stage \d+ copied/);
+await test("today's card has a single GPX share button and shows sunrise and sunset", async () => {
+  assert.equal(await page.locator("#next [data-gpx]").count(), 1);
+  assert.equal(await page.locator("[data-gpx-copy]").count(), 0);
+  assert.match(await page.locator("#next .stage-head").innerText(), /🌅 \d\d:\d\d · 🌇 \d\d:\d\d/);
 });
-await test("today's card offers the GPX file too", async () => {
-  const [dl] = await Promise.all([page.waitForEvent("download"), page.locator("#next [data-gpx]").first().click()]);
-  const gpx = fs.readFileSync(await dl.path(), "utf8");
-  assert.match(dl.suggestedFilename(), /stage-\d+-\d{4}-\d\d-\d\d\.gpx$/);
-  assert.ok((gpx.match(/<trkpt/g) || []).length > 100);
+await test("every coming day shows sunrise and sunset", async () => {
+  const rows = await page.locator(".day-row .dr-route").allInnerTexts();
+  assert.ok(rows.length > 0);
+  for (const r of rows) assert.match(r, /🌅 \d\d:\d\d 🌇 \d\d:\d\d/);
 });
 await test("tapping a coming day opens it in place with its own route map, without jumping down", async () => {
   await ev(() => window.scrollTo(0, 0));
@@ -294,7 +318,9 @@ await test("tapping a coming day opens it in place with its own route map, witho
   assert.equal(await page.locator(".day-detail .day-inline").count(), 1);
   assert.ok(Math.abs((await ev(() => window.scrollY)) - y0) < 5, "page scrolled");
   const detail = await page.locator(".day-detail").innerText();
-  assert.match(detail, /Distance/); assert.match(detail, /Open in app/); assert.match(detail, /Copy GPX/); assert.match(detail, /👕/);
+  assert.match(detail, /Distance/); assert.match(detail, /Share GPX/); assert.match(detail, /🌅/); assert.match(detail, /👕/);
+  assert.equal(await page.locator(`.day-row[data-open-stage="${k}"] [data-gpx]`).count(), 0, "one GPX button per open day, not two");
+  assert.equal(await page.locator(".day-detail [data-gpx]").count(), 1);
   assert.equal(await page.locator(".day-detail .day-map-el.leaflet-container").count(), 1, "route map of the day");
   // the map element survives re-renders (no reload of tiles), the day stays open; a second tap closes it
   const mapId = await ev(() => document.querySelector(".day-detail .day-map-el")._leaflet_id);

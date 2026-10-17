@@ -185,9 +185,10 @@ opens with a tap:
    ☕ breaks), weather with ☁️ cloud cover and 💨 wind, **👕 what to wear**,
    an **hour-by-hour** strip (where you will be and the weather there),
    **💡 rain advice** when rain is expected, and warnings. Buttons:
-   **📲 Open in app** (share menu with the GPX file – pick Bergfex Touren or
-   your navigation app), **📋 Copy GPX** (the GPX text), **⛺ Campsites** and
-   **🏁 End day**. **More about this day** has surface, elevation, the time
+   **📤 Share GPX** (shows what's in the day's GPX, like tapping a GPX file in
+   a chat, then **Share** it – to a chat, Bergfex Touren, your navigation app
+   or Files – or **Copy** the GPX text), **⛺ Campsites** and **🏁 End day**.
+   The header shows 🌅 sunrise and 🌇 sunset at the day's destination. **More about this day** has surface, elevation, the time
    estimate, day and night weather, **📤 Upload today's ride** and **😴 Rest
    day**. **🌦️ Weather models compared** shows what every model expects, with
    hourly charts.
@@ -196,7 +197,8 @@ opens with a tap:
    you will be) and **🛒 Supplies** (water, shops, bakeries, bike repair,
    toilets along today's route).
 5. **📅 Coming days** – one line per day: distance, time on the road and the
-   weather (temperature, rain, head- ↓ or tailwind ↑). Tap a day to open it in
+   weather (temperature, rain, head- ↓ or tailwind ↑), 🌅 sunrise and 🌇 sunset,
+   and a 📤 GPX button. Tap a day to open it in
    place: the same card as today plus a map of that day's route.
 
 ### Rest days

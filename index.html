@@ -231,6 +231,17 @@
   .day-row button span { font-size: 0.72rem; color: var(--ink-2); }
   .wx-ico { font-size: 1.15rem; }
   .day-row.open { border-bottom: none; }
+  .sun { white-space: nowrap; }
+  dialog.sheet { width: 100%; max-width: 560px; margin: auto auto 0; border: none; border-radius: 16px 16px 0 0;
+                 background: var(--surface); color: var(--ink); padding: 0; max-height: 88vh; box-sizing: border-box; }
+  .sheet-body { display: flex; flex-direction: column; max-height: 88vh; box-sizing: border-box;
+                padding: 14px 16px calc(14px + env(safe-area-inset-bottom)); }
+  dialog.sheet::backdrop { background: rgba(0, 0, 0, 0.45); }
+  .sheet-head { display: flex; align-items: flex-start; gap: 10px; }
+  .sheet-head b { flex: 1 1 auto; min-width: 0; }
+  .sheet-head button { flex: none; min-height: 36px; padding: 4px 12px; }
+  .gpx-text { flex: 1 1 auto; min-height: 120px; overflow: auto; margin: 10px 0 0; padding: 10px; border-radius: 10px;
+              background: var(--surface-2); font-size: 0.72rem; line-height: 1.35; white-space: pre; }
   .tour-map { height: 320px; border-radius: 12px; margin-top: 10px; z-index: 0; }
   .day-map-el { height: 240px; border-radius: 12px; margin-top: 12px; z-index: 0; }
   .wear { margin-top: 10px; padding: 8px 12px; border-radius: 10px; background: var(--surface-2); font-size: 0.92rem; }
@@ -500,7 +511,7 @@
 /* ---------- Configuration ---------- */
 
 // Bump with every release (and VERSION in sw.js): the app compares it with the published page to offer updates.
-const APP_VERSION = "2026-10-12.1";
+const APP_VERSION = "2026-10-17.1";
 
 // days = forecast_days requested from Open-Meteo, roughly the model's real horizon.
 const MODELS = [
@@ -2656,6 +2667,11 @@ function stageWarnings(st, w, sun) {
   return warnings;
 }
 
+// Sunrise and sunset at the destination, for the day headers.
+function sunText(sun) {
+  return sun ? ` · <span class="sun" title="sunrise">🌅 ${fmtMinutes(sun.rise)}</span> · <span class="sun" title="sunset">🌇 ${fmtMinutes(sun.set)}</span>` : "";
+}
+
 function stageSun(st, w) {
   const browserOffset = -new Date().getTimezoneOffset() * 60;
   return sunTimes(st.endPt.lat, st.endPt.lon, st.date, w.offset ?? browserOffset);
@@ -2758,11 +2774,11 @@ function dayCard(st, k, w, inline = false) {
   const wear = clothing(w);
   const today = st.dayOffset === 0;
   const head = inline
-    ? `<p class="small muted" style="margin:0 0 4px">${stageTitle(st)} · ${fmtMinutes(st.dep)} → about ${fmtMinutes(st.arr)}${sun ? ` · sunset ${fmtMinutes(sun.set)}` : ""}</p>`
+    ? `<p class="small muted" style="margin:0 0 4px">${stageTitle(st)} · ${fmtMinutes(st.dep)} → about ${fmtMinutes(st.arr)}${sunText(sun)}</p>`
     : `<div class="stage-head">
       <div>
         <h3>${dayLabel(st)} · Stage ${st.no}: ${stageTitle(st)}</h3>
-        <p>${fmtMinutes(st.dep)} → about ${fmtMinutes(st.arr)}${sun ? ` · sunset ${fmtMinutes(sun.set)}` : ""}</p>
+        <p>${fmtMinutes(st.dep)} → about ${fmtMinutes(st.arr)}${sunText(sun)}</p>
       </div>
       <div class="stage-badges">
         ${v ? `<span class="badge ${v[0]}"><span class="dot"></span>${v[1]}</span>` : ""}
@@ -2785,8 +2801,7 @@ function dayCard(st, k, w, inline = false) {
     ${(() => { const a = w.ok.length ? rainAdvice(st) : null; return a ? `<div class="advice">${a}</div>` : ""; })()}
     ${warnings.map((t) => `<div class="warn-line">${t}</div>`).join("")}
     <div class="btn-row icons">
-      <button type="button" data-gpx="${k}" title="Open the share menu with this day's GPX file – pick Bergfex Touren or your navigation app">📲<span>Open in app</span></button>
-      <button type="button" data-gpx-copy="${k}" title="Copy this day's GPX text">📋<span>Copy GPX</span></button>
+      <button type="button" data-gpx="${k}" title="See this day's GPX, copy it or share it – to a chat, Bergfex Touren or your navigation app">📤<span>Share GPX</span></button>
       <button type="button" data-camp-open="${k}" title="Campsites near the end of this day">⛺<span>Campsites</span></button>
       ${today ? `<button type="button" data-end-day title="Save your current position as the end of today">🏁<span>End day</span></button>` : ""}
     </div>
@@ -2841,14 +2856,15 @@ function renderComing(weather) {
         ` · <span class="${(m.rain.med ?? 0) >= 1 ? "rainy" : ""}">☔ ${fmt(m.rain.med, 1)}</span>${head}`
       : cellStatus(w);
     const open = comingOpen.has(k);
+    const sun = stageSun(st, w);
     return `<li class="day-row${open ? " open" : ""}" data-open-stage="${k}" tabindex="0" role="button" aria-expanded="${open}" aria-label="${dayLabel(st)}, stage ${st.no}: ${open ? "hide" : "show"} details">
       <div class="dr-main">
         <div class="dr-line"><b>${dayLabel(st)}</b> <span class="small"><b class="num">${fmt(st.km, 0)} km</b> · ⏱ ${fmtDuration(st.hours)}</span></div>
         <div class="small dr-line">${wxText}</div>
-        <div class="small muted dr-route">Stage ${st.no} · ${stageTitle(st)} · ↑ ${fmt(st.up, 0)} m</div>
+        <div class="small muted dr-route">${sun ? `<span class="sun" title="sunrise">🌅 ${fmtMinutes(sun.rise)}</span> <span class="sun" title="sunset">🌇 ${fmtMinutes(sun.set)}</span> · ` : ""}Stage ${st.no} · ${stageTitle(st)} · ↑ ${fmt(st.up, 0)} m</div>
       </div>
       <span class="dr-chev" aria-hidden="true">${open ? "▴" : "▾"}</span>
-      <button type="button" data-gpx="${k}" title="Open the share menu with this day's GPX file (e.g. for Bergfex Touren)" aria-label="Share GPX of stage ${st.no}">📲<span class="small">GPX</span></button>
+      ${open ? "" : `<button type="button" data-gpx="${k}" title="See this day's GPX, copy it or share it (e.g. to Bergfex Touren)" aria-label="Share GPX of stage ${st.no}">📤<span class="small">GPX</span></button>`}
     </li>${open ? `<li class="day-detail">${dayCard(st, k, w, true)}</li>` : ""}`;
   }).join("");
   const last = list[list.length - 1];
@@ -3716,13 +3732,38 @@ async function copyText(text) {
 // The GPX itself as text (not a file): paste it into a navigation app's import.
 async function copyStageGpx(k) {
   const st = S.stages[k];
-  if (!st) return;
+  if (!st) return false;
   const text = stageGpx(st, k);
   if (await copyText(text)) {
     setStatus(`📋 GPX of stage ${st.no} copied (${fmt(st.km, 0)} km, ${numFmt(Math.round(text.length / 1024))} KB of text) – paste it into your navigation app.`);
-  } else {
-    setStatus("Copying didn't work here – use “⬇ GPX file” in the stage details instead.");
+    return true;
   }
+  setStatus("Copying didn't work here – use “Share” instead.");
+  return false;
+}
+
+// Like tapping a GPX file in a chat: see what's in it, then copy it or share it (chat, Bergfex, Files …).
+const GPX_PREVIEW_LINES = 80;
+let sheetStage = -1;
+function openGpxSheet(k) {
+  const st = S.stages[k];
+  if (!st) return;
+  sheetStage = k;
+  const text = stageGpx(st, k);
+  const lines = text.split("\n");
+  const points = (text.match(/<trkpt/g) || []).length;
+  $("gpxSheetTitle").textContent = `${st.date ? dayLabel(st) + " · " : ""}Stage ${st.no}: ${plainStageTitle(st)}`;
+  $("gpxSheetInfo").textContent = `${slugify(S.track.name)}-stage-${st.no}-${st.date || "done"}.gpx · ${fmt(st.km, 1)} km · ↑ ${fmt(st.up, 0)} m · ` +
+    `${numFmt(points)} track points · ${numFmt(Math.max(1, Math.round(text.length / 1024)))} KB`;
+  $("gpxSheetText").textContent = lines.length > GPX_PREVIEW_LINES
+    ? lines.slice(0, GPX_PREVIEW_LINES).join("\n") + `\n      … ${numFmt(lines.length - GPX_PREVIEW_LINES)} more lines`
+    : text;
+  $("gpxSheetText").scrollTop = 0;
+  const canShare = window.matchMedia("(pointer: coarse)").matches && !!navigator.share;
+  $("gpxSheetShare").innerHTML = canShare ? "📤<span>Share · open in app</span>" : "⬇<span>Download file</span>";
+  $("gpxSheetCopy").innerHTML = "📋<span>Copy GPX</span>";
+  const d = $("gpxSheet");
+  if (!d.open) d.showModal();
 }
 
 async function downloadStage(k) {
@@ -4295,10 +4336,16 @@ function initControls() {
   $("refresh").addEventListener("click", () => loadWeather(true));
   $("locate").addEventListener("click", () => locate());
   $("deleteTour").addEventListener("click", deleteTour);
+  const sheet = $("gpxSheet");
+  $("gpxSheetClose").addEventListener("click", () => sheet.close());
+  sheet.addEventListener("click", (e) => { if (e.target === sheet) sheet.close(); });   // tap on the dimmed backdrop
+  $("gpxSheetShare").addEventListener("click", () => downloadStage(sheetStage));
+  $("gpxSheetCopy").addEventListener("click", async () => {
+    if (await copyStageGpx(sheetStage)) $("gpxSheetCopy").innerHTML = "✅<span>Copied</span>";
+  });
   document.addEventListener("click", (e) => {
-    const gpx = e.target.closest("[data-gpx], [data-gpx-copy]");
-    if (gpx && gpx.dataset.gpxCopy != null) copyStageGpx(Number(gpx.dataset.gpxCopy));
-    else if (gpx) downloadStage(Number(gpx.dataset.gpx));
+    const gpx = e.target.closest("[data-gpx]");
+    if (gpx) openGpxSheet(Number(gpx.dataset.gpx));
     if (e.target.closest("[data-end-day]")) endToday();
     if (e.target.closest("[data-rest-day]")) restDay();
     if (e.target.closest("[data-reopen]")) reopenToday();
@@ -4510,5 +4557,14 @@ window.addEventListener("load", () => setTimeout(checkForUpdate, 3000));
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
 else init();
 </script>
+<dialog id="gpxSheet" class="sheet" aria-labelledby="gpxSheetTitle"><div class="sheet-body">
+  <div class="sheet-head"><b id="gpxSheetTitle"></b><button type="button" id="gpxSheetClose" aria-label="Close">✕</button></div>
+  <div id="gpxSheetInfo" class="small muted" style="margin-top:4px"></div>
+  <pre id="gpxSheetText" class="gpx-text"></pre>
+  <div class="btn-row icons">
+    <button type="button" id="gpxSheetShare">📤<span>Share</span></button>
+    <button type="button" id="gpxSheetCopy">📋<span>Copy</span></button>
+  </div>
+</div></dialog>
 </body>
 </html>
