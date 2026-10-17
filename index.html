@@ -511,7 +511,7 @@
 /* ---------- Configuration ---------- */
 
 // Bump with every release (and VERSION in sw.js): the app compares it with the published page to offer updates.
-const APP_VERSION = "2026-10-17.1";
+const APP_VERSION = "2026-10-17.2";
 
 // days = forecast_days requested from Open-Meteo, roughly the model's real horizon.
 const MODELS = [
@@ -2802,7 +2802,7 @@ function dayCard(st, k, w, inline = false) {
     ${warnings.map((t) => `<div class="warn-line">${t}</div>`).join("")}
     <div class="btn-row icons">
       <button type="button" data-gpx="${k}" title="See this day's GPX, copy it or share it – to a chat, Bergfex Touren or your navigation app">📤<span>Share GPX</span></button>
-      <button type="button" data-camp-open="${k}" title="Campsites near the end of this day">⛺<span>Campsites</span></button>
+      <button type="button" data-camp-open="${k}" title="Campsites along the end of this day, close to the route">⛺<span>Campsites</span></button>
       ${today ? `<button type="button" data-end-day title="Save your current position as the end of today">🏁<span>End day</span></button>` : ""}
     </div>
     ${campSection(st, k)}
@@ -3648,7 +3648,7 @@ function restDay() {
 
 /* ---------- Backup and restore ---------- */
 
-const BACKUP_LOCAL_KEYS = ["settings", "current", "places", "camps", "basemap", "mapView", "brouterProfile", "brouterOpts", "campRadius", "supplyRadius"];
+const BACKUP_LOCAL_KEYS = ["settings", "current", "places", "camps", "basemap", "mapView", "brouterProfile", "brouterOpts", "campRadius", "campStretch", "supplyRadius"];
 
 async function exportBackup() {
   const plain = (v) => (ArrayBuffer.isView(v) ? Array.from(v) : v);
@@ -3774,23 +3774,34 @@ async function downloadStage(k) {
   if (!S.track.raw) setStatus("Note: this tour was saved by an older version, so the stage GPX uses the simplified track. Load the GPX again for full detail.");
 }
 
-/* ---------- Campsites near the stage end (OpenStreetMap via Overpass) ---------- */
+/* ---------- Campsites along the end of the stage (OpenStreetMap via Overpass) ---------- */
 
-const CAMP_RADII = [2, 5, 10, 20, 30];
+// Searched: the last `campStretch` km of the stage, up to `campRadius` km off the route – little extra way.
+const CAMP_RADII = [0.5, 1, 2, 5, 10];       // km off the route
+const CAMP_STRETCHES = [0, 5, 10, 20, 30];   // km before the stage end (0 = only around the end)
 const CAMP_TTL_MS = 7 * 86400 * 1000;
 const campOpen = new Set();       // stage numbers whose campsite section is expanded
 const campBusy = new Set();       // searches in progress (cache keys)
 const campErr = new Map();        // cache key -> error message
 let campCache = restore("camps") || {};   // cache key -> { t, list }
-let campRadius = restore("campRadius") || 5;
+let campRadius = CAMP_RADII.includes(restore("campRadius")) ? restore("campRadius") : 2;
+let campStretch = CAMP_STRETCHES.includes(restore("campStretch")) ? restore("campStretch") : 10;
 const campMarkers = new Map();    // "lat,lon" -> Leaflet marker
 
-function campKey(p, r) { return `${p.lat.toFixed(3)},${p.lon.toFixed(3)}|${r}`; }
+// The searched part of the route (metres along the tour) and its cache key.
+function campWindow(st) {
+  const b = st.b, a = Math.max(st.a, b - campStretch * 1000);
+  const p = (m) => { const q = pointAt(S.track, m); return `${q.lat.toFixed(3)},${q.lon.toFixed(3)}`; };
+  return { a, b, key: `${p(a)}>${p(b)}|${campRadius}` };
+}
 
 function campResult(st) {
-  const e = campCache[campKey(st.endPt, campRadius)];
+  const e = campCache[campWindow(st).key];
   return e && Date.now() - e.t < CAMP_TTL_MS ? e : null;
 }
+
+const campWhere = () => campStretch ? `in the last ${campStretch} km, up to ${fmt(campRadius, campRadius < 1 ? 1 : 0)} km off the route`
+  : `within ${fmt(campRadius, campRadius < 1 ? 1 : 0)} km of the stage end`;
 
 // Only allow http(s) links from map data.
 function safeUrl(u) {
@@ -3809,16 +3820,22 @@ function directionsUrl(c) {
 async function searchCamps(k) {
   const st = S.stages[k];
   if (!st) return;
-  const key = campKey(st.endPt, campRadius);
+  const T = S.track, win = campWindow(st), key = win.key;
   if (campBusy.has(key)) return;
   campBusy.add(key);
   campErr.delete(key);
   render();
-  const r = campRadius * 1000, lat = st.endPt.lat.toFixed(5), lon = st.endPt.lon.toFixed(5);
-  const query = `[out:json][timeout:25];(` +
-    `nwr["tourism"="camp_site"](around:${r},${lat},${lon});` +
-    `nwr["tourism"="caravan_site"]["tents"="yes"](around:${r},${lat},${lon});` +
-    `);out center tags 80;`;
+  // The route as a line (Overpass searches around the whole line, not only its points).
+  const ia = idxAt(T, win.a), ib = idxAt(T, win.b);
+  const every = Math.max(1, Math.round(400 / T.step));
+  const coords = [];
+  for (let i = ia; i <= ib; i += every) coords.push(`${T.pts[i].lat.toFixed(5)},${T.pts[i].lon.toFixed(5)}`);
+  if (!coords.length || (ib - ia) % every) coords.push(`${T.pts[ib].lat.toFixed(5)},${T.pts[ib].lon.toFixed(5)}`);
+  const r = Math.round(campRadius * 1000), line = coords.join(",");
+  const query = `[out:json][timeout:30];(` +
+    `nwr["tourism"="camp_site"](around:${r},${line});` +
+    `nwr["tourism"="caravan_site"]["tents"="yes"](around:${r},${line});` +
+    `);out center tags 150;`;
   try {
     const res = await fetch("https://overpass-api.de/api/interpreter", {
       method: "POST",
@@ -3836,16 +3853,25 @@ async function searchCamps(k) {
       const plat = el.lat ?? (el.center && el.center.lat);
       const plon = el.lon ?? (el.center && el.center.lon);
       if (plat == null || plon == null) return null;
-      const near = nearestKm(S.track, plat, plon);
+      // Closest point of the searched stretch: how far before the stage end, and the detour from there.
+      const cos = Math.cos(plat * rad);
+      let best = ia, bestD = Infinity;
+      for (let i = ia; i <= ib; i++) {
+        const dx = (T.pts[i].lon - plon) * cos, dy = T.pts[i].lat - plat, dd = dx * dx + dy * dy;
+        if (dd < bestD) { bestD = dd; best = i; }
+      }
+      const off = haversine(T.pts[best], { lat: plat, lon: plon });
+      if (off > r + 150) return null;
+      const km = T.pts[best].d / 1000;
       return {
         name: t.name || "", lat: plat, lon: plon,
-        dist: haversine(st.endPt, { lat: plat, lon: plon }), off: near.offset, km: near.km,
+        before: Math.max(0, win.b / 1000 - km), off, km,
         kind: t.tourism, camp: t.camp_site || "", backcountry: t.backcountry === "yes",
         fee: t.fee || "", tents: t.tents || "", hours: t.opening_hours || "",
         web: safeUrl(t.website || t["contact:website"] || t.url || ""),
         phone: t.phone || t["contact:phone"] || "",
       };
-    }).filter(Boolean).sort((a, b) => a.dist - b.dist);
+    }).filter(Boolean).sort((a, b) => a.before - b.before || a.off - b.off);
     campCache[key] = { t: Date.now(), list };
     // Keep the cache small.
     const keys = Object.keys(campCache).sort((a, b) => campCache[b].t - campCache[a].t);
@@ -3860,8 +3886,8 @@ async function searchCamps(k) {
 }
 
 function campFacts(c) {
-  const facts = [`${fmt(c.dist / 1000, 1)} km from the stage end`];
-  facts.push(c.off < 300 ? "right on the route" : `${fmt(c.off / 1000, 1)} km off the route (near km ${fmt(c.km, 0)})`);
+  const facts = [c.before < 0.3 ? "at the stage end" : `${fmt(c.before, 1)} km before the stage end (km ${fmt(c.km, 0)})`];
+  facts.push(c.off < 300 ? "right on the route" : `${fmt(c.off / 1000, 1)} km off the route`);
   if (c.backcountry || c.camp === "basic") facts.push("basic / wild camping");
   if (c.kind === "caravan_site") facts.push("caravan site, tents allowed");
   if (c.fee === "no") facts.push("free");
@@ -3882,21 +3908,26 @@ function campItem(c) {
 }
 
 function campSection(st, k) {
-  const key = campKey(st.endPt, campRadius);
+  const key = campWindow(st).key;
   const res = campResult(st);
   let body;
   if (campBusy.has(key)) body = `<p class="small muted">Searching for campsites …</p>`;
   else if (campErr.has(key)) body = `<p class="small">${esc(campErr.get(key))}</p>`;
-  else if (!res) body = `<p class="small muted">Finds campsites from OpenStreetMap around the end of this stage. They are marked ⛺ on the map.</p>`;
-  else if (!res.list.length) body = `<p class="small muted">No campsites found within ${campRadius} km. Try a larger distance.</p>`;
-  else body = `<p class="small muted">${res.list.length} campsite${res.list.length > 1 ? "s" : ""} within ${campRadius} km, closest first:</p>
+  else if (!res) body = `<p class="small muted">Finds campsites from OpenStreetMap along the last part of this stage, close to the route. They are marked ⛺ on the map.</p>`;
+  else if (!res.list.length) body = `<p class="small muted">No campsites found ${campWhere()}. Try a longer stretch or more distance off the route.</p>`;
+  else body = `<p class="small muted">${res.list.length} campsite${res.list.length > 1 ? "s" : ""} ${campWhere()}, closest to the stage end first:</p>
     <ul class="camp-list">${res.list.slice(0, 30).map(campItem).join("")}</ul>`;
+  const km = (v) => fmt(v, v < 1 ? 1 : 0, " km");
   return `<details class="camp" data-camp="${k}" ${campOpen.has(k) ? "open" : ""}>
-    <summary>⛺ Campsites near the end of this stage${res ? ` <span class="muted small">(${res.list.length} within ${campRadius} km)</span>` : ""}</summary>
+    <summary>⛺ Campsites along the end of this stage${res ? ` <span class="muted small">(${res.list.length})</span>` : ""}</summary>
     <div class="camp-controls">
-      <label class="small">Within
-        <select data-camp-radius aria-label="Search distance">${CAMP_RADII.map((r) =>
-          `<option value="${r}" ${r === campRadius ? "selected" : ""}>${r} km</option>`).join("")}</select>
+      <label class="small">Last
+        <select data-camp-stretch aria-label="Stretch before the stage end">${CAMP_STRETCHES.map((v) =>
+          `<option value="${v}" ${v === campStretch ? "selected" : ""}>${v ? km(v) : "0 km (end only)"}</option>`).join("")}</select>
+      </label>
+      <label class="small">up to
+        <select data-camp-radius aria-label="Distance off the route">${CAMP_RADII.map((r) =>
+          `<option value="${r}" ${r === campRadius ? "selected" : ""}>${km(r)}</option>`).join("")}</select> off the route
       </label>
       <button type="button" data-camp-search="${k}">${res ? "Search again" : "Search"}</button>
     </div>
@@ -3911,6 +3942,10 @@ function renderCampMarkers(layer) {
     const res = campResult(st);
     if (!res) return;
     if (campOpen.has(k)) {
+      // The searched stretch, and the search distance around the stage end.
+      const win = campWindow(st), T = S.track, line = [];
+      for (let i = idxAt(T, win.a); i <= idxAt(T, win.b); i++) line.push([T.pts[i].lat, T.pts[i].lon]);
+      if (line.length > 1) L.polyline(line, { color: css("--accent"), weight: 14, opacity: 0.25, interactive: false }).addTo(layer);
       L.circle([st.endPt.lat, st.endPt.lon], {
         radius: campRadius * 1000, color: css("--accent"), weight: 1, fillOpacity: 0.06, interactive: false,
       }).addTo(layer);
@@ -4119,7 +4154,7 @@ async function downloadPdf() {
       }
       const camps = campResult(st);
       if (camps && camps.list.length) {
-        write(`Campsites within ${campRadius} km of the stage end`, 11, "bold");
+        write(`Campsites ${campWhere()}`, 11, "bold");
         table({
           startY: y,
           head: [["Name", "Distance / location", "Website", "Phone"]],
@@ -4368,10 +4403,13 @@ function initControls() {
     if (show) showCampOnMap(show.dataset.campShow);
   });
   document.addEventListener("change", (e) => {
-    if (!e.target.matches("[data-camp-radius]")) return;
-    campRadius = Number(e.target.value) || 5;
-    store("campRadius", campRadius);
-    render();
+    if (!e.target.matches("[data-camp-radius], [data-camp-stretch]")) return;
+    if (e.target.matches("[data-camp-radius]")) { campRadius = Number(e.target.value) || 2; store("campRadius", campRadius); }
+    else { campStretch = Number(e.target.value) || 0; store("campStretch", campStretch); }
+    // Search the new stretch right away (cached results show without a new search).
+    const d = e.target.closest("details.camp"), st = d && S.stages[Number(d.dataset.camp)];
+    if (st && !campResult(st)) searchCamps(Number(d.dataset.camp));
+    else render();
   });
   // "toggle" doesn't bubble, so listen in the capture phase. Opening a campsite section searches right away.
   document.addEventListener("toggle", (e) => {

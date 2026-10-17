@@ -29,7 +29,7 @@ No account, no sign-up, no ads. Your tours stay on your phone.
 - 🌅 Sunrise and sunset, with a warning if you would arrive after dark
 - ✅ Whether the weather models agree or disagree
 - ⬇️ The GPX of just that stage, to load into your navigation app
-- ⛺ Campsites around the end of the stage, listed and marked on the map
+- ⛺ Campsites along the last part of the stage, close to the route, listed and marked on the map
 
 You also get a map of the whole tour (bike map by CyclOSM), an elevation profile,
 an overview table of all stages, and the whole forecast as a PDF.
@@ -208,11 +208,20 @@ plan simply continues tomorrow.
 
 ### 5. Find a campsite for the night
 
-At the end of each stage, open **⛺ Campsites near the end of this stage**.
-Choose how far you are willing to ride (2 to 30 km) and the app lists the
-campsites around the stage end, closest first: how far each is from the stage
-end and from your route, and – if known – website, phone and opening hours.
-They are also marked ⛺ on the map. **Directions** opens your maps app.
+At the end of each stage, open **⛺ Campsites along the end of this stage**.
+The app looks for campsites along your route, so you don't ride far out of your
+way. Two settings decide where:
+
+- **Last … km** – how much of the end of the stage is searched (0 = only around
+  the stage end, up to 30 km). A campsite a few km before the end just makes
+  the day a little shorter.
+- **up to … km off the route** – how far a campsite may be from the route
+  (0.5 to 10 km); that's your detour.
+
+The list starts with the campsites closest to the stage end and shows for each
+how far before the end it lies, how far off the route, and – if known –
+website, phone and opening hours. The searched stretch is highlighted on the
+map. They are also marked ⛺ on the map. **Directions** opens your maps app.
 
 The campsites come from OpenStreetMap, so small or new places may be missing.
 Check opening times before you go – many campsites close for the winter.

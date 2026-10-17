@@ -79,10 +79,16 @@ await ctx.route("**/*", (route) => {
   if (LIB[url]) return route.fulfill({ body: fs.readFileSync(LIB[url]), contentType: url.endsWith(".css") ? "text/css" : "text/javascript" });
   if (url.includes("api.open-meteo.com/v1/forecast")) return route.fulfill({ json: forecast(url) });
   if (url.includes("bigdatacloud")) return route.fulfill({ json: { city: "Town " + new URL(url).searchParams.get("longitude").slice(0, 4) } });
-  if (url.includes("overpass")) return route.fulfill({ json: { elements: [] } });
+  if (url.includes("overpass")) {
+    const q = decodeURIComponent(route.request().postData().replace(/^data=/, "").replace(/\+/g, " "));
+    if (!q.includes("camp_site")) return route.fulfill({ json: { elements: [] } });
+    campQueries.push(q);
+    return route.fulfill({ json: { elements: campElements } });
+  }
   if (url.endsWith(".png")) return route.fulfill({ body: PNG, contentType: "image/png" });
   return route.fulfill({ status: 404, body: "" });
 });
+let campElements = [], campQueries = [];   // what the campsite search returns / was asked
 const page = await ctx.newPage();
 const errors = [];
 page.on("pageerror", (e) => errors.push(e.message));
@@ -305,6 +311,54 @@ await test("every coming day shows sunrise and sunset", async () => {
   const rows = await page.locator(".day-row .dr-route").allInnerTexts();
   assert.ok(rows.length > 0);
   for (const r of rows) assert.match(r, /🌅 \d\d:\d\d 🌇 \d\d:\d\d/);
+});
+await test("campsites are searched along the end of the stage, close to the route", async () => {
+  // Test campsites placed relative to today's stage end: km before the end, metres off the route (north).
+  const k = await ev(() => S.stages.findIndex((st) => st.dayOffset >= 0));
+  campElements = await ev((k) => {
+    const st = S.stages[k];
+    const at = (before, off, name) => { const p = pointAt(S.track, st.b - before * 1000); return { type: "node", lat: p.lat + off / 111320, lon: p.lon, tags: { tourism: "camp_site", name } }; };
+    return [at(0, 100, "End Camp"), at(4, 800, "Four Km Camp"), at(15, 500, "Fifteen Km Camp"), at(2, 4000, "Far Off Camp")];
+  }, k);
+  await ev(() => { localStorage.removeItem("gpxweather.v1.camps"); campCache = {}; });
+  await page.locator("#next [data-camp-open]").click();
+  await page.waitForFunction(() => document.querySelectorAll("#next .camp-list li").length > 0);
+  const q = campQueries.at(-1);
+  assert.match(q, /around:2000,[\d.,]+\)/, "default: up to 2 km off the route");
+  const coords = q.match(/around:2000,([\d.,]+)\)/)[1].split(",").length / 2;
+  assert.ok(coords > 10, `searches along a line of the route, not one point (${coords} points)`);
+  const names = await page.locator("#next .camp-list .name").allInnerTexts();
+  assert.deepEqual(names.map((n) => n.replace("⛺ ", "")), ["End Camp", "Four Km Camp"], "last 10 km, 2 km off the route, closest to the end first");
+  const facts = await page.locator("#next .camp-list li .muted").allInnerTexts();
+  assert.match(facts[0], /at the stage end · right on the route/);
+  const [, before, off] = facts[1].match(/^([\d.]+) km before the stage end \(km \d+\) · ([\d.]+) km off the route/);
+  assert.ok(before > 3 && before <= 4.5 && off > 0.3 && off <= 0.8, facts[1]);   // the zig-zag route passes closer than where it was placed
+  assert.match(await page.locator("#next details.camp > summary").innerText(), /along the end of this stage/);
+});
+await test("a longer stretch finds campsites earlier on the route; more distance finds ones further off", async () => {
+  await page.locator("#next [data-camp-stretch]").selectOption("20");
+  await page.waitForFunction(() => document.querySelectorAll("#next .camp-list li").length === 3);
+  assert.match(campQueries.at(-1), /around:2000,/);
+  await page.locator("#next [data-camp-radius]").selectOption("5");
+  await page.waitForFunction(() => document.querySelectorAll("#next .camp-list li").length === 4);
+  assert.match(campQueries.at(-1), /around:5000,/);
+  assert.match(await page.locator("#next .camp-controls + p").innerText(), /in the last 20 km, up to 5 km off the route/);
+});
+await test("stretch 0 searches only around the stage end; the choice survives a reload", async () => {
+  await page.locator("#next [data-camp-radius]").selectOption("2");
+  await page.locator("#next [data-camp-stretch]").selectOption("0");
+  await page.waitForFunction(() => document.querySelectorAll("#next .camp-list li").length === 1);
+  assert.equal(campQueries.at(-1).match(/around:2000,([\d.,]+)\)/)[1].split(",").length, 2, "a single point");
+  assert.match(await page.locator("#next .camp-list").innerText(), /End Camp/);
+  const n = campQueries.length;
+  await page.locator("#next [data-camp-radius]").selectOption("5");
+  await page.locator("#next [data-camp-stretch]").selectOption("20");   // searched before: no new search
+  await page.waitForFunction(() => document.querySelectorAll("#next .camp-list li").length === 4);
+  assert.equal(campQueries.length, n + 1, "only the 0 km / 5 km step was new");
+  await page.reload();
+  await page.waitForFunction(() => S.stages.length > 0);
+  assert.deepEqual(await ev(() => [campStretch, campRadius]), [20, 5]);
+  await ev(() => { campStretch = 10; campRadius = 2; store("campStretch", 10); store("campRadius", 2); });
 });
 await test("tapping a coming day opens it in place with its own route map, without jumping down", async () => {
   await ev(() => window.scrollTo(0, 0));
