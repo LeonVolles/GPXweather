@@ -232,7 +232,11 @@
   .wx-ico { font-size: 1.15rem; }
   .day-row.open { border-bottom: none; }
   .ride-detail { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--grid); }
-  .ride-chart { margin-top: 8px; }
+  .track-chart { margin-top: 10px; }
+  .track-chart .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tc-readout { margin: 8px 0 2px; min-height: 2.6em; color: var(--ink-2); }
+  .tc-legend { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 2px; }
+  .tc-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
   .sun { white-space: nowrap; }
   dialog.sheet { width: 100%; max-width: 560px; margin: auto auto 0; border: none; border-radius: 16px 16px 0 0;
                  background: var(--surface); color: var(--ink); padding: 0; max-height: 88vh; box-sizing: border-box; }
@@ -517,7 +521,7 @@
 /* ---------- Configuration ---------- */
 
 // Bump with every release (and VERSION in sw.js): the app compares it with the published page to offer updates.
-const APP_VERSION = "2026-10-18.2";
+const APP_VERSION = "2026-10-18.3";
 
 // days = forecast_days requested from Open-Meteo, roughly the model's real horizon.
 const MODELS = [
@@ -1308,29 +1312,35 @@ function rideMetrics(pts) {
   const timed = pts.filter((p) => p.t != null);
   if (timed.length < 10) return null;
   const has = (k) => timed.some((p) => p[k] != null);
-  const hasHr = has("hr"), hasPw = has("pw"), hasCad = has("cad");
+  const hasHr = has("hr"), hasPw = has("pw"), hasCad = has("cad"), hasTemp = has("temp");
   const m = { hrS: 0, hrT: 0, hrMax: null, pS: 0, pT: 0, pMax: null, np4: 0, npT: 0, cadS: 0, cadT: 0, vMax: null };
   const cum = [0];
   for (let i = 1; i < timed.length; i++) cum.push(cum[i - 1] + haversine(timed[i - 1], timed[i]));
   const win = [];   // last 30 s of power while moving: [seconds, watts]
   let winS = 0, winT = 0, j = 0;
   const bucket = Math.max(100, cum[cum.length - 1] / 300);
-  const series = { km: [], v: [], hr: hasHr ? [] : null, p: hasPw ? [] : null, ele: [] };
-  let b = { d: 0, t: 0, hrS: 0, hrT: 0, pS: 0, pT: 0, end: bucket };
+  const series = { km: [], v: [], hr: hasHr ? [] : null, p: hasPw ? [] : null, cad: hasCad ? [] : null, temp: hasTemp ? [] : null,
+    ele: [], lat: [], lon: [] };
+  const fresh = (end) => ({ d: 0, t: 0, hrS: 0, hrT: 0, pS: 0, pT: 0, cS: 0, cT: 0, tS: 0, tT: 0, end });
+  let b = fresh(bucket);
   const flush = (i) => {
     if (b.t > 0) {
       series.km.push(+(cum[i] / 1000).toFixed(2));
       series.v.push(+((b.d / b.t) * 3.6).toFixed(1));
       if (series.hr) series.hr.push(b.hrT ? Math.round(b.hrS / b.hrT) : null);
       if (series.p) series.p.push(b.pT ? Math.round(b.pS / b.pT) : null);
+      if (series.cad) series.cad.push(b.cT ? Math.round(b.cS / b.cT) : null);
+      if (series.temp) series.temp.push(b.tT ? +(b.tS / b.tT).toFixed(1) : null);
       series.ele.push(timed[i].ele == null ? null : Math.round(timed[i].ele));
+      series.lat.push(+timed[i].lat.toFixed(5)); series.lon.push(+timed[i].lon.toFixed(5));
     }
-    b = { d: 0, t: 0, hrS: 0, hrT: 0, pS: 0, pT: 0, end: cum[i] + bucket };
+    b = fresh(cum[i] + bucket);
   };
   for (let i = 1; i < timed.length; i++) {
     const p = timed[i], dt = (p.t - timed[i - 1].t) / 1000, dd = cum[i] - cum[i - 1];
     if (!(dt > 0) || dt > 120) continue;
     const moving = dd / dt > 2 / 3.6 && dd / dt < 90 / 3.6;
+    if (p.temp != null) { b.tS += p.temp * dt; b.tT += dt; }
     if (p.hr != null && p.hr > 30) {
       m.hrS += p.hr * dt; m.hrT += dt; m.hrMax = Math.max(m.hrMax ?? 0, p.hr);
       b.hrS += p.hr * dt; b.hrT += dt;
@@ -1346,7 +1356,7 @@ function rideMetrics(pts) {
         while (winT - win[0][0] >= 30) { const [t0, w0] = win.shift(); winS -= w0 * t0; winT -= t0; }
         if (winT >= 25) { m.np4 += (winS / winT) ** 4 * dt; m.npT += dt; }
       }
-      if (hasCad && p.cad > 0) { m.cadS += p.cad * dt; m.cadT += dt; }
+      if (hasCad && p.cad > 0) { m.cadS += p.cad * dt; m.cadT += dt; b.cS += p.cad * dt; b.cT += dt; }
     }
     // Top speed over at least 20 s (single GPS points jump around).
     while (j < i - 1 && (p.t - timed[j + 1].t) / 1000 >= 20) j++;
@@ -1369,22 +1379,23 @@ function rideStats(rec) {
   const max = (k) => { const v = parts.map((p) => p.metrics[k]).filter((x) => x != null); return v.length ? Math.max(...v) : null; };
   const hrT = add("hrT"), pT = add("pT"), npT = add("npT"), cadT = add("cadT");
   // One series over the whole day: the files in time order, one after the other.
-  const series = { km: [], v: [], hr: [], p: [], ele: [] };
+  const keys = ["v", "hr", "p", "cad", "temp", "ele", "lat", "lon"];
+  const series = { km: [] };
+  keys.forEach((k) => { series[k] = []; });
   let off = 0;
   for (const part of [...parts].sort((x, y) => (x.startTime ?? 0) - (y.startTime ?? 0))) {
     const s = part.metrics.series, n = s.km.length;
     series.km.push(...s.km.map((k) => +(k + off).toFixed(2)));
-    series.v.push(...s.v); series.ele.push(...s.ele);
-    series.hr.push(...(s.hr || Array(n).fill(null)));
-    series.p.push(...(s.p || Array(n).fill(null)));
+    for (const k of keys) series[k].push(...(s[k] || Array(n).fill(null)));
     off += part.km;
   }
+  for (const k of keys) if (!series[k].some((v) => v != null)) series[k] = null;
   return {
     movingH: rec.movingH, vAvg: rec.movingH ? rec.km / rec.movingH : null, vMax: max("vMax"),
     hrAvg: hrT ? add("hrS") / hrT : null, hrMax: max("hrMax"),
     pAvg: pT ? add("pS") / pT : null, pMax: max("pMax"), np: npT ? (add("np4") / npT) ** 0.25 : null,
     cad: cadT ? add("cadS") / cadT : null, kj: pT ? add("pS") / 1000 : null,
-    series: { ...series, hr: hrT ? series.hr : null, p: pT ? series.p : null },
+    series,
   };
 }
 
@@ -1402,7 +1413,8 @@ function parseRide(text) {
     const time = t ? Date.parse(t.textContent.trim()) : NaN;
     pts.push({ lat, lon, ele: Number.isFinite(ele) ? ele : null, t: Number.isFinite(time) ? time : null,
       // Sensor values from the extensions (Garmin, Wahoo, Strava …), whatever namespace they use.
-      hr: extValue(n, ["hr", "heartrate"]), pw: extValue(n, ["power", "PowerInWatts", "watts"]), cad: extValue(n, ["cad", "cadence"]) });
+      hr: extValue(n, ["hr", "heartrate"]), pw: extValue(n, ["power", "PowerInWatts", "watts"]), cad: extValue(n, ["cad", "cadence"]),
+      temp: extValue(n, ["atemp", "temp", "temperature"]) });
   }
   if (pts.length < 2) throw new Error("No track points found in this GPX.");
 
@@ -3101,7 +3113,7 @@ function dayCard(st, k, w, inline = false) {
       <summary>ℹ️ More about this day</summary>
       <div class="tiles" style="margin-top:10px">${surfaceTile(st)}
         ${tile("Elevation", `${fmt(st.lo, 0)}–${fmt(st.hi, 0)} m`, `${fmt(st.startEle, 0)} m → ${fmt(st.endEle, 0)} m`)}</div>
-      ${sparkline(st)}
+      ${typeof Plotly === "undefined" ? sparkline(st) : moreOpen.has(k) ? `<div data-track-chart="plan:${k}"></div>` : ""}
       <div class="small muted" style="margin-top:6px">${timeText(st)}</div>
       <div class="summary-box day-summary">${daySummary}</div>
       ${nightSummary ? `<div class="summary-box night-summary">${nightSummary}</div>` : ""}
@@ -3126,6 +3138,7 @@ function renderNext(weather) {
   $("next").innerHTML = k < 0 ? `<div class="card next-card"><h3 style="margin:0">🎉 You have arrived – no stages left.</h3></div>`
     : dayCard(S.stages[k], k, weather[k]);
   if (k >= 0 && modelsOpen.has(k)) renderHourly(k, weather[k]);
+  attachTrackCharts();
 }
 
 // The days after today, in order: length, time and weather at a glance; tap to open a day in place.
@@ -3162,6 +3175,7 @@ function renderComing(weather) {
   </section>`;
   for (const k of modelsOpen) if (comingOpen.has(k)) renderHourly(k, weather[k]);
   attachDayMaps();
+  attachTrackCharts();
 }
 
 function toggleComing(k) {
@@ -3283,7 +3297,8 @@ function renderDone() {
       Other days: km and climb along the planned route. Time and speed come from your uploads
       (first to last point, incl. breaks). ✕ removes a day from the log, e.g. one you ended by mistake.</div>
     <div class="btn-row"><label class="button" for="rideFile">📤 Add a ridden day (GPX of your ride)</label></div>`;
-  for (const d of days) if (d.rec && rideOpen.has(d.date)) renderRideCharts(d);
+  attachRideMaps();
+  attachTrackCharts();
 }
 
 /* Details of a recorded day: speed, heart rate, power and cadence, with a chart of each along the ride. */
@@ -3302,33 +3317,208 @@ function rideDetail(d) {
   if (r.pAvg != null) tiles.push(tile("⚡ Power", `${fmt(r.pAvg, 0)} W`, `average${r.np ? ` · normalized ${fmt(r.np, 0)}` : ""} · max ${fmt(r.pMax, 0)}`));
   if (r.cad) tiles.push(tile("🔄 Cadence", `${fmt(r.cad, 0)} rpm`, "average while pedalling"));
   if (r.kj) tiles.push(tile("🔥 Work", `${numFmt(Math.round(r.kj))} kJ`, `≈ ${numFmt(Math.round(r.kj))} kcal burned`));
-  const charts = ["v", "hr", "p"].filter((k) => r.series[k]).map((k) => `<div class="ride-chart" id="ride-${k}-${d.date}"></div>`).join("");
+  const charts = `<div data-track-chart="ride:${d.date}"></div>`;
   const missing = [!r.hrAvg && "heart rate", r.pAvg == null && "power"].filter(Boolean);
-  return `<div class="tiles" style="margin-top:4px">${tiles.join("")}</div>${charts}
+  return `<div class="tiles" style="margin-top:4px">${tiles.join("")}</div>${charts}<div data-ride-map="${d.date}"></div>
     ${missing.length ? `<p class="small muted" style="margin:6px 0 0">No ${missing.join(" or ")} in this GPX (it needs a sensor and an export that keeps it, e.g. Garmin, Wahoo, Strava).</p>` : ""}`;
 }
 
-function renderRideCharts(d) {
-  const r = rideStats(d.rec);
-  if (!r || typeof Plotly === "undefined") return;
-  // One chart per measure, each on its own axis, all over the km of the day.
-  const panel = (k, title, unit, color, zero) => {
-    const el = $(`ride-${k}-${d.date}`);
-    if (!el) return;
-    Plotly.react(el, [{
-      type: "scatter", mode: "lines", x: r.series.km, y: r.series[k], connectgaps: false,
-      line: { color: css(color), width: 2 }, hovertemplate: `km %{x:.1f}: %{y:.0f} ${unit}<extra></extra>`,
-    }], plotTheme({
-      height: 170, hovermode: "x",
-      title: { text: `${title} (${unit})`, x: 0, xanchor: "left", font: { size: 13, color: css("--ink") } },
-      margin: { l: 40, r: 12, t: 32, b: 32 },
-      xaxis: { ...plotTheme().xaxis, ticksuffix: " km", showspikes: true, spikemode: "across", spikethickness: 1, spikecolor: css("--axis"), spikedash: "solid" },
-      yaxis: { ...plotTheme().yaxis, rangemode: zero ? "tozero" : "normal" },
-    }), PLOT_CONFIG);
+/* ---------- Track chart (like gpx.studio): elevation coloured by gradient, with speed, heart rate, power,
+   cadence and temperature below it on the same km axis – each in its own row, each can be switched off.
+   Hovering shows every value at that point and the spot on the map. ---------- */
+
+const CHART_LAYERS = [
+  { k: "slope", label: "📐 Gradient", on: true },
+  { k: "v", label: "🚴 Speed", unit: "km/h", d: 1, color: "--m1", zero: true, on: true },
+  { k: "hr", label: "❤️ Heart rate", unit: "bpm", d: 0, color: "--m2", on: true },
+  { k: "p", label: "⚡ Power", unit: "W", d: 0, color: "--m3", zero: true, on: true },
+  { k: "cad", label: "🔄 Cadence", unit: "rpm", d: 0, color: "--m4", on: false },
+  { k: "temp", label: "🌡️ Temperature", unit: "°C", d: 0, color: "--m5", on: false },
+];
+// Gradient classes in % (downhill blue, flat grey, uphill yellow → dark red).
+const SLOPE_BINS = [[-8, "#1f5fa8", "↓ 8+"], [-4, "#4f8fd6", "↓ 4–8"], [-1.5, "#9cc3ec", "↓ 1.5–4"], [1.5, "#b9b8b0", "flat"],
+  [4, "#f2c14e", "↑ 1.5–4"], [8, "#ec8a2e", "↑ 4–8"], [12, "#d6452a", "↑ 8–12"], [Infinity, "#8c1d1d", "↑ 12+"]];
+const slopeColor = (g) => (g == null ? css("--grid") : SLOPE_BINS.find(([max]) => g < max)[1]);
+let chartLayers = restore("chartLayers") || {};
+const layerOn = (l) => chartLayers[l.k] ?? l.on;
+
+// Gradient (%) at every sample, over about 100 m each way so elevation noise doesn't show as walls.
+function gradients(km, ele) {
+  const n = km.length, out = new Array(n).fill(null);
+  let j0 = 0, j1 = 0;
+  for (let i = 0; i < n; i++) {
+    while (j0 < i && km[i] - km[j0 + 1] >= 0.1) j0++;
+    if (j1 < i) j1 = i;
+    while (j1 < n - 1 && km[j1] - km[i] < 0.1) j1++;
+    const run = (km[j1] - km[j0]) * 1000;
+    if (run > 20 && ele[j0] != null && ele[j1] != null) out[i] = Math.max(-30, Math.min(30, ((ele[j1] - ele[j0]) / run) * 100));
+  }
+  return out;
+}
+
+// Chart data of a recorded day.
+function rideChartData(rec) {
+  const r = rideStats(rec);
+  if (!r || !r.series.km.length) return null;
+  return { ...r.series, slope: r.series.ele ? gradients(r.series.km, r.series.ele) : null };
+}
+
+// Chart data of a planned day: elevation and gradient along the route (km from the start of the day).
+function planChartData(st) {
+  const T = S.track, ia = idxAt(T, st.a), ib = idxAt(T, st.b);
+  const every = Math.max(1, Math.ceil((ib - ia) / 600));
+  const km = [], ele = [], lat = [], lon = [];
+  for (let i = ia; i <= ib; i += every) { const p = T.pts[i]; km.push((p.d - st.a) / 1000); ele.push(p.sm); lat.push(p.lat); lon.push(p.lon); }
+  return { km, ele, lat, lon, slope: gradients(km, ele) };
+}
+
+const trackCharts = new Map();   // slot key -> { el, sig }
+function attachTrackCharts() {
+  if (typeof Plotly === "undefined") return;
+  for (const slot of document.querySelectorAll("[data-track-chart]")) {
+    const key = slot.dataset.trackChart, [kind, id] = key.split(":");
+    const st = kind === "plan" ? S.stages[Number(id)] : null;
+    const rec = kind === "ride" && S.days[id] ? S.days[id].rec : null;
+    const data = st ? planChartData(st) : rec ? rideChartData(rec) : null;
+    if (!data) { slot.remove(); continue; }
+    const sig = st ? `${S.tourId}|${Math.round(st.a)}|${Math.round(st.b)}` : `${rec.km}|${(rec.parts || []).length}`;
+    let tc = trackCharts.get(key);
+    if (tc && tc.sig === sig) { slot.replaceWith(tc.el); continue; }   // keep the drawn chart across re-renders
+    const el = document.createElement("div");
+    el.className = "track-chart";
+    slot.replaceWith(el);
+    tc = { el, sig, data, kind, id };
+    trackCharts.set(key, tc);
+    drawTrackChart(tc);
+  }
+}
+
+function drawTrackChart(tc) {
+  const { el, data } = tc;
+  const avail = CHART_LAYERS.filter((l) => data[l.k] && data[l.k].some((v) => v != null));
+  const rows = avail.filter((l) => l.k !== "slope" && layerOn(l));
+  const slopeOn = data.slope && layerOn(CHART_LAYERS[0]);
+  el.innerHTML = `${avail.length ? `<div class="chips" role="group" aria-label="Show in the chart">${avail.map((l) =>
+      `<button type="button" class="chip${layerOn(l) ? " on" : ""}" data-layer="${l.k}" aria-pressed="${layerOn(l)}">${l.label}</button>`).join("")}</div>` : ""}
+    <div class="tc-readout small" aria-live="polite"></div>
+    <div class="tc-plot"></div>
+    ${slopeOn ? `<div class="tc-legend small muted">${SLOPE_BINS.map(([, c, t]) => `<span><i style="background:${c}"></i>${t}</span>`).join("")} %</div>` : ""}`;
+  const plot = el.querySelector(".tc-plot"), readout = el.querySelector(".tc-readout");
+  el.querySelectorAll("[data-layer]").forEach((b) => b.addEventListener("click", () => {
+    const l = CHART_LAYERS.find((x) => x.k === b.dataset.layer);
+    chartLayers = { ...chartLayers, [l.k]: !layerOn(l) };
+    store("chartLayers", chartLayers);
+    for (const other of trackCharts.values()) if (other.el.isConnected) drawTrackChart(other);
+  }));
+
+  // Rows from the top: elevation, then each switched-on measure. One y axis per row, all on the km axis.
+  const H0 = 160, H1 = 78, GAP = 24, top = 22, bottom = 30;
+  const height = top + bottom + H0 + rows.length * (H1 + GAP);
+  const ph = height - top - bottom;
+  const traces = [], layout = plotTheme({ height, hovermode: "x", margin: { l: 44, r: 10, t: top, b: bottom }, bargap: 0, annotations: [] });
+  const km = data.km, n = km.length;
+  let y0 = ph;   // px from the bottom of the plot area, going down
+  const domain = (h) => { const hi = y0 / ph, lo = (y0 - h) / ph; y0 -= h + GAP; return [Math.max(0, lo), Math.min(1, hi)]; };
+  const axisName = (i) => (i ? `y${i + 1}` : "y");
+  const label = (i, text, dom) => layout.annotations.push({ xref: "paper", yref: "paper", x: 0, y: dom[1], xanchor: "left", yanchor: "bottom",
+    text, showarrow: false, font: { size: 12, color: css("--ink-2") } });
+
+  const ele = data.ele || [];
+  const known = ele.filter((v) => v != null);
+  const dom0 = domain(H0);
+  layout.yaxis = { ...plotTheme().yaxis, domain: dom0, ticksuffix: " m" };
+  if (known.length) {
+    const lo = Math.min(...known), hi = Math.max(...known), pad = Math.max(10, (hi - lo) * 0.1), base = Math.floor(lo - pad);
+    layout.yaxis.range = [base, hi + pad];
+    // The area under the profile as thin bars, each coloured by its gradient.
+    traces.push({ type: "bar", x: km.map((k, i) => (i ? (k + km[i - 1]) / 2 : k)), width: km.map((k, i) => (i ? Math.max(0.001, k - km[i - 1]) : 0.001)),
+      y: ele.map((v) => (v == null ? null : v - base)), base, yaxis: "y", hoverinfo: "skip",
+      marker: { color: slopeOn ? data.slope.map(slopeColor) : css("--m1") + "40", line: { width: 0 } } });
+    traces.push({ type: "scatter", mode: "lines", x: km, y: ele, yaxis: "y", line: { color: css("--ink-2"), width: 1.5 }, hoverinfo: "none", connectgaps: true });
+  }
+  label(0, "⛰️ Elevation", dom0);
+  rows.forEach((l, i) => {
+    const dom = domain(H1), ax = axisName(i + 1);
+    layout["yaxis" + (i + 2)] = { ...plotTheme().yaxis, domain: dom, rangemode: l.zero ? "tozero" : "normal", nticks: 4 };
+    traces.push({ type: "scatter", mode: "lines", x: km, y: data[l.k], yaxis: ax, line: { color: css(l.color), width: 2 }, hoverinfo: "none", connectgaps: false });
+    label(i + 1, `${l.label} (${l.unit})`, dom);
+  });
+  layout.xaxis = { ...plotTheme().xaxis, ticksuffix: " km", anchor: axisName(rows.length), range: [km[0], km[n - 1]] };
+  layout.shapes = [];
+  Plotly.react(plot, traces, layout, PLOT_CONFIG);
+
+  // Readout: summary until you point at the chart, then every value there.
+  const climb = climbOf(ele.map((v) => [0, 0, v]));
+  const g = (data.slope || []).filter((v) => v != null);
+  const summary = `${fmt(km[n - 1], 1)} km · ↑ ${fmt(climb.up, 0)} m ↓ ${fmt(climb.down, 0)} m` +
+    (known.length ? ` · ${fmt(Math.min(...known), 0)}–${fmt(Math.max(...known), 0)} m` : "") +
+    (g.length ? ` · steepest ${fmt(Math.max(...g), 0)} % up, ${fmt(-Math.min(...g), 0)} % down` : "");
+  readout.textContent = summary;
+  let marker = null, raf = 0;
+  const show = (i) => {
+    const parts = [`km ${fmt(km[i], 1)}`];
+    if (ele[i] != null) parts.push(`⛰️ ${fmt(ele[i], 0)} m`);
+    if (data.slope && data.slope[i] != null) parts.push(`📐 ${data.slope[i] > 0 ? "+" : ""}${fmt(data.slope[i], 1)} %`);
+    for (const l of CHART_LAYERS.slice(1)) if (data[l.k] && data[l.k][i] != null) parts.push(`${l.label.split(" ")[0]} ${fmt(data[l.k][i], l.d)} ${l.unit}`);
+    readout.textContent = parts.join(" · ");
+    Plotly.relayout(plot, { shapes: [{ type: "line", xref: "x", yref: "paper", x0: km[i], x1: km[i], y0: 0, y1: 1, line: { color: css("--ink-2"), width: 1 } }] });
+    const m = chartMap(tc);
+    if (m && data.lat && data.lat[i] != null) {
+      if (!marker || marker._map !== m) {
+        if (marker) marker.remove();
+        marker = L.circleMarker([data.lat[i], data.lon[i]], { radius: 7, color: "#fff", weight: 2, fillColor: css("--critical"), fillOpacity: 1 }).addTo(m);
+      } else marker.setLatLng([data.lat[i], data.lon[i]]);
+    }
   };
-  panel("v", "Speed", "km/h", "--m1", true);
-  panel("hr", "Heart rate", "bpm", "--m2", false);
-  panel("p", "Power", "W", "--m3", true);
+  plot.on("plotly_hover", (ev) => {
+    const x = ev.points[0].x;
+    let lo = 0, hi = n - 1;
+    while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (km[mid] < x) lo = mid; else hi = mid; }
+    const i = x - km[lo] < km[hi] - x ? lo : hi;
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(() => show(i));
+  });
+  plot.on("plotly_unhover", () => {
+    readout.textContent = summary;
+    Plotly.relayout(plot, { shapes: [] });
+    if (marker) { marker.remove(); marker = null; }
+  });
+  tc.show = show;
+}
+
+// The map that shows where you point in the chart: the ride's own map, the day's map, or the main map.
+function chartMap(tc) {
+  if (typeof L === "undefined") return null;
+  if (tc.kind === "ride") return rideMaps.get(tc.id) ? rideMaps.get(tc.id).map : null;
+  const k = Number(tc.id), dm = dayMaps.get(k);
+  return dm ? dm.map : map;
+}
+
+// A small map of a recorded day (its track), kept across re-renders.
+const rideMaps = new Map();
+function attachRideMaps() {
+  if (typeof L === "undefined") return;
+  for (const slot of document.querySelectorAll("[data-ride-map]")) {
+    const date = slot.dataset.rideMap, e = S.days[date];
+    if (!e || !e.rec) { slot.remove(); continue; }
+    const sig = `${e.rec.km}|${(e.rec.parts || []).length}`;
+    let rm = rideMaps.get(date);
+    if (rm && rm.sig === sig) { slot.replaceWith(rm.el); setTimeout(() => rm.map.invalidateSize(), 0); continue; }
+    if (rm) rm.map.remove();
+    const el = document.createElement("div");
+    el.className = "day-map-el";
+    slot.replaceWith(el);
+    const m = L.map(el, { scrollWheelZoom: false, zoomSnap: 0.25 });
+    L.tileLayer("https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png", {
+      maxZoom: 20, subdomains: "abc", attribution: '<a href="https://www.cyclosm.org/">CyclOSM</a> | © OpenStreetMap',
+    }).addTo(m);
+    const lines = recLines(e.rec);
+    for (const line of lines) L.polyline(line, { color: css("--m5"), weight: 4, opacity: 0.95 }).addTo(m);
+    const all = lines.flat();
+    if (all.length) m.fitBounds(L.latLngBounds(all), { padding: [16, 16] });
+    rideMaps.set(date, { el, map: m, sig });
+    setTimeout(() => m.invalidateSize(), 0);
+  }
 }
 
 async function downloadDone(i) {
@@ -4936,7 +5126,12 @@ function initControls() {
   document.addEventListener("toggle", (e) => {
     const d = e.target;
     if (!d.matches) return;
-    if (d.matches("details[data-more]")) { const k = Number(d.dataset.more); if (d.open) moreOpen.add(k); else moreOpen.delete(k); }
+    if (d.matches("details[data-more]")) {
+      const k = Number(d.dataset.more);
+      if (d.open === moreOpen.has(k)) return;
+      if (d.open) moreOpen.add(k); else moreOpen.delete(k);
+      if (d.open) render();   // draws the profile chart into the opened section
+    }
     if (d.matches("details[data-models]")) {
       const k = Number(d.dataset.models);
       if (d.open) { modelsOpen.add(k); renderHourly(k, lastWeather[k]); } else modelsOpen.delete(k);

@@ -142,8 +142,14 @@ You have two ways to close a day:
 
 **📈 on a recorded day** opens what your bike computer or watch recorded:
 moving time, average and top speed, heart rate (average and max), power
-(average, normalized and max), cadence and the work in kJ (≈ kcal), plus a
-chart of speed, heart rate and power along the ride. Heart rate, power and
+(average, normalized and max), cadence and the work in kJ (≈ kcal), a map of
+the ride and a chart in the style of gpx.studio: the elevation profile
+coloured by gradient (blue downhill, grey flat, yellow to dark red uphill),
+and below it speed, heart rate, power, cadence and temperature on the same km
+axis. Each of them can be switched on and off with the buttons above the
+chart (your choice is remembered). Move your finger or mouse along the chart
+to see every value at that point, and where that is on the map. Planned days
+get the same elevation and gradient chart under **More about this day**. Heart rate, power and
 cadence need a sensor and a GPX export that keeps them (Garmin, Wahoo,
 Strava … do). Rides uploaded with an older version: upload the GPX again –
 it replaces the old one.

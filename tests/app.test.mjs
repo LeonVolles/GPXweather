@@ -496,10 +496,53 @@ await test("a ride with heart rate, power and cadence shows them in Completed, w
   assert.match(text, /⚡ Power\s*(199|200|201) W\s*average · normalized \d+ · max 250/);
   assert.match(text, /🔄 Cadence\s*85 rpm/);
   assert.match(text, /🚴 Speed\s*20[.,]\d km\/h/);
-  await page.waitForFunction(() => document.querySelectorAll("#done-list .ride-chart .main-svg").length >= 3);
-  assert.deepEqual(await ev(() => [...document.querySelectorAll("#done-list .ride-chart")].map((e) => e.id.split("-")[1])), ["v", "hr", "p"]);
+  await page.waitForFunction(() => document.querySelector("#done-list .track-chart .main-svg"));
+  // like gpx.studio: elevation on top, then speed, heart rate and power (cadence and temperature can be switched on)
+  const labels = async () => ev(() => [...document.querySelectorAll("#done-list .track-chart .annotation-text")].map((e) => e.textContent));
+  assert.deepEqual(await labels(), ["⛰️ Elevation", "🚴 Speed (km/h)", "❤️ Heart rate (bpm)", "⚡ Power (W)"]);
+  assert.deepEqual(await page.locator("#done-list .track-chart [data-layer]").allInnerTexts(), ["📐 Gradient", "🚴 Speed", "❤️ Heart rate", "⚡ Power", "🔄 Cadence"]);
+  await page.locator('#done-list .track-chart [data-layer="hr"]').click();
+  await page.locator('#done-list .track-chart [data-layer="cad"]').click();
+  assert.deepEqual(await labels(), ["⛰️ Elevation", "🚴 Speed (km/h)", "⚡ Power (W)", "🔄 Cadence (rpm)"], "each row can be switched on and off");
+  assert.deepEqual(await ev(() => JSON.parse(localStorage.getItem("gpxweather.v1.chartLayers"))), { hr: false, cad: true }, "the choice is remembered");
+  await page.locator('#done-list .track-chart [data-layer="hr"]').click();
+  await page.locator('#done-list .track-chart [data-layer="cad"]').click();
+  // pointing at km 15 shows every value there, and the spot on the ride's map
+  assert.match(await page.textContent("#done-list .tc-readout"), /^(19[.,]\d|20[.,]0) km · ↑ 0 m ↓ 0 m/);
+  await ev(() => document.querySelector("#done-list .tc-plot").scrollIntoView({ block: "center" }));
+  const box = await page.locator("#done-list .tc-plot .nsewdrag").last().boundingBox();   // the bottom row (power)
+  await page.mouse.move(box.x + box.width * 0.75, box.y + box.height / 2);
+  await page.waitForTimeout(300);
+  assert.match(await page.textContent("#done-list .tc-readout"), /^km 15[.,]\d · ⛰️ 300 m · 📐 [+]?0[.,]0 % · 🚴 20[.,]\d km\/h · ❤️ 1[34]\d bpm · ⚡ 250 W · 🔄 85 rpm$/);
+  assert.equal(await ev(() => document.querySelectorAll("#done-list .day-map-el .leaflet-interactive").length), 2, "track + position marker on the ride's map");
   await page.locator("#done-list [data-ride-open]").click();
   assert.equal(await page.locator("#done-list .ride-detail").count(), 0, "📈 closes the details again");
+});
+await test("a planned day shows its elevation profile coloured by gradient", async () => {
+  await ev(() => { const d = document.querySelector("#next details[data-more]"); d.open = true; });
+  await page.waitForFunction(() => document.querySelector("#next .track-chart .main-svg"));
+  assert.ok(await ev(() => document.querySelectorAll("#next .track-chart .bars path").length > 100), "the profile is drawn");
+  // the test tour is nearly flat, so check the colours on a made-up hill: 5 km up at 10 %, 5 km down at 5 %
+  const hill = await ev(async () => {
+    const km = [], ele = [];
+    for (let i = 0; i <= 200; i++) { const x = i * 0.05; km.push(x); ele.push(x <= 5 ? 300 + x * 100 : 800 - (x - 5) * 50); }
+    const el = document.createElement("div"); document.body.appendChild(el);
+    const tc = { el, data: { km, ele, slope: gradients(km, ele) }, kind: "plan", id: "x" };
+    drawTrackChart(tc);
+    const fills = [...el.querySelectorAll(".bars path")].map((b) => b.style.fill);
+    const res = { up: tc.data.slope[50], down: tc.data.slope[150], colors: [...new Set(fills)], readout: el.querySelector(".tc-readout").textContent };
+    el.remove();
+    return res;
+  });
+  assert.ok(Math.abs(hill.up - 10) < 0.5 && Math.abs(hill.down + 5) < 0.5, `gradients ${hill.up} / ${hill.down}`);
+  assert.ok(hill.colors.includes("rgb(214, 69, 42)") && hill.colors.includes("rgb(79, 143, 214)"), "↑ 8–12 % red, ↓ 4–8 % blue: " + hill.colors);
+  assert.match(hill.readout, /^10[.,]0 km · ↑ 500 m ↓ 250 m · 300–800 m · steepest 10 % up, 5 % down$/);
+  assert.match(await page.textContent("#next .tc-legend"), /↓ 8\+.*flat.*↑ 12\+/s);
+  assert.deepEqual(await page.locator("#next .track-chart [data-layer]").allInnerTexts(), ["📐 Gradient"], "a plan has no sensor data");
+  await page.locator('#next .track-chart [data-layer="slope"]').click();
+  assert.equal(await page.locator("#next .tc-legend").count(), 0, "gradient colours switched off");
+  await page.locator('#next .track-chart [data-layer="slope"]').click();
+  await ev(() => { document.querySelector("#next details[data-more]").open = false; });
 });
 await test("a ride uploaded by an older version asks for the GPX again instead of showing nothing", async () => {
   await ev(() => { const e = Object.values(S.days)[0]; e.rec.parts.forEach((p) => delete p.metrics); rideOpen.add(Object.keys(S.days)[0]); renderDone(); });
