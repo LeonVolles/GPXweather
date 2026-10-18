@@ -85,10 +85,23 @@ await ctx.route("**/*", (route) => {
     campQueries.push(q);
     return route.fulfill({ json: { elements: campElements } });
   }
+  if (url.startsWith("https://brouter.de/brouter?")) {
+    // Straight line with elevation; going to `brouterHill` means a 250 m climb on the way.
+    brouterCalls.push(url);
+    if (brouterDown) return route.fulfill({ body: "operation killed by thread-priority-watchdog" });   // BRouter's error text
+    const [[lon0, lat0], [lon1, lat1]] = new URL(url).searchParams.get("lonlats").split("|").map((x) => x.split(",").map(Number));
+    const hill = brouterHill && Math.hypot((lat1 - brouterHill.lat) * 111, (lon1 - brouterHill.lon) * 75) < 0.3;
+    const coords = Array.from({ length: 41 }, (_, i) => {
+      const f = i / 40;
+      return [lon0 + (lon1 - lon0) * f, lat0 + (lat1 - lat0) * f, 400 + (hill ? 250 * Math.sin(Math.PI * Math.min(1, f * 1.6)) * (f < 0.625 ? 1 : 1) : 0)];
+    });
+    return route.fulfill({ json: { type: "FeatureCollection", features: [{ type: "Feature", properties: { messages: [["Longitude", "Latitude", "WayTags"]] }, geometry: { type: "LineString", coordinates: coords } }] } });
+  }
   if (url.endsWith(".png")) return route.fulfill({ body: PNG, contentType: "image/png" });
   return route.fulfill({ status: 404, body: "" });
 });
-let campElements = [], campQueries = [];   // what the campsite search returns / was asked
+let campElements = [], campQueries = [];
+let brouterCalls = [], brouterHill = null, brouterDown = false;   // BRouter mock   // what the campsite search returns / was asked
 const page = await ctx.newPage();
 const errors = [];
 page.on("pageerror", (e) => errors.push(e.message));
@@ -359,6 +372,103 @@ await test("stretch 0 searches only around the stage end; the choice survives a 
   await page.waitForFunction(() => S.stages.length > 0);
   assert.deepEqual(await ev(() => [campStretch, campRadius]), [20, 5]);
   await ev(() => { campStretch = 10; campRadius = 2; store("campStretch", 10); store("campRadius", 2); });
+});
+// A recorded ride along the route from km a to km b (optionally with a detour north), as GPX text.
+async function rideAlong(a, b, startMs, detourKm = 0) {
+  return ev(({ a, b, startMs, detourKm }) => {
+    const pts = [];
+    for (let d = a * 1000; d <= b * 1000; d += 100) {
+      const p = pointAt(S.track, d);
+      // the detour: halfway, ride north and back
+      const mid = (a + b) * 500, off = detourKm && Math.abs(d - mid) < 1000 ? (1 - Math.abs(d - mid) / 1000) * detourKm * 1000 / 2 : 0;
+      pts.push([p.lat + off / 111320, p.lon]);
+    }
+    return `<gpx><trk><trkseg>${pts.map(([lat, lon], i) =>
+      `<trkpt lat="${lat.toFixed(6)}" lon="${lon.toFixed(6)}"><ele>300</ele><time>${new Date(startMs + i * 18000).toISOString()}</time></trkpt>`).join("")}</trkseg></trk></gpx>`;
+  }, { a, b, startMs, detourKm });
+}
+const sum2 = (a) => a.reduce((x, y) => x + y, 0);
+async function upload(name, text) {
+  const f = path.join(tmp, name);
+  fs.writeFileSync(f, text);
+  await page.setInputFiles("#rideFile", f);
+  await page.waitForTimeout(400);
+}
+await test("an uploaded ride counts as you rode it: real km in Completed, the tour total and the map", async () => {
+  await ev(() => { S.days = {}; S.gps = null; S.approach = null; setStartKm(0, true, false); });
+  const y = new Date(); y.setDate(y.getDate() - 1); y.setHours(9, 0, 0, 0);
+  await upload("detour.gpx", await rideAlong(0, 30, y.getTime(), 4));   // 30 km of route + a detour 1 km north and back (≈ +2.5 km)
+  const d = await ev(() => completedDays().find((x) => x.date));
+  assert.ok(d.real.km > 32 && d.real.km < 33.5, "recorded km " + d.real.km);
+  assert.ok(Math.abs(d.km - 30) < 0.5, "planned km " + d.km);
+  await ev(() => { $("sec-done").open = true; });
+  assert.match(await page.locator("#done-list tbody tr").first().innerText(), /📍\s*3[23][.,]\d/);
+  const total = await ev(() => tourKm()), planned = await ev(() => S.track.total / 1000);
+  assert.ok(Math.abs(total - (planned + d.real.km - 30)) < 0.6, `tour total ${total} vs planned ${planned}`);
+  assert.match(await page.textContent("#progress"), /Ridden\s*3[23] of [\d.,]+ km · planned/);
+  assert.deepEqual(await ev(() => unrecordedRidden()), [], "no planned line drawn under the recording");
+});
+await test("several GPX files of one day add up; the same file twice counts once", async () => {
+  const y = new Date(); y.setDate(y.getDate() - 1); y.setHours(15, 0, 0, 0);
+  const afternoon = await rideAlong(30, 50, y.getTime());
+  await upload("afternoon.gpx", afternoon);
+  const one = await ev(() => completedDays().filter((x) => x.date));
+  assert.equal(one.length, 1, "still one day");
+  assert.equal(one[0].rec.parts.length, 2);
+  assert.ok(one[0].real.km > 52 && one[0].real.km < 54, "morning + afternoon " + one[0].real.km);
+  assert.ok(Math.abs(one[0].rec.elapsedH - sum2(one[0].rec.parts.map((p) => p.elapsedH))) < 1e-9 && one[0].rec.elapsedH < 3,
+    "time on the road: both recordings added, not the long stop between them " + one[0].rec.elapsedH);
+  await upload("afternoon-again.gpx", afternoon);
+  const again = await ev(() => completedDays().filter((x) => x.date)[0]);
+  assert.equal(again.rec.parts.length, 2);
+  assert.ok(Math.abs(again.real.km - one[0].real.km) < 0.01);
+  assert.match(await page.textContent("#status"), /replaced/);
+  const [dl] = await Promise.all([page.waitForEvent("download"), page.locator("#done-list [data-done-gpx]").first().click()]);
+  const gpx = fs.readFileSync(await dl.path(), "utf8");
+  assert.equal((gpx.match(/<trkseg>/g) || []).length, 2, "the recorded GPX has both parts");
+  assert.match(gpx, /as ridden/);
+});
+await test("the next day starts at the campsite: BRouter leads back to the route, not up the hill to the nearest point", async () => {
+  // The ride ended at route km ~50. Now you're at a campsite 1.2 km north of the route near km 50.5.
+  const loc = await ev(() => { const p = pointAt(S.track, 50500); return { lat: p.lat + 1200 / 111320, lon: p.lon }; });
+  const near = await ev((loc) => nearestKm(S.track, loc.lat, loc.lon), loc);
+  brouterHill = await ev((km) => { const p = pointAt(S.track, km * 1000); return { lat: p.lat, lon: p.lon }; }, near.km);
+  brouterCalls = [];
+  await ev((loc) => { S.gps = { ...loc, t: Date.now() }; recompute(); }, loc);
+  await page.waitForFunction(() => S.approach && S.stages[0].approach);
+  const ap = await ev(() => S.stages[0].approach);
+  assert.ok(brouterCalls.length >= 3, "several points of the route were tried: " + brouterCalls.length);
+  assert.ok(ap.join - near.km * 1000 > 300, `joins ahead of the nearest point (${ap.join} vs ${near.km * 1000}) – avoids the climb`);
+  assert.ok(ap.up < 50, "the chosen way has no big climb: " + ap.up);
+  const st = await ev(() => { const s = S.stages[0]; return { a: s.a, km: s.km, routeKm: (s.b - s.a) / 1000, hours: s.hours, startAt: stageSegments(s)[0][0] }; });
+  assert.equal(st.a, ap.join, "the day continues on the route from the join point");
+  assert.ok(Math.abs(st.km - st.routeKm - ap.km) < 0.01, "the way back counts towards the day");
+  assert.ok(Math.abs(st.km - (await ev(() => planPerDay()))) < 0.5, "distance mode: the day's km include the way back: " + st.km);
+  const hrs = await ev(() => { S.planMode = "hours"; recompute(); const s = S.stages[0]; const r = [s.hours, s.approach.moving * s.breaks, S.hoursPerDay]; S.planMode = "km"; recompute(); return r; });
+  assert.ok(Math.abs(hrs[0] - hrs[2]) < 0.35 && hrs[1] > 0.1, "riding-time mode: the way back is part of the day's hours: " + hrs);
+  assert.ok(Math.abs(st.startAt[0] - loc.lat) < 1e-4 && Math.abs(st.startAt[1] - loc.lon) < 1e-4, "the day's GPX starts at the campsite");
+  assert.match(await page.locator("#next").innerText(), /🧭 The day starts at your GPS position: [\d.,]+ km .* back to the route at km/);
+  // the GPX in the share sheet starts at the campsite too
+  await page.locator("#next [data-gpx]").click();
+  assert.match(await page.textContent("#gpxSheetText"), new RegExp(`<trkpt lat="${loc.lat.toFixed(6).slice(0, 7)}`));
+  await ev(() => $("gpxSheet").close());
+});
+await test("on the route (under 200 m) no way back is planned; without BRouter the GPX starts on the route", async () => {
+  await ev(() => { const p = pointAt(S.track, S.startKm * 1000); S.gps = { lat: p.lat + 100 / 111320, lon: p.lon, t: Date.now() }; recompute(); });
+  assert.equal(await ev(() => !!S.stages[0].approach), false);
+  assert.equal(await ev(() => S.stages[0].a), await ev(() => S.startKm * 1000));
+  brouterDown = true;
+  await ev(() => { const p = pointAt(S.track, S.startKm * 1000 + 300); S.gps = { lat: p.lat - 900 / 111320, lon: p.lon, t: Date.now() }; recompute(); });
+  await page.waitForFunction(() => /could not be planned/.test($("next").innerText));
+  assert.equal(await ev(() => !!S.stages[0].approach), false);
+  brouterDown = false; brouterHill = null;
+  // already riding today (20 km done), then a stop 500 m off the route: no way back is planned
+  const n0 = brouterCalls.length;
+  await ev(() => { S.days[todayStr()] = { start: S.startKm, end: S.startKm + 20 }; S.startKm += 20; const p = pointAt(S.track, S.startKm * 1000); S.gps = { lat: p.lat + 500 / 111320, lon: p.lon, t: Date.now() }; recompute(); });
+  await page.waitForTimeout(300);
+  assert.equal(await ev(() => approachNeed()), null);
+  assert.equal(brouterCalls.length, n0);
+  await ev(() => { S.days = {}; S.gps = null; S.approach = null; setStartKm(0, true, false); return saveTourSettings(); });
 });
 await test("tapping a coming day opens it in place with its own route map, without jumping down", async () => {
   await ev(() => window.scrollTo(0, 0));

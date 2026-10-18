@@ -129,11 +129,32 @@ You have two ways to close a day:
   end of today. The plan then continues tomorrow from there. Tapped too early? **Undo** reopens the day.
 - **📤 Upload today's ride (GPX)** – load the track you recorded with your
   bike computer, watch or phone app (Garmin, Wahoo, Komoot, Strava …). The app
-  finds where the ride lies on your route, ends that day there and adds the
-  real numbers to the **✓ Completed** list: time on the road and average speed.
-  Your recorded ride is drawn on the map. You can also add earlier days later
-  with **📤 Add a ridden day** in the Completed list – the date is taken from
-  the GPX.
+  finds where the ride lies on your route, ends that day there and puts what
+  you **really** rode into the **✓ Completed** list (marked 📍): the recorded
+  km and climb – shortcuts and detours included – time on the road and
+  average speed. The tour total ("Ridden 312 of 1,480 km · planned 1,465") is
+  what you rode plus the planned rest, and the map shows your recorded track
+  instead of the planned line for that part. Rode with two files on one day
+  (morning and afternoon)? Upload both – they are added up; uploading the same
+  file again replaces it. **⬇ GPX** in the Completed list gives you the track
+  as you rode it. You can also add earlier days later with **📤 Add a ridden
+  day** in the Completed list – the date is taken from the GPX.
+
+### Back to the route in the morning
+
+Spent the night off the route (campsite, hotel)? The next day's plan starts
+where you are – your last GPS position, or else the end of the ride you
+uploaded – as soon as that is more than 200 m from the route. BRouter plans
+the way back, and not simply to the nearest point: it tries several points
+ahead of you on the route and takes the one that gets you on fastest, with
+your own speed on climbs and surfaces. A steep climb up to the nearest point
+loses against a slightly longer way that already goes in your direction.
+
+The way back counts towards the day (km, riding time, weather) and is part of
+the day's **📤 Share GPX**, so your navigation app leads you from the campsite
+onto the route. It is dashed on the maps; today's card says how long it is and
+where you join the route. Once you are riding, a stop next to the route
+doesn't trigger it.
 
 ### Your pace
 

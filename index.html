@@ -511,7 +511,7 @@
 /* ---------- Configuration ---------- */
 
 // Bump with every release (and VERSION in sw.js): the app compares it with the published page to offer updates.
-const APP_VERSION = "2026-10-17.2";
+const APP_VERSION = "2026-10-18.1";
 
 // days = forecast_days requested from Open-Meteo, roughly the model's real horizon.
 const MODELS = [
@@ -782,6 +782,8 @@ const S = {
   useRides: true,         // speed and breaks measured from uploaded rides instead of the entered ones
   planModeChosen: false,  // distance mode only sticks when picked on purpose (riding time is the default)
   days: {},               // ride log: "YYYY-MM-DD" -> { start, end } in km
+  gps: null,              // last GPS fix { lat, lon, t }
+  approach: null,         // way from where you are back onto the route (BRouter), see planApproach()
   stages: [],
   tours: [],              // [{ id, name, total }]
 };
@@ -1012,7 +1014,7 @@ function unpackTrack(t) {
 }
 
 function tourSettings() {
-  return { startKm: S.startKm, perDay: S.perDay, date: S.date, dep: S.dep, planMode: S.planMode, planModeChosen: S.planModeChosen, hoursPerDay: S.hoursPerDay, flatSpeed: S.flatSpeed, breaks: S.breaks, mass: S.mass, days: S.days, savedAt: Date.now() };
+  return { startKm: S.startKm, perDay: S.perDay, date: S.date, dep: S.dep, planMode: S.planMode, planModeChosen: S.planModeChosen, hoursPerDay: S.hoursPerDay, flatSpeed: S.flatSpeed, breaks: S.breaks, mass: S.mass, days: S.days, gps: S.gps, approach: S.approach, savedAt: Date.now() };
 }
 
 let saveTimer = null;
@@ -1076,6 +1078,8 @@ async function openTour(id) {
   // A planned future start date is kept; otherwise the first stage is today.
   S.date = settings.date && settings.date > todayStr() ? settings.date : todayStr();
   S.days = settings.days && typeof settings.days === "object" ? settings.days : {};
+  S.gps = settings.gps || null;
+  S.approach = settings.approach || null;
   syncInputs();
   setTrack(unpackTrack(t), settings.startKm || 0);
   await loadSurfaceCache();
@@ -1179,6 +1183,9 @@ function completedDays() {
   const out = [];
   let covered = 0;
   for (const r of logged) {
+    // A recorded day that left the route (shortcut, way back from a campsite) leaves a bit of the route out:
+    // that's how you rode, not an unlogged part.
+    if (S.days[r.date].rec && r.a - covered > 100 && r.a - covered < 15000) r.a = covered;
     if (r.a - covered > 100) out.push({ date: null, a: covered, b: r.a });
     const a = Math.min(Math.max(r.a, covered), Math.max(r.b, covered));
     if (r.b - a > 50 || S.days[r.date].closed) out.push({ date: r.date, a, b: Math.max(r.b, a) });
@@ -1186,10 +1193,37 @@ function completedDays() {
   }
   if (endKm * 1000 - covered > 100) out.push({ date: null, a: covered, b: endKm * 1000 });
   let n = 0;
-  return out.map((r) => ({
-    ...rangeStats(r.a, r.b), date: r.date, no: r.date ? ++n : null,
-    rec: r.date && S.days[r.date].rec ? S.days[r.date].rec : null,
-  }));
+  return out.map((r) => {
+    const st = rangeStats(r.a, r.b);
+    const rec = r.date && S.days[r.date].rec ? S.days[r.date].rec : null;
+    // What you really rode: the recording if there is one, else the planned route between start and end.
+    const real = rec ? { km: rec.km, up: rec.hasEle === false ? st.up : rec.up, down: rec.hasEle === false ? st.down : rec.down }
+      : { km: st.km, up: st.up, down: st.down };
+    return { ...st, date: r.date, no: r.date ? ++n : null, rec, real };
+  });
+}
+
+// km really ridden so far: recorded days as recorded, the rest along the route (incl. today until now).
+function riddenKm() {
+  const days = completedDays();
+  const covered = days.length ? days[days.length - 1].b : 0;
+  return sum(days.map((d) => d.real.km)) + Math.max(0, S.startKm * 1000 - covered) / 1000;
+}
+
+// The tour as you really ride it: what you rode plus the planned rest.
+function tourKm() {
+  return riddenKm() + Math.max(0, S.track.total / 1000 - S.startKm);
+}
+
+// Parts of the route behind you that have no recording (drawn as the planned line).
+function unrecordedRidden() {
+  const T = S.track, end = Math.min(S.startKm * 1000, T.total);
+  const rec = completedDays().filter((d) => d.rec).map((d) => [d.a, d.b]);
+  const out = [];
+  let a = 0;
+  for (const [ra, rb] of rec) { if (ra > a) out.push([a, Math.min(ra, end)]); a = Math.max(a, rb); }
+  if (end > a) out.push([a, end]);
+  return out.filter(([x, y]) => y - x > 1);
 }
 
 /* Your pace from the completed days (recent ones count): km per day and travel speed incl. breaks.
@@ -1286,16 +1320,47 @@ function parseRide(text) {
   const times = pts.map((p) => p.t).filter((t) => t != null);
   const t0 = times.length ? Math.min(...times) : null, t1 = times.length ? Math.max(...times) : null;
   const every = Math.max(1, Math.ceil(pts.length / 1500));
+  const last = pts[pts.length - 1];
   return {
     pts,
     rec: {
       km, up, down,
+      hasEle: pts.filter((p) => p.ele != null).length > pts.length / 2,
+      endPt: [+last.lat.toFixed(5), +last.lon.toFixed(5)],
       elapsedH: t0 != null ? (t1 - t0) / 3600000 : null,
       movingH: moving || null,
       startTime: t0, endTime: t1,
       line: pts.filter((_, i) => i % every === 0 || i === pts.length - 1).map((p) => [+p.lat.toFixed(5), +p.lon.toFixed(5)]),
     },
   };
+}
+
+// Several recordings of one day (e.g. morning and afternoon) count as one day: km, climb, moving time and time
+// on the road add up (a long stop between two files doesn't count as a break). Uploading the same file again replaces it.
+function mergeRides(parts) {
+  parts = [...parts].sort((x, y) => (x.startTime ?? 0) - (y.startTime ?? 0));
+  const add = (k) => sum(parts.map((p) => p[k] || 0));
+  const times = parts.filter((p) => p.startTime != null);
+  const t0 = times.length ? Math.min(...times.map((p) => p.startTime)) : null;
+  const t1 = times.length ? Math.max(...times.map((p) => p.endTime)) : null;
+  const lastPart = times.length ? times.reduce((x, y) => (y.endTime > x.endTime ? y : x)) : parts[parts.length - 1];
+  return {
+    km: add("km"), up: add("up"), down: add("down"),
+    hasEle: parts.every((p) => p.hasEle !== false),
+    movingH: add("movingH") || null,
+    elapsedH: add("elapsedH") || null,
+    startTime: t0, endTime: t1,
+    endPt: lastPart.endPt || (lastPart.line && lastPart.line[lastPart.line.length - 1]) || null,
+    parts,
+  };
+}
+
+const sameRide = (x, y) => Math.abs(x.km - y.km) < 0.05 &&
+  (x.startTime != null && y.startTime != null ? Math.abs(x.startTime - y.startTime) < 60000 : x.line && y.line && String(x.line[0]) === String(y.line[0]));
+
+// The recordings of a day as separate lines (older saved days have a single one).
+function recLines(rec) {
+  return rec.parts ? rec.parts.map((p) => p.line).filter(Boolean) : rec.line ? [rec.line] : [];
 }
 
 function localDate(t) {
@@ -1323,12 +1388,16 @@ async function uploadRide(file) {
       if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
     }
     if (date > todayStr()) throw new Error("This ride is dated in the future.");
-    // Merge with what is already known about that day (e.g. a position update before the recording started).
+    // Merge with what is already known about that day (e.g. a position update before the recording started,
+    // or another recording of the same day).
     const prev = S.days[date];
+    const earlier = prev && prev.rec ? (prev.rec.parts || [prev.rec]) : [];
+    const again = earlier.some((p) => sameRide(p, rec));
+    const parts = earlier.filter((p) => !sameRide(p, rec)).map((p) => { const q = { ...p }; delete q.parts; return q; }).concat([rec]);
     S.days[date] = {
       start: prev ? Math.min(prev.start, start) : start,
       end: prev ? Math.max(prev.end, end) : end,
-      closed: true, rec,
+      closed: true, rec: mergeRides(parts),
     };
     if (end > S.startKm) {
       S.startKm = Math.round(end * 10) / 10;   // you are at least where this ride ended
@@ -1336,8 +1405,10 @@ async function uploadRide(file) {
       $("startKmNum").value = S.startKm;
       $("startKmOut").textContent = fmt(S.startKm, 1);
     }
-    setStatus(`Ride of ${fmtDate(date)} added: ${fmt(rec.km, 1)} km recorded` +
-      (rec.elapsedH ? ` in ${fmtDuration(rec.elapsedH)}` : "") + `, route km ${fmt(start, 0)}–${fmt(end, 0)}.`);
+    const day = S.days[date].rec;
+    setStatus(`Ride of ${fmtDate(date)} ${again ? "replaced" : "added"}: ${fmt(rec.km, 1)} km recorded` +
+      (rec.elapsedH ? ` in ${fmtDuration(rec.elapsedH)}` : "") + `, route km ${fmt(start, 0)}–${fmt(end, 0)}.` +
+      (parts.length > 1 ? ` That day now has ${parts.length} recordings, ${fmt(day.km, 1)} km in total.` : ""));
     recompute({ weatherDelay: 300 });
   } catch (e) {
     console.error(e);
@@ -1506,6 +1577,10 @@ function stageProfile(st, params, headAt = null, opts = { grade: true, surface: 
 }
 
 function setProfile(st, prof, params) {
+  if (st.approach) {
+    const s0 = st.approach.moving * 3600;
+    prof = { d: [0, ...prof.d], t: [0, ...prof.t.map((x) => x + s0)], moving: prof.moving + st.approach.moving };
+  }
   st.prof = prof;
   st.breaks = params.breaks;
   st.moving = prof.moving;
@@ -1690,16 +1765,23 @@ function buildStages() {
   // your position during the ride doesn't move today's goal. An ended day moves the plan to tomorrow.
   const isToday = S.date === today && !closed;
   const planDate = S.date === today && closed ? addDays(today, 1) : S.date;
-  const first = isToday ? Math.min(todayStartKm() * 1000, pos) : pos;
+  let first = isToday ? Math.min(todayStartKm() * 1000, pos) : pos;
   const offset = completedDays().filter((d) => d.no).length;
 
   const [h, m] = S.dep.split(":").map(Number);
   const depMin = h * 60 + m;
   const byHours = S.planMode === "hours";
+  // Off the route (campsite …): the first day starts with the way back to the route, and that counts towards the day.
+  const need = approachNeed();
+  const appr = need && S.approach && S.approach.key === need.key && first >= pos - 3000 ? S.approach : null;
+  const apprH = appr ? approachMoving(appr, params) : 0;
+  if (appr) first = Math.min(appr.join, T.total);
   const ranges = [];
   let a = first;
   while (T.total - a >= 100) {
-    let b = byHours ? Math.max(a + 1000, distanceForTime(a, S.hoursPerDay, params, addDays(planDate, ranges.length), depMin)) : a + per;
+    const extra = ranges.length === 0 ? apprH : 0;
+    let b = byHours ? Math.max(a + 1000, distanceForTime(a, S.hoursPerDay - extra * params.breaks, params, addDays(planDate, ranges.length), depMin + extra * params.breaks * 60))
+      : a + Math.max(1000, per - (ranges.length === 0 && appr ? appr.km * 1000 : 0));
     b = Math.min(T.total, b);
     if (ranges.length === 0 && isToday && b < pos) b = pos;      // already rode further than planned
     if (T.total - b < 0.15 * (b - a)) b = T.total;                // fold a tiny remainder into the last day
@@ -1715,6 +1797,10 @@ function buildStages() {
       dayOffset: dayDiff(today, date),
       dep: depMin,
     };
+    if (i === 0 && appr) {
+      st.approach = { ...appr, moving: apprH };
+      st.km += appr.km; st.up += appr.up; st.down += appr.down;
+    }
     setProfile(st, stageProfile(st, params), params);         // riding time from terrain and surface (wind follows)
     st.movingNoWind = st.moving;
     st.windH = 0;
@@ -2264,7 +2350,7 @@ function render() {
 
 // The landing view: how much of the whole tour is done.
 function renderProgress() {
-  const T = S.track, total = T.total / 1000, done = Math.min(S.startKm, total);
+  const T = S.track, done = riddenKm(), total = done + Math.max(0, T.total / 1000 - S.startKm);
   const pct = total ? (100 * done) / total : 0;
   const days = completedDays().filter((d) => d.no).length;
   const st = S.stages, cur = st.find((x) => x.dayOffset >= 0);
@@ -2278,7 +2364,8 @@ function renderProgress() {
     <div class="progress big" role="progressbar" aria-valuenow="${pct.toFixed(0)}" aria-valuemin="0" aria-valuemax="100">
       <div class="progress-bar" style="width:${pct.toFixed(2)}%"></div>${todayBar}</div>
     <div class="prog-stats">
-      ${stat("🚴 Ridden", `${numFmt(Math.round(done))} of ${numFmt(Math.round(total))} km`)}
+      ${stat("🚴 Ridden", `${numFmt(Math.round(done))} of ${numFmt(Math.round(total))} km` +
+        (Math.abs(total - T.total / 1000) >= 1 ? `<span class="small muted" title="length of the planned route"> · planned ${numFmt(Math.round(T.total / 1000))}</span>` : ""))}
       ${stat("🏁 To go", `${numFmt(Math.round(total - done))} km <span class="small muted">↑ ${numFmt(Math.round(upLeft))} m</span>`)}
       ${stat("📅 Days", `${days ? `${days} ridden · ` : ""}${st.length} to go`)}
       ${stat("🎯 Arrival", last ? fmtDate(last.date, { weekday: "short", day: "numeric", month: "short" }) : "🎉 arrived")}
@@ -2291,8 +2378,8 @@ function renderSummaries() {
   const done = completedDays();
   const dated = done.filter((d) => d.no).length;
   $("sum-done").textContent = done.length
-    ? `· ${dated ? `${dated} day${dated > 1 ? "s" : ""} · ` : ""}${fmt(sum(done.map((d) => d.km)), 0)} km` : "";
-  $("sum-route").textContent = `· ${fmt(T.total / 1000, 0)} km · ↑ ${fmt(T.cumUp[T.cumUp.length - 1], 0)} m`;
+    ? `· ${dated ? `${dated} day${dated > 1 ? "s" : ""} · ` : ""}${fmt(sum(done.map((d) => d.real.km)), 0)} km` : "";
+  $("sum-route").textContent = `· ${fmt(tourKm(), 0)} km · ↑ ${fmt(T.cumUp[T.cumUp.length - 1], 0)} m`;
 }
 
 function renderPreview() {
@@ -2301,7 +2388,8 @@ function renderPreview() {
   for (const p of T.pts) { lo = Math.min(lo, p.sm); hi = Math.max(hi, p.sm); }
   const tiles = [
     ["Tour", esc(T.name || "GPX track"), T.segments.length > 1 ? `${T.segments.length} sections` : ""],
-    ["Length", fmt(T.total / 1000, 1, " km"), info.rawPoints ? `${numFmt(info.rawPoints)} GPX points` : ""],
+    ["Length", fmt(T.total / 1000, 1, " km"), (Math.abs(tourKm() - T.total / 1000) >= 1 ? `as you ride it: ${fmt(tourKm(), 0, " km")} · ` : "") +
+      (info.rawPoints ? `${numFmt(info.rawPoints)} GPX points` : "")],
     ["Total climb", fmt(T.cumUp[T.cumUp.length - 1], 0, " m"), `descent ${fmt(T.cumDown[T.cumDown.length - 1], 0, " m")}`],
     ["Elevation", `${fmt(lo, 0)}–${fmt(hi, 0)} m`, info.hadEle != null && info.hadEle < 0.8 ? "from elevation model" : "from the GPX"],
     ["Start → finish", esc(placeName(T.pts[0]) || "start") + " → " + esc(placeName(T.pts[T.pts.length - 1]) || "finish"), ""],
@@ -2382,8 +2470,8 @@ function renderMap() {
   const ll = (p) => [p.lat, p.lon];
   const startI = idxAt(T, S.startKm * 1000);
   const gapStyle = { color: css("--ridden"), weight: 2, opacity: 0.9, dashArray: "4 8" };
-  if (startI > 0) {
-    for (const r of runs(T, 0, startI)) {
+  for (const [ra, rb] of unrecordedRidden()) {
+    for (const r of runs(T, idxAt(T, ra), idxAt(T, rb))) {
       L.polyline(r.pts.map(ll), r.gap ? gapStyle : { color: css("--ridden"), weight: 4, opacity: 0.7 }).addTo(mapLayers);
     }
   }
@@ -2393,6 +2481,7 @@ function renderMap() {
       L.polyline(r.pts.map(ll), r.gap ? gapStyle : { color: stageColor(k), weight: 5, opacity: 0.9 })
         .bindTooltip(r.gap ? "Gap in the GPX (straight line)" : tip, { sticky: true }).addTo(mapLayers);
     }
+    if (st.approach) drawApproach(st, mapLayers, stageColor(k));
     // Numbered pins for short trips; small dots for long ones so they don't cover the route.
     const pin = S.stages.length <= 12
       ? L.marker(ll(st.endPt), {
@@ -2401,11 +2490,7 @@ function renderMap() {
       : L.circleMarker(ll(st.endPt), { radius: 4, color: css("--ink"), weight: 1.5, fillColor: css("--surface"), fillOpacity: 1 });
     pin.bindTooltip(`End of stage ${st.no}: ${placeName(st.endPt) || "km " + fmt(st.b / 1000, 0)}`).addTo(mapLayers);
   });
-  for (const [date, e] of Object.entries(S.days)) {
-    if (!e.rec || !e.rec.line) continue;
-    L.polyline(e.rec.line, { color: css("--m5"), weight: 3, opacity: 0.9 })
-      .bindTooltip(`Your ride on ${fmtDate(date)} · ${fmt(e.rec.km, 1)} km`, { sticky: true }).addTo(mapLayers);
-  }
+  drawRecordings(mapLayers);
   renderCampMarkers(mapLayers);
   if (supplies.on) loadSupplies();
   L.marker(ll(T.pts[startI]), {
@@ -2415,17 +2500,39 @@ function renderMap() {
 
   // Zoom to today's (or the next) stage, or to the whole tour – only when that view changes, not while you pan.
   const cur = S.stages.find((x) => x.dayOffset >= 0);
-  const viewKey = mapView === "today" && cur ? `today|${Math.round(cur.a)}|${Math.round(cur.b)}` : "all";
+  const viewKey = mapView === "today" && cur ? `today|${Math.round(cur.a)}|${Math.round(cur.b)}|${cur.approach ? cur.approach.key : ""}` : "all";
   $("mapTitle").textContent = mapView === "all" || !cur ? "Whole tour"
     : cur.dayOffset === 0 ? "Today's route" : cur.dayOffset === 1 ? "Tomorrow's route" : "Next stage";
   document.querySelectorAll("[data-mapview]").forEach((b) => b.classList.toggle("on", b.dataset.mapview === mapView));
   if (fittedFor !== T || fittedKey !== viewKey) {
-    const pts = viewKey === "all" ? T.pts : T.pts.slice(Math.min(idxAt(T, cur.a), startI), idxAt(T, cur.b) + 1);
-    map.fitBounds(L.latLngBounds(pts.map(ll)), { padding: [20, 20] });
+    const pts = (viewKey === "all" ? T.pts : T.pts.slice(Math.min(idxAt(T, cur.a), startI), idxAt(T, cur.b) + 1)).map(ll);
+    if (viewKey !== "all" && cur.approach) pts.push(...cur.approach.coords.map(([lat, lon]) => [lat, lon]));
+    map.fitBounds(L.latLngBounds(pts), { padding: [20, 20] });
     fittedFor = T;
     fittedKey = viewKey;
   }
   setTimeout(() => map.invalidateSize(), 0);
+}
+
+// The way from where you are back to the route (dashed, in the stage colour).
+function drawApproach(st, layer, color) {
+  const line = st.approach.coords.map(([lat, lon]) => [lat, lon]);
+  L.polyline(line, { color, weight: 5, opacity: 0.9, dashArray: "8 7" })
+    .bindTooltip(`Back to the route · ${fmt(st.approach.km, 1)} km`, { sticky: true }).addTo(layer);
+  L.circleMarker(line[0], { radius: 6, color: "#fff", weight: 2, fillColor: css("--good"), fillOpacity: 1 })
+    .bindTooltip(st.approach.from === "gps" ? "You (GPS)" : "End of your last ride").addTo(layer);
+  return line;
+}
+
+// The rides you uploaded, as you really rode them.
+function drawRecordings(layer) {
+  for (const [date, e] of Object.entries(S.days)) {
+    if (!e.rec) continue;
+    for (const line of recLines(e.rec)) {
+      L.polyline(line, { color: css("--m5"), weight: 4, opacity: 0.9 })
+        .bindTooltip(`Your ride on ${fmtDate(date)} · ${fmt(e.rec.km, 1)} km`, { sticky: true }).addTo(layer);
+    }
+  }
 }
 
 function pickOnMap(lat, lon) {
@@ -2799,6 +2906,7 @@ function dayCard(st, k, w, inline = false) {
       <div class="small">Ridden today: <b>${fmt(st.done, 1)} km</b> · ${fmt(Math.max(0, st.km - st.done), 1)} km to go</div>` : ""}
     ${w.ok.length ? hourStrip(st) : ""}
     ${(() => { const a = w.ok.length ? rainAdvice(st) : null; return a ? `<div class="advice">${a}</div>` : ""; })()}
+    ${approachText(st, k)}
     ${warnings.map((t) => `<div class="warn-line">${t}</div>`).join("")}
     <div class="btn-row icons">
       <button type="button" data-gpx="${k}" title="See this day's GPX, copy it or share it – to a chat, Bergfex Touren or your navigation app">📤<span>Share GPX</span></button>
@@ -2902,7 +3010,7 @@ function attachDayMaps() {
     const k = Number(slot.dataset.daymap), st = S.stages[k];
     if (!st) continue;
     if (typeof L === "undefined") { slot.innerHTML = `<div class="small muted">Map not available (offline?).</div>`; continue; }
-    const key = `${S.tourId}|${Math.round(st.a)}|${Math.round(st.b)}`;
+    const key = `${S.tourId}|${Math.round(st.a)}|${Math.round(st.b)}|${st.approach ? st.approach.key : ""}`;
     let dm = dayMaps.get(k);
     if (dm && dm.key !== key) { dm.map.remove(); dayMaps.delete(k); dm = null; }
     if (dm) { slot.replaceWith(dm.el); setTimeout(() => dm.map.invalidateSize(), 0); continue; }
@@ -2919,7 +3027,8 @@ function attachDayMaps() {
       L.polyline(r.pts.map(ll), r.gap ? { color: css("--ridden"), weight: 2, dashArray: "4 8" } : { color: css("--route-a"), weight: 5, opacity: 0.9 }).addTo(m);
       pts.push(...r.pts);
     }
-    L.circleMarker(ll(st.startPt), { radius: 6, color: "#fff", weight: 2, fillColor: css("--good"), fillOpacity: 1 }).bindTooltip("Start").addTo(m);
+    if (st.approach) pts.push(...drawApproach(st, m, css("--route-a")).map(([lat, lon]) => ({ lat, lon })));
+    else L.circleMarker(ll(st.startPt), { radius: 6, color: "#fff", weight: 2, fillColor: css("--good"), fillOpacity: 1 }).bindTooltip("Start").addTo(m);
     L.circleMarker(ll(st.endPt), { radius: 6, color: "#fff", weight: 2, fillColor: css("--critical"), fillOpacity: 1 }).bindTooltip("End").addTo(m);
     if (pts.length) m.fitBounds(L.latLngBounds(pts.map(ll)), { padding: [16, 16] });
     dayMaps.set(k, { el, map: m, key });
@@ -2942,12 +3051,16 @@ function renderTourMap() {
   }
   tourLayer.clearLayers();
   const startI = idxAt(T, S.startKm * 1000);
-  for (const r of runs(T, 0, startI)) L.polyline(r.pts.map(ll), { color: css("--ridden"), weight: r.gap ? 2 : 4, opacity: 0.8 }).addTo(tourLayer);
+  for (const [ra, rb] of unrecordedRidden()) {
+    for (const r of runs(T, idxAt(T, ra), idxAt(T, rb))) L.polyline(r.pts.map(ll), { color: css("--ridden"), weight: r.gap ? 2 : 4, opacity: 0.8 }).addTo(tourLayer);
+  }
+  drawRecordings(tourLayer);
   S.stages.forEach((st, k) => {
     for (const r of runs(T, Math.max(idxAt(T, st.a), startI), idxAt(T, st.b))) {
       L.polyline(r.pts.map(ll), r.gap ? { color: css("--ridden"), weight: 2, dashArray: "4 8" } : { color: stageColor(k), weight: 4 })
         .bindTooltip(`Stage ${st.no} · ${dayLabel(st)} · ${fmt(st.km, 0)} km`, { sticky: true }).addTo(tourLayer);
     }
+    if (st.approach) drawApproach(st, tourLayer, stageColor(k));
   });
   L.marker(ll(T.pts[startI]), { icon: L.divIcon({ className: "pos-pin", html: "<span></span>", iconSize: [18, 18], iconAnchor: [9, 9] }) })
     .bindTooltip(`You · km ${fmt(S.startKm, 1)}`).addTo(tourLayer);
@@ -2969,19 +3082,20 @@ function renderDone() {
     <td>${d.no ? `<b>${d.no}</b>` : ""}</td>
     <td>${d.date ? fmtDate(d.date) : `<span class="muted">not logged</span>`}</td>
     <td class="opt">${stageTitle(d)}</td>
-    <td class="r num" ${d.rec ? `title="recorded: ${fmt(d.rec.km, 1)} km"` : ""}>${fmt(d.km, 1)}</td>
-    <td class="r num">${fmt(d.up, 0)}</td>
-    <td class="r num opt">${fmt(d.down, 0)}</td>
-    <td class="r num">${d.rec && d.rec.elapsedH ? fmtDuration(d.rec.elapsedH) : d.km < 0.05 ? "rest day" : "–"}</td>
-    <td class="r num opt">${d.rec && d.rec.elapsedH ? fmt(d.km / d.rec.elapsedH, 1) : "–"}</td>
-    <td class="r">${d.km >= 0.05 ? `<button type="button" data-done-gpx="${i}" title="Download the GPX of this part" style="min-height:32px;padding:4px 10px;font-size:.85rem">⬇ GPX</button>` : ""}
+    <td class="r num" title="${d.rec ? `recorded${d.rec.parts && d.rec.parts.length > 1 ? ` (${d.rec.parts.length} files)` : ""} · planned route: ${fmt(d.km, 1)} km` : "along the planned route"}">${d.rec ? "📍" : ""}${fmt(d.real.km, 1)}</td>
+    <td class="r num">${fmt(d.real.up, 0)}</td>
+    <td class="r num opt">${fmt(d.real.down, 0)}</td>
+    <td class="r num">${d.rec && d.rec.elapsedH ? fmtDuration(d.rec.elapsedH) : d.real.km < 0.05 ? "rest day" : "–"}</td>
+    <td class="r num opt">${d.rec && d.rec.elapsedH ? fmt(d.real.km / d.rec.elapsedH, 1) : "–"}</td>
+    <td class="r">${d.real.km >= 0.05 ? `<button type="button" data-done-gpx="${i}" title="${d.rec ? "The GPX of how you rode this day" : "Download the GPX of this part"}" style="min-height:32px;padding:4px 10px;font-size:.85rem">⬇ GPX</button>` : ""}
       ${d.date ? `<button type="button" data-del-day="${d.date}" title="Remove this day from the ride log" aria-label="Remove ${fmtDate(d.date)}" style="min-height:32px;padding:4px 10px;font-size:.85rem">✕</button>` : ""}</td>
   </tr>`).join("");
   host.innerHTML = `<div class="table-wrap"><table>
       <thead><tr><th>#</th><th>Date</th><th class="opt">Route</th><th class="r">km</th><th class="r">↑ m</th><th class="r opt">↓ m</th>
         <th class="r" title="time on the road (recorded rides)">Time</th><th class="r opt">km/h</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-    <div class="small muted" style="margin-top:8px">km and climb along the planned route. Time and speed come from rides you uploaded
+    <div class="small muted" style="margin-top:8px">📍 = as you rode it (from the GPX you uploaded; several files of one day are added up).
+      Other days: km and climb along the planned route. Time and speed come from your uploads
       (first to last point, incl. breaks). ✕ removes a day from the log, e.g. one you ended by mistake.</div>
     <div class="btn-row"><label class="button" for="rideFile">📤 Add a ridden day (GPX of your ride)</label></div>`;
 }
@@ -2990,7 +3104,21 @@ async function downloadDone(i) {
   const d = completedDays()[i];
   if (!d) return;
   const name = `${slugify(S.track.name)}-${d.no ? `stage-${d.no}-${d.date}` : "ridden-earlier"}.gpx`;
-  await saveFile(new File([stageGpx(d, -1)], name, { type: "application/gpx+xml" }));
+  await saveFile(new File([d.rec ? recordedGpx(d) : stageGpx(d, -1)], name, { type: "application/gpx+xml" }));
+}
+
+function recordedGpx(d) {
+  const title = `${S.track.name || "Tour"} – ${fmtDate(d.date)} (as ridden)`;
+  const segs = recLines(d.rec).map((line) => `    <trkseg>\n${line.map(([lat, lon]) => `      <trkpt lat="${lat}" lon="${lon}"></trkpt>`).join("\n")}\n    </trkseg>`).join("\n");
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="GPX Weather" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata><name>${xmlEsc(title)}</name><desc>${xmlEsc(`${fmt(d.rec.km, 1)} km recorded`)}</desc></metadata>
+  <trk>
+    <name>${xmlEsc(title)}</name>
+${segs}
+  </trk>
+</gpx>
+`;
 }
 
 function comparisonTable(w) {
@@ -3100,6 +3228,8 @@ function stageSegments(st) {
     }
   }
   cut();
+  // The way back to the route comes first, in the same segment, so navigation apps see one line.
+  if (st.approach && segs.length) segs[0] = st.approach.coords.map(([lat, lon, ele]) => [lat, lon, ele ?? NaN]).concat(segs[0]);
   return segs;
 }
 
@@ -3110,11 +3240,12 @@ function stageGpx(st, k) {
     `${fmt(st.km, 1)} km · ↑ ${fmt(st.up, 0)} m · ↓ ${fmt(st.down, 0)} m (km ${fmt(st.a / 1000, 1)}–${fmt(st.b / 1000, 1)} of the tour)`;
   const pt = ([lat, lon, ele]) =>
     `<trkpt lat="${lat.toFixed(6)}" lon="${lon.toFixed(6)}">${ele == null || Number.isNaN(ele) ? "" : `<ele>${ele.toFixed(1)}</ele>`}</trkpt>`;
+  const startAt = st.approach ? { lat: st.approach.coords[0][0], lon: st.approach.coords[0][1] } : st.startPt;
   const segs = stageSegments(st).map((seg) => `    <trkseg>\n      ${seg.map(pt).join("\n      ")}\n    </trkseg>`).join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="GPX Weather" xmlns="http://www.topografix.com/GPX/1/1">
   <metadata><name>${xmlEsc(title)}</name><desc>${xmlEsc(desc)}</desc></metadata>
-  <wpt lat="${st.startPt.lat.toFixed(6)}" lon="${st.startPt.lon.toFixed(6)}"><name>${xmlEsc("Start " + (st.no ? "stage " + st.no : "") + (placeName(st.startPt) ? ": " + placeName(st.startPt) : ""))}</name></wpt>
+  <wpt lat="${startAt.lat.toFixed(6)}" lon="${startAt.lon.toFixed(6)}"><name>${xmlEsc("Start " + (st.no ? "stage " + st.no : "") + (placeName(st.startPt) ? ": " + placeName(st.startPt) : ""))}</name></wpt>
   <wpt lat="${st.endPt.lat.toFixed(6)}" lon="${st.endPt.lon.toFixed(6)}"><name>${xmlEsc("End " + (st.no ? "stage " + st.no : "") + (placeName(st.endPt) ? ": " + placeName(st.endPt) : ""))}</name></wpt>
   <trk>
     <name>${xmlEsc(title)}</name>
@@ -3123,6 +3254,127 @@ ${segs}
   </trk>
 </gpx>
 `;
+}
+
+/* ---------- Back to the route: from where you are (campsite …) to a good point ahead on the route ----------
+   BRouter routes to a few points of the route ahead of you; the one that gets you furthest fastest wins
+   (time of the way there + riding time on the route up to the furthest candidate), so a steep climb to the
+   nearest point loses against a slightly longer, easier way that already goes in your direction. */
+
+const APPROACH_MIN_OFF = 200;     // m off the route before a way back is planned
+const APPROACH_STEPS = [0, 0.5, 1, 2, 3, 5, 8, 12];   // km ahead of your position on the route
+let approachBusy = null, approachErr = null;   // key being planned / { key, msg }
+
+// Where you are now: the newer of your last GPS fix and the end of your last uploaded ride.
+function currentLocation() {
+  const out = [];
+  if (S.gps) out.push({ lat: S.gps.lat, lon: S.gps.lon, t: S.gps.t, from: "gps" });
+  for (const [date, e] of Object.entries(S.days)) {
+    const r = e.rec;
+    const pt = r && (r.endPt || (r.line && r.line[r.line.length - 1]));
+    if (pt) out.push({ lat: pt[0], lon: pt[1], t: r.endTime ?? Date.parse(date + "T20:00"), from: "ride", date });
+  }
+  return out.sort((x, y) => y.t - x.t)[0] || null;
+}
+
+// Whether the next day needs a way back to the route, and the cache key of that way.
+function approachNeed() {
+  const T = S.track;
+  if (!T) return null;
+  const loc = currentLocation();
+  if (!loc) return null;
+  // Only before the day's ride: once you are on the road today, a stop next to the route needs no way back.
+  const e = S.days[todayStr()];
+  if (S.date === todayStr() && e && !e.closed && S.startKm - Math.min(e.start, S.startKm) > 3) return null;
+  const n = nearestKm(T, loc.lat, loc.lon);
+  if (n.offset < APPROACH_MIN_OFF || Math.abs(n.km - S.startKm) > 15 || S.startKm * 1000 >= T.total - 100) return null;
+  const pos = Math.round(S.startKm * 1000);
+  return { loc, pos, key: `${loc.lat.toFixed(4)},${loc.lon.toFixed(4)}|${Math.round(pos / 100)}|${plan.profile}${planOptionParams()}` };
+}
+
+// Moving hours of the way back with your riding model (climbs and surface from BRouter).
+function approachMoving(ap, params) {
+  const c = ap.coords;
+  let t = 0, k = 0, si = 0;
+  for (let i = 1; i < c.length; i++) {
+    const len = ap.cum[i] - ap.cum[i - 1];
+    if (len <= 0) continue;
+    while (ap.cum[i] - ap.cum[k] > 80 && k < i - 1) k++;          // gradient over the last ~80 m against elevation noise
+    const run = ap.cum[i] - ap.cum[k];
+    const grade = run > 0 && c[i][2] != null && c[k][2] != null ? Math.max(-0.2, Math.min(0.2, (c[i][2] - c[k][2]) / run)) : 0;
+    while (si < ap.surf.length - 1 && ap.surf[si][0] < ap.cum[i]) si++;
+    const surf = ap.surf.length ? ap.surf[si][1] : 0;
+    t += len / speedFor(params.P, grade, surf, params.mass, airDensity(c[i][2]), 0);
+  }
+  return t / 3600;
+}
+
+function climbOf(coords) {
+  let up = 0, down = 0, ref = null;
+  for (const c of coords) {
+    if (c[2] == null) continue;
+    if (ref == null) ref = c[2];
+    else if (c[2] - ref >= 3) { up += c[2] - ref; ref = c[2]; }
+    else if (ref - c[2] >= 3) { down += ref - c[2]; ref = c[2]; }
+  }
+  return { up, down };
+}
+
+async function planApproach() {
+  const need = approachNeed();
+  if (!need || (S.approach && S.approach.key === need.key) || approachBusy === need.key || (approachErr && approachErr.key === need.key)) return;
+  if (navigator.onLine === false) return;
+  approachBusy = need.key;
+  render();
+  const T = S.track, { loc, pos } = need, params = modelParams();
+  try {
+    const near = nearestKm(T, loc.lat, loc.lon);
+    let cands = APPROACH_STEPS.map((k) => pos + k * 1000).concat([near.km * 1000]).filter((d) => d >= pos - 1 && d <= T.total)
+      .sort((x, y) => x - y).filter((d, i, arr) => i === 0 || d - arr[i - 1] > 200)
+      .map((d) => ({ d, air: haversine(loc, pointAt(T, d)) }));
+    const minAir = Math.min(...cands.map((c) => c.air));
+    cands = cands.filter((c) => c.air <= 2.5 * minAir + 1500).slice(0, 6);   // a handful of reasonable points, nearest first
+    const far = cands[cands.length - 1].d;
+    let best = null;
+    for (const c of cands) {
+      const p = pointAt(T, c.d);
+      let leg;
+      try { leg = await routeLeg({ lat: loc.lat, lng: loc.lon }, { lat: p.lat, lng: p.lon }); } catch (e) { continue; }
+      const ap = { coords: leg.coords.map(([lon, lat, ele]) => [lat, lon, ele ?? null]), cum: leg.cum, surf: leg.surf };
+      const cost = approachMoving(ap, params) + movingTime(c.d, far, params.P, params.mass);
+      if (!best || cost < best.cost) best = { cost, c, ap, leg };
+    }
+    if (!best) throw new Error("no route");
+    const { up, down } = climbOf(best.ap.coords);
+    S.approach = {
+      key: need.key, join: best.c.d, nearest: near.km * 1000, km: best.leg.km, up, down,
+      coords: best.ap.coords.map(([lat, lon, ele]) => [+lat.toFixed(5), +lon.toFixed(5), ele == null ? null : Math.round(ele)]),
+      cum: best.ap.cum.map((x) => Math.round(x)), surf: best.ap.surf,
+      from: loc.from, date: loc.date || null, tried: cands.length,
+    };
+    approachErr = null;
+  } catch (e) {
+    approachErr = { key: need.key, msg: "The way back to the route could not be planned (BRouter not reachable?) – the GPX starts on the route." };
+  } finally {
+    approachBusy = null;
+    recompute({ weatherDelay: 300 });
+  }
+}
+
+// One line for the day card about the way back to the route.
+function approachText(st, k) {
+  if (k !== S.stages.findIndex((x) => x.dayOffset >= 0)) return "";
+  const need = approachNeed();
+  if (!need) return "";
+  if (approachBusy === need.key) return `<div class="advice">🧭 Planning the way from your ${need.loc.from === "gps" ? "position" : "campsite"} back to the route …</div>`;
+  if (approachErr && approachErr.key === need.key) return `<div class="warn-line">🧭 ${esc(approachErr.msg)}</div>`;
+  const ap = st.approach;
+  if (!ap) return "";
+  const from = ap.from === "gps" ? "your GPS position" : `the end of your ride${ap.date ? ` on ${fmtDate(ap.date)}` : ""}`;
+  const ahead = (ap.join - ap.nearest) / 1000;
+  return `<div class="advice">🧭 The day starts at ${from}: <b>${fmt(ap.km, 1)} km</b> (↑ ${fmt(ap.up, 0)} m, about ${fmtDuration(ap.moving)})
+    back to the route at km ${fmt(ap.join / 1000, 1)}${ahead > 0.3 ? ` – ${fmt(ahead, 1)} km further along than the nearest point, the quicker way` : ""}.
+    It's included in the day and in its GPX.</div>`;
 }
 
 /* ---------- Route planner with BRouter (brouter.de) ---------- */
@@ -4087,14 +4339,14 @@ async function downloadPdf() {
     const done = completedDays();
     if (done.length) {
       ensure(30);
-      write(`Completed: ${fmt(sum(done.map((d) => d.km)), 0)} km`, 11, "bold");
+      write(`Completed: ${fmt(sum(done.map((d) => d.real.km)), 0)} km`, 11, "bold");
       table({
         startY: y,
         head: [["#", "Date", "Route", "km", "Up m", "Down m", "Time", "km/h"]],
         body: done.map((d) => [d.no || "", d.date ? fmtDate(d.date) : "not logged", pdfSafe(plainStageTitle(d)),
-          fmt(d.km, 1), fmt(d.up, 0), fmt(d.down, 0),
-          d.rec && d.rec.elapsedH ? fmtDuration(d.rec.elapsedH) : d.km < 0.05 ? "rest day" : "-",
-          d.rec && d.rec.elapsedH ? fmt(d.km / d.rec.elapsedH, 1) : "-"]),
+          fmt(d.real.km, 1) + (d.rec ? " (GPS)" : ""), fmt(d.real.up, 0), fmt(d.real.down, 0),
+          d.rec && d.rec.elapsedH ? fmtDuration(d.rec.elapsedH) : d.real.km < 0.05 ? "rest day" : "-",
+          d.rec && d.rec.elapsedH ? fmt(d.real.km / d.rec.elapsedH, 1) : "-"]),
         columnStyles: { 2: { cellWidth: 110 } },
       });
       y = doc.lastAutoTable.finalY + 6;
@@ -4195,6 +4447,7 @@ function recompute({ weatherDelay = 800 } = {}) {
   render();
   saveTourSoon();
   scheduleWeather(weatherDelay);
+  planApproach();
 }
 
 function saveGlobalSettings() {
@@ -4276,7 +4529,8 @@ function locate({ silent = false } = {}) {
   setStatus("Getting your location …");
   navigator.geolocation.getCurrentPosition((pos) => {
     const n = nearestKm(S.track, pos.coords.latitude, pos.coords.longitude);
-    setStartKm(n.km, false, true, true);
+    S.gps = { lat: +pos.coords.latitude.toFixed(5), lon: +pos.coords.longitude.toFixed(5), t: Date.now() };
+    setStartKm(n.km, true, true, true);
     setStatus(n.offset > 2000
       ? `You are ${fmt(n.offset / 1000, 1, " km")} away from the route – nearest point: km ${fmt(n.km, 1)}.`
       : `Location found: km ${fmt(n.km, 1)} of the route.`);
