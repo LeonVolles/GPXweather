@@ -140,6 +140,24 @@ You have two ways to close a day:
   as you rode it. You can also add earlier days later with **📤 Add a ridden
   day** in the Completed list – the date is taken from the GPX.
 
+**📈 on a recorded day** opens what your bike computer or watch recorded:
+moving time, average and top speed, heart rate (average and max), power
+(average, normalized and max), cadence and the work in kJ (≈ kcal), plus a
+chart of speed, heart rate and power along the ride. Heart rate, power and
+cadence need a sensor and a GPX export that keeps them (Garmin, Wahoo,
+Strava … do). Rides uploaded with an older version: upload the GPX again –
+it replaces the old one.
+
+### Changed your route?
+
+Open **🗺️ Whole tour** and tap **🔁 Replace the route**, then pick the new
+GPX. The tour stays the same – its name, settings, ridden days and uploaded
+rides – and every day is placed on the new route again (uploaded rides by
+their recorded track). If the new GPX starts where you are now (you planned
+on from here), the part you have already ridden stays in front of it and
+the new route continues from your position. **↶ Undo** brings the old route
+back.
+
 ### Back to the route in the morning
 
 Spent the night off the route (campsite, hotel)? The next day's plan starts

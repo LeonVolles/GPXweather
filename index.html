@@ -231,6 +231,8 @@
   .day-row button span { font-size: 0.72rem; color: var(--ink-2); }
   .wx-ico { font-size: 1.15rem; }
   .day-row.open { border-bottom: none; }
+  .ride-detail { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--grid); }
+  .ride-chart { margin-top: 8px; }
   .sun { white-space: nowrap; }
   dialog.sheet { width: 100%; max-width: 560px; margin: auto auto 0; border: none; border-radius: 16px 16px 0 0;
                  background: var(--surface); color: var(--ink); padding: 0; max-height: 88vh; box-sizing: border-box; }
@@ -298,6 +300,7 @@
   </div>
   <input type="file" id="file" class="file-input">
   <input type="file" id="rideFile" class="file-input">
+  <input type="file" id="replaceFile" class="file-input">
   <label class="drop" id="drop" for="file">
     <strong id="drop-title">Drop a GPX file here or tap to choose one</strong>
     <span class="muted small">The file stays on your device. Nothing is uploaded.</span>
@@ -439,7 +442,10 @@
       <div class="tiles" id="preview" style="margin-top:10px"></div>
       <div id="gap-note" class="small muted" style="margin-top:10px"></div>
       <div class="tiles" id="totals" style="margin-top:10px"></div>
-      <div class="btn-row"><button type="button" id="pdfBtn">📄 Whole forecast as PDF</button></div>
+      <div class="btn-row"><button type="button" id="pdfBtn">📄 Whole forecast as PDF</button>
+        <label class="button" for="replaceFile" title="Load a changed route (GPX) for this tour – your ridden days and uploaded rides stay">🔁 Replace the route</label></div>
+      <p class="small muted" style="margin:6px 0 0">Changed your plans? <b>Replace the route</b> with a new GPX: your ridden days and uploaded rides are kept.
+        If the new GPX starts where you are now, the part you have ridden stays and the new route continues from there.</p>
     </details>
   </div>
 
@@ -511,7 +517,7 @@
 /* ---------- Configuration ---------- */
 
 // Bump with every release (and VERSION in sw.js): the app compares it with the published page to offer updates.
-const APP_VERSION = "2026-10-18.1";
+const APP_VERSION = "2026-10-18.2";
 
 // days = forecast_days requested from Open-Meteo, roughly the model's real horizon.
 const MODELS = [
@@ -678,11 +684,11 @@ function setStatus(text) { $("status").textContent = text; statusAt = Date.now()
 // A message with an Undo button, for changes that are easy to make by mistake.
 function offerUndo(text, fn) {
   $("status").innerHTML = `${esc(text)} <button type="button" class="chip" id="undoBtn">↶ Undo</button>`;
-  statusAt = Date.now();
+  statusAt = Date.now() + 10000;   // background messages leave an Undo alone for 15 s
   undoFn = fn;
   $("undoBtn").addEventListener("click", () => { const f = undoFn; setStatus("Undone."); if (f) f(); });
 }
-// Background info (weather age) never hides a message you just got, e.g. "Ride added".
+// Background info (weather age, loading progress) never hides a message you just got, e.g. "Ride added".
 function softStatus(text) { if (Date.now() - statusAt > 5000) setStatus(text); }
 
 /* Tiny IndexedDB key/value store: saved tours and cached forecasts (localStorage is too small). */
@@ -1287,6 +1293,101 @@ function reopenToday() {
 
 /* ---------- Upload the recorded track of a day ---------- */
 
+function extValue(n, names) {
+  for (const name of names) {
+    const e = n.getElementsByTagNameNS("*", name)[0];
+    const v = e ? parseFloat(e.textContent) : NaN;
+    if (Number.isFinite(v) && v >= 0) return v;
+  }
+  return null;
+}
+
+/* Heart rate, power, cadence and speed of one recording: sums (so several files of a day add up) and a
+   series over the distance for the charts. Stops longer than 2 min don't count; power and cadence only while moving. */
+function rideMetrics(pts) {
+  const timed = pts.filter((p) => p.t != null);
+  if (timed.length < 10) return null;
+  const has = (k) => timed.some((p) => p[k] != null);
+  const hasHr = has("hr"), hasPw = has("pw"), hasCad = has("cad");
+  const m = { hrS: 0, hrT: 0, hrMax: null, pS: 0, pT: 0, pMax: null, np4: 0, npT: 0, cadS: 0, cadT: 0, vMax: null };
+  const cum = [0];
+  for (let i = 1; i < timed.length; i++) cum.push(cum[i - 1] + haversine(timed[i - 1], timed[i]));
+  const win = [];   // last 30 s of power while moving: [seconds, watts]
+  let winS = 0, winT = 0, j = 0;
+  const bucket = Math.max(100, cum[cum.length - 1] / 300);
+  const series = { km: [], v: [], hr: hasHr ? [] : null, p: hasPw ? [] : null, ele: [] };
+  let b = { d: 0, t: 0, hrS: 0, hrT: 0, pS: 0, pT: 0, end: bucket };
+  const flush = (i) => {
+    if (b.t > 0) {
+      series.km.push(+(cum[i] / 1000).toFixed(2));
+      series.v.push(+((b.d / b.t) * 3.6).toFixed(1));
+      if (series.hr) series.hr.push(b.hrT ? Math.round(b.hrS / b.hrT) : null);
+      if (series.p) series.p.push(b.pT ? Math.round(b.pS / b.pT) : null);
+      series.ele.push(timed[i].ele == null ? null : Math.round(timed[i].ele));
+    }
+    b = { d: 0, t: 0, hrS: 0, hrT: 0, pS: 0, pT: 0, end: cum[i] + bucket };
+  };
+  for (let i = 1; i < timed.length; i++) {
+    const p = timed[i], dt = (p.t - timed[i - 1].t) / 1000, dd = cum[i] - cum[i - 1];
+    if (!(dt > 0) || dt > 120) continue;
+    const moving = dd / dt > 2 / 3.6 && dd / dt < 90 / 3.6;
+    if (p.hr != null && p.hr > 30) {
+      m.hrS += p.hr * dt; m.hrT += dt; m.hrMax = Math.max(m.hrMax ?? 0, p.hr);
+      b.hrS += p.hr * dt; b.hrT += dt;
+    }
+    if (moving) {
+      b.d += dd; b.t += dt;
+      if (hasPw) {
+        const w = p.pw ?? 0;
+        m.pS += w * dt; m.pT += dt; m.pMax = Math.max(m.pMax ?? 0, w);
+        b.pS += w * dt; b.pT += dt;
+        // Normalized power: 30 s rolling average, to the 4th power, averaged, 4th root.
+        win.push([dt, w]); winS += w * dt; winT += dt;
+        while (winT - win[0][0] >= 30) { const [t0, w0] = win.shift(); winS -= w0 * t0; winT -= t0; }
+        if (winT >= 25) { m.np4 += (winS / winT) ** 4 * dt; m.npT += dt; }
+      }
+      if (hasCad && p.cad > 0) { m.cadS += p.cad * dt; m.cadT += dt; }
+    }
+    // Top speed over at least 20 s (single GPS points jump around).
+    while (j < i - 1 && (p.t - timed[j + 1].t) / 1000 >= 20) j++;
+    const span = (p.t - timed[j].t) / 1000;
+    if (span >= 20 && span < 120) {
+      const v = ((cum[i] - cum[j]) / span) * 3.6;
+      if (v < 90) m.vMax = Math.max(m.vMax ?? 0, v);
+    }
+    if (cum[i] >= b.end) flush(i);
+  }
+  flush(timed.length - 1);
+  return { ...m, series };
+}
+
+// What the Completed list shows for a recorded day (all its files together); null for days uploaded before.
+function rideStats(rec) {
+  const parts = (rec.parts || [rec]).filter((p) => p.metrics);
+  if (!parts.length) return null;
+  const add = (k) => sum(parts.map((p) => p.metrics[k] || 0));
+  const max = (k) => { const v = parts.map((p) => p.metrics[k]).filter((x) => x != null); return v.length ? Math.max(...v) : null; };
+  const hrT = add("hrT"), pT = add("pT"), npT = add("npT"), cadT = add("cadT");
+  // One series over the whole day: the files in time order, one after the other.
+  const series = { km: [], v: [], hr: [], p: [], ele: [] };
+  let off = 0;
+  for (const part of [...parts].sort((x, y) => (x.startTime ?? 0) - (y.startTime ?? 0))) {
+    const s = part.metrics.series, n = s.km.length;
+    series.km.push(...s.km.map((k) => +(k + off).toFixed(2)));
+    series.v.push(...s.v); series.ele.push(...s.ele);
+    series.hr.push(...(s.hr || Array(n).fill(null)));
+    series.p.push(...(s.p || Array(n).fill(null)));
+    off += part.km;
+  }
+  return {
+    movingH: rec.movingH, vAvg: rec.movingH ? rec.km / rec.movingH : null, vMax: max("vMax"),
+    hrAvg: hrT ? add("hrS") / hrT : null, hrMax: max("hrMax"),
+    pAvg: pT ? add("pS") / pT : null, pMax: max("pMax"), np: npT ? (add("np4") / npT) ** 0.25 : null,
+    cad: cadT ? add("cadS") / cadT : null, kj: pT ? add("pS") / 1000 : null,
+    series: { ...series, hr: hrT ? series.hr : null, p: pT ? series.p : null },
+  };
+}
+
 function parseRide(text) {
   const xml = new DOMParser().parseFromString(text, "application/xml");
   if (xml.getElementsByTagName("parsererror").length) throw new Error("This file is not valid GPX.");
@@ -1299,7 +1400,9 @@ function parseRide(text) {
     const e = n.getElementsByTagNameNS("*", "ele")[0], t = n.getElementsByTagNameNS("*", "time")[0];
     const ele = e ? parseFloat(e.textContent) : NaN;
     const time = t ? Date.parse(t.textContent.trim()) : NaN;
-    pts.push({ lat, lon, ele: Number.isFinite(ele) ? ele : null, t: Number.isFinite(time) ? time : null });
+    pts.push({ lat, lon, ele: Number.isFinite(ele) ? ele : null, t: Number.isFinite(time) ? time : null,
+      // Sensor values from the extensions (Garmin, Wahoo, Strava …), whatever namespace they use.
+      hr: extValue(n, ["hr", "heartrate"]), pw: extValue(n, ["power", "PowerInWatts", "watts"]), cad: extValue(n, ["cad", "cadence"]) });
   }
   if (pts.length < 2) throw new Error("No track points found in this GPX.");
 
@@ -1326,6 +1429,7 @@ function parseRide(text) {
     rec: {
       km, up, down,
       hasEle: pts.filter((p) => p.ele != null).length > pts.length / 2,
+      metrics: rideMetrics(pts),
       endPt: [+last.lat.toFixed(5), +last.lon.toFixed(5)],
       elapsedH: t0 != null ? (t1 - t0) / 3600000 : null,
       movingH: moving || null,
@@ -1368,19 +1472,25 @@ function localDate(t) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
+// Where on the route a recording lies (km): map a sample of its points onto the route and take the covered range.
+function rideRange(track, pts) {
+  const step = Math.max(1, Math.floor(pts.length / 60));
+  const hits = [];
+  for (let i = 0; i < pts.length; i += step) hits.push(nearestKm(track, pts[i].lat, pts[i].lon));
+  hits.push(nearestKm(track, pts[pts.length - 1].lat, pts[pts.length - 1].lon));
+  const onRoute = hits.filter((h) => h.offset < 3000);
+  if (onRoute.length < Math.max(2, hits.length * 0.3)) return null;
+  const kms = onRoute.map((h) => h.km).sort((a, b) => a - b);
+  return { start: kms[0], end: kms[kms.length - 1] };
+}
+
 async function uploadRide(file) {
   if (!S.track) { setStatus("Please load the tour GPX first."); return; }
   try {
     const { pts, rec } = parseRide(await file.text());
-    // Where on the route was this ride? Map a sample of points onto the route and take the covered range.
-    const step = Math.max(1, Math.floor(pts.length / 60));
-    const hits = [];
-    for (let i = 0; i < pts.length; i += step) hits.push(nearestKm(S.track, pts[i].lat, pts[i].lon));
-    hits.push(nearestKm(S.track, pts[pts.length - 1].lat, pts[pts.length - 1].lon));
-    const onRoute = hits.filter((h) => h.offset < 3000);
-    if (onRoute.length < Math.max(2, hits.length * 0.3)) throw new Error("This ride doesn't follow the route of the current tour.");
-    const kms = onRoute.map((h) => h.km).sort((a, b) => a - b);
-    const start = kms[0], end = kms[kms.length - 1];
+    const range = rideRange(S.track, pts);
+    if (!range) throw new Error("This ride doesn't follow the route of the current tour.");
+    const { start, end } = range;
 
     let date = rec.startTime != null ? localDate(rec.startTime) : null;
     if (!date) {
@@ -1414,6 +1524,76 @@ async function uploadRide(file) {
     console.error(e);
     setStatus("The ride could not be added: " + e.message);
   }
+}
+
+/* ---------- Replace the route of a tour, keeping what you rode ----------
+   The ride log is in km along the route, so every day is placed on the new route again: uploaded rides by
+   their recorded track, other days by where their start and end were. If the new GPX doesn't pass the old
+   start (you planned on from where you are), the ridden part of the old route stays in front of it. */
+
+async function replaceRoute(file) {
+  if (!S.track || !S.tourId) { setStatus("Please load a tour first."); return; }
+  try {
+    const old = S.track, oldPos = pointAt(old, S.startKm * 1000);
+    const parsed = parseGPX(await file.text());
+    let raw = parsed.raw, segments = parsed.segments, kept = 0;
+    const startNear = nearestKm(resample(raw, segments), old.pts[0].lat, old.pts[0].lon);
+    if (S.startKm > 0.5 && startNear.offset > 2000) {
+      // Ridden part of the old route + the new route from the point nearest to where you are.
+      let iNear = 0, best = Infinity;
+      raw.forEach((p, i) => { const d = haversine(p, oldPos); if (d < best) { best = d; iNear = i; } });
+      if (best > 20000) throw new Error("The new route is far from where you are (" + fmt(best / 1000, 0) + " km) – it can't continue this tour.");
+      const before = stageSegments({ a: 0, b: S.startKm * 1000 });
+      const head = [], headSegs = [];
+      before.forEach((seg) => {
+        headSegs.push({ name: (old.segments.find((x) => x.start != null) || {}).name || old.name || "" });
+        for (const [lat, lon, ele] of seg) head.push({ lat, lon, ele: Number.isFinite(ele) ? ele : null, seg: headSegs.length - 1 });
+      });
+      raw = head.concat(raw.slice(iNear).map((p) => ({ ...p, seg: p.seg + headSegs.length })));
+      segments = headSegs.concat(segments);
+      kept = S.startKm;
+    }
+    await tick();
+    const track = resample(raw, segments);
+    track.name = old.name || parsed.name;
+    if (track.pts.filter((p) => p.ele != null).length / track.pts.length < 0.8) await fillElevation(track);
+    finishTrack(track);
+
+    // Undo: the old route and log, exactly as they were.
+    const undo = { pack: packTrack(old), days: JSON.stringify(S.days), startKm: S.startKm, approach: S.approach };
+    const mapKm = (km) => nearestKm(track, pointAt(old, km * 1000).lat, pointAt(old, km * 1000).lon).km;
+    const days = {};
+    for (const [date, e] of Object.entries(S.days)) {
+      const lines = e.rec ? recLines(e.rec).flat().map(([lat, lon]) => ({ lat, lon })) : [];
+      const r = lines.length > 1 ? rideRange(track, lines) : null;
+      const start = r ? r.start : mapKm(e.start), end = r ? r.end : mapKm(e.end);
+      days[date] = { ...e, start: Math.min(start, end), end: Math.max(start, end) };
+    }
+    const pos = kept ? kept : mapKm(S.startKm);
+    await switchTrack(track, days, pos, null);
+    const n = Object.values(days).filter((e) => e.rec).length;
+    offerUndo(`Route replaced: ${fmt(track.total / 1000, 0)} km (was ${fmt(old.total / 1000, 0)}).` +
+      (kept ? ` The ${fmt(kept, 0)} km you rode stay in front, the new route continues from where you are.` : "") +
+      (n ? ` ${n} uploaded ride${n > 1 ? "s" : ""} kept.` : ""),
+      () => switchTrack(unpackTrack(undo.pack), JSON.parse(undo.days), undo.startKm, undo.approach));
+  } catch (e) {
+    console.error(e);
+    setStatus("The route could not be replaced: " + e.message);
+  }
+}
+
+// Puts another route into the current tour (same tour, same settings) and saves it.
+async function switchTrack(track, days, startKm, approach) {
+  await idb.set("tour|" + S.tourId, { id: S.tourId, ...packTrack(track) });
+  for (const k of await idb.keys(`surf|${S.tourId}|`)) await idb.del(k);   // surfaces belong to the old line
+  S.days = days;
+  S.approach = approach;
+  tourFitted = null;
+  setTrack(track, startKm);
+  await loadSurfaceCache();
+  recompute({ weatherDelay: 0 });
+  await saveTourSettings();
+  await refreshTourList();
 }
 
 /* ---------- Riding-time model ----------
@@ -1959,7 +2139,7 @@ async function loadWeatherOnce(force) {
   }
 
   let done = 0;
-  setStatus(`Loading weather … 0/${work.length} requests`);
+  softStatus(`Loading weather … 0/${work.length} requests`);
   // One request at a time per model: gentle on rate limits.
   const byModel = new Map();
   work.forEach((w) => { if (!byModel.has(w.model)) byModel.set(w.model, []); byModel.get(w.model).push(w); });
@@ -1998,13 +2178,13 @@ async function loadWeatherOnce(force) {
         break;   // don't hammer a failing API with the remaining requests
       }
       done++;
-      setStatus(`Loading weather … ${done}/${work.length} requests`);
+      softStatus(`Loading weather … ${done}/${work.length} requests`);
       scheduleRender();
     }
   }), 2);
 
   for (const id of Object.keys(modelState)) if (modelState[id].state === "loading") modelState[id].state = "ok";
-  setStatus([`Weather updated at ${fmtClock(Date.now())} · ${fetchCount} requests this session, ${numFmt(dailyCount())} locations today`,
+  softStatus([`Weather updated at ${fmtClock(Date.now())} · ${fetchCount} requests this session, ${numFmt(dailyCount())} locations today`,
              ...messages].join(" · "));
   render();
 }
@@ -3088,16 +3268,67 @@ function renderDone() {
     <td class="r num">${d.rec && d.rec.elapsedH ? fmtDuration(d.rec.elapsedH) : d.real.km < 0.05 ? "rest day" : "–"}</td>
     <td class="r num opt">${d.rec && d.rec.elapsedH ? fmt(d.real.km / d.rec.elapsedH, 1) : "–"}</td>
     <td class="r">${d.real.km >= 0.05 ? `<button type="button" data-done-gpx="${i}" title="${d.rec ? "The GPX of how you rode this day" : "Download the GPX of this part"}" style="min-height:32px;padding:4px 10px;font-size:.85rem">⬇ GPX</button>` : ""}
+      ${d.rec ? `<button type="button" data-ride-open="${d.date}" aria-expanded="${rideOpen.has(d.date)}" title="Speed, heart rate and power of this ride" aria-label="Details of ${fmtDate(d.date)}" style="min-height:32px;padding:4px 10px;font-size:.85rem">📈</button>` : ""}
       ${d.date ? `<button type="button" data-del-day="${d.date}" title="Remove this day from the ride log" aria-label="Remove ${fmtDate(d.date)}" style="min-height:32px;padding:4px 10px;font-size:.85rem">✕</button>` : ""}</td>
   </tr>`).join("");
+  // Opened ride details go below the table, at the full width of the card.
+  const details = days.filter((d) => d.rec && rideOpen.has(d.date)).map((d) =>
+    `<div class="ride-detail"><b>📈 ${fmtDate(d.date)}${d.no ? ` · day ${d.no}` : ""}</b>${rideDetail(d)}</div>`).join("");
   host.innerHTML = `<div class="table-wrap"><table>
       <thead><tr><th>#</th><th>Date</th><th class="opt">Route</th><th class="r">km</th><th class="r">↑ m</th><th class="r opt">↓ m</th>
         <th class="r" title="time on the road (recorded rides)">Time</th><th class="r opt">km/h</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
+    ${details}
     <div class="small muted" style="margin-top:8px">📍 = as you rode it (from the GPX you uploaded; several files of one day are added up).
       Other days: km and climb along the planned route. Time and speed come from your uploads
       (first to last point, incl. breaks). ✕ removes a day from the log, e.g. one you ended by mistake.</div>
     <div class="btn-row"><label class="button" for="rideFile">📤 Add a ridden day (GPX of your ride)</label></div>`;
+  for (const d of days) if (d.rec && rideOpen.has(d.date)) renderRideCharts(d);
+}
+
+/* Details of a recorded day: speed, heart rate, power and cadence, with a chart of each along the ride. */
+const rideOpen = new Set();   // dates whose details are open
+
+function rideDetail(d) {
+  const r = rideStats(d.rec);
+  if (!r) return `<p class="small muted">Heart rate, power and speed appear for rides uploaded with this version.
+    Upload the GPX of ${fmtDate(d.date)} again to see them – it replaces the old one, nothing is counted twice.</p>`;
+  const tile = (k, v, sub) => `<div class="tile"><div class="k">${k}</div><div class="v num">${v}</div><div class="s">${sub}</div></div>`;
+  const tiles = [
+    tile("⏱️ Moving", r.movingH ? fmtDuration(r.movingH) : "–", d.rec.elapsedH ? `${fmtDuration(d.rec.elapsedH)} on the road` : ""),
+    tile("🚴 Speed", r.vAvg ? fmt(r.vAvg, 1, " km/h") : "–", `average while moving${r.vMax ? ` · max ${fmt(r.vMax, 0)}` : ""}`),
+  ];
+  if (r.hrAvg) tiles.push(tile("❤️ Heart rate", `${fmt(r.hrAvg, 0)} bpm`, `average · max ${fmt(r.hrMax, 0)}`));
+  if (r.pAvg != null) tiles.push(tile("⚡ Power", `${fmt(r.pAvg, 0)} W`, `average${r.np ? ` · normalized ${fmt(r.np, 0)}` : ""} · max ${fmt(r.pMax, 0)}`));
+  if (r.cad) tiles.push(tile("🔄 Cadence", `${fmt(r.cad, 0)} rpm`, "average while pedalling"));
+  if (r.kj) tiles.push(tile("🔥 Work", `${numFmt(Math.round(r.kj))} kJ`, `≈ ${numFmt(Math.round(r.kj))} kcal burned`));
+  const charts = ["v", "hr", "p"].filter((k) => r.series[k]).map((k) => `<div class="ride-chart" id="ride-${k}-${d.date}"></div>`).join("");
+  const missing = [!r.hrAvg && "heart rate", r.pAvg == null && "power"].filter(Boolean);
+  return `<div class="tiles" style="margin-top:4px">${tiles.join("")}</div>${charts}
+    ${missing.length ? `<p class="small muted" style="margin:6px 0 0">No ${missing.join(" or ")} in this GPX (it needs a sensor and an export that keeps it, e.g. Garmin, Wahoo, Strava).</p>` : ""}`;
+}
+
+function renderRideCharts(d) {
+  const r = rideStats(d.rec);
+  if (!r || typeof Plotly === "undefined") return;
+  // One chart per measure, each on its own axis, all over the km of the day.
+  const panel = (k, title, unit, color, zero) => {
+    const el = $(`ride-${k}-${d.date}`);
+    if (!el) return;
+    Plotly.react(el, [{
+      type: "scatter", mode: "lines", x: r.series.km, y: r.series[k], connectgaps: false,
+      line: { color: css(color), width: 2 }, hovertemplate: `km %{x:.1f}: %{y:.0f} ${unit}<extra></extra>`,
+    }], plotTheme({
+      height: 170, hovermode: "x",
+      title: { text: `${title} (${unit})`, x: 0, xanchor: "left", font: { size: 13, color: css("--ink") } },
+      margin: { l: 40, r: 12, t: 32, b: 32 },
+      xaxis: { ...plotTheme().xaxis, ticksuffix: " km", showspikes: true, spikemode: "across", spikethickness: 1, spikecolor: css("--axis"), spikedash: "solid" },
+      yaxis: { ...plotTheme().yaxis, rangemode: zero ? "tozero" : "normal" },
+    }), PLOT_CONFIG);
+  };
+  panel("v", "Speed", "km/h", "--m1", true);
+  panel("hr", "Heart rate", "bpm", "--m2", false);
+  panel("p", "Power", "W", "--m3", true);
 }
 
 async function downloadDone(i) {
@@ -4622,6 +4853,7 @@ function initControls() {
   $("useRides").addEventListener("change", (e) => { S.useRides = e.target.checked; saveGlobalSettings(); recompute({ weatherDelay: 300 }); });
   $("useHistory").addEventListener("change", (e) => { S.useHistory = e.target.checked; saveGlobalSettings(); recompute({ weatherDelay: 300 }); });
   $("rideFile").addEventListener("change", (e) => { if (e.target.files[0]) uploadRide(e.target.files[0]); e.target.value = ""; });
+  $("replaceFile").addEventListener("change", (e) => { if (e.target.files[0]) replaceRoute(e.target.files[0]); e.target.value = ""; });
   $("refresh").addEventListener("click", () => loadWeather(true));
   $("locate").addEventListener("click", () => locate());
   $("deleteTour").addEventListener("click", deleteTour);
@@ -4644,6 +4876,12 @@ function initControls() {
     if (go) openStage(Number(go.dataset.goto));
     const del = e.target.closest("[data-del-day]");
     if (del) removeDay(del.dataset.delDay);
+    const rideBtn = e.target.closest("[data-ride-open]");
+    if (rideBtn) {
+      const d = rideBtn.dataset.rideOpen;
+      if (rideOpen.has(d)) rideOpen.delete(d); else rideOpen.add(d);
+      renderDone();
+    }
     const doneGpx = e.target.closest("[data-done-gpx]");
     if (doneGpx) downloadDone(Number(doneGpx.dataset.doneGpx));
     const campBtn = e.target.closest("[data-camp-open]");

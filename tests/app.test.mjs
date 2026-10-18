@@ -470,6 +470,102 @@ await test("on the route (under 200 m) no way back is planned; without BRouter t
   assert.equal(brouterCalls.length, n0);
   await ev(() => { S.days = {}; S.gps = null; S.approach = null; setStartKm(0, true, false); return saveTourSettings(); });
 });
+await test("a ride with heart rate, power and cadence shows them in Completed, with a chart of each", async () => {
+  await ev(() => { S.days = {}; S.gps = null; S.approach = null; setStartKm(0, true, false); });
+  const y = new Date(); y.setDate(y.getDate() - 1); y.setHours(9, 0, 0, 0);
+  // 20 km at 20 km/h; heart rate 130/150 in turns, 150 W in the first half and 250 W in the second, 85 rpm
+  const gpx = await ev((t0) => {
+    let pts = "";
+    for (let i = 0; i <= 200; i++) {
+      const p = pointAt(S.track, i * 100);
+      pts += `<trkpt lat="${p.lat.toFixed(6)}" lon="${p.lon.toFixed(6)}"><ele>300</ele><time>${new Date(t0 + i * 18000).toISOString()}</time>` +
+        `<extensions><power>${i <= 100 ? 150 : 250}</power><gpxtpx:TrackPointExtension><gpxtpx:hr>${i % 2 ? 150 : 130}</gpxtpx:hr><gpxtpx:cad>85</gpxtpx:cad></gpxtpx:TrackPointExtension></extensions></trkpt>`;
+    }
+    return `<?xml version="1.0"?><gpx version="1.1" xmlns="http://www.topografix.com/GPX/1/1" xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1"><trk><trkseg>${pts}</trkseg></trk></gpx>`;
+  }, y.getTime());
+  await upload("sensors.gpx", gpx);
+  const r = await ev(() => rideStats(completedDays().find((d) => d.date).rec));
+  assert.ok(Math.abs(r.hrAvg - 140) < 1.5 && r.hrMax === 150, "heart rate " + r.hrAvg + " / " + r.hrMax);
+  assert.ok(Math.abs(r.pAvg - 200) < 3 && r.pMax === 250, "power " + r.pAvg);
+  assert.ok(Math.abs(r.np - (((150 ** 4 + 250 ** 4) / 2) ** 0.25)) < 3, "normalized power " + r.np);   // ≈ 217 W
+  assert.ok(Math.abs(r.cad - 85) < 0.5 && Math.abs(r.vAvg - 20) < 0.5 && r.vMax < 22, `cadence ${r.cad}, speed ${r.vAvg}/${r.vMax}`);
+  await ev(() => { $("sec-done").open = true; });
+  await page.locator("#done-list [data-ride-open]").click();
+  const text = await page.locator("#done-list .ride-detail").innerText();
+  assert.match(text, /❤️ Heart rate\s*14\d bpm\s*average · max 150/);
+  assert.match(text, /⚡ Power\s*(199|200|201) W\s*average · normalized \d+ · max 250/);
+  assert.match(text, /🔄 Cadence\s*85 rpm/);
+  assert.match(text, /🚴 Speed\s*20[.,]\d km\/h/);
+  await page.waitForFunction(() => document.querySelectorAll("#done-list .ride-chart .main-svg").length >= 3);
+  assert.deepEqual(await ev(() => [...document.querySelectorAll("#done-list .ride-chart")].map((e) => e.id.split("-")[1])), ["v", "hr", "p"]);
+  await page.locator("#done-list [data-ride-open]").click();
+  assert.equal(await page.locator("#done-list .ride-detail").count(), 0, "📈 closes the details again");
+});
+await test("a ride uploaded by an older version asks for the GPX again instead of showing nothing", async () => {
+  await ev(() => { const e = Object.values(S.days)[0]; e.rec.parts.forEach((p) => delete p.metrics); rideOpen.add(Object.keys(S.days)[0]); renderDone(); });
+  assert.match(await page.locator("#done-list .ride-detail").innerText(), /Upload the GPX of .* again/);
+  await ev(() => { rideOpen.clear(); S.days = {}; setStartKm(0, true, false); });
+});
+await test("replacing the route keeps the ridden days and uploaded rides, placed on the new route", async () => {
+  const y = new Date(); y.setDate(y.getDate() - 1); y.setHours(9, 0, 0, 0);
+  await upload("day1.gpx", await rideAlong(0, 40, y.getTime()));
+  const before = await ev(() => ({ total: S.track.total, startKm: S.startKm, id: S.tourId, tours: S.tours.length, day: Object.values(S.days)[0] }));
+  // the same start, but from km 150 on a different way (further north) and 30 km longer
+  const gpx = await ev(() => {
+    let pts = "";
+    for (let d = 0; d <= S.track.total; d += 100) {
+      const p = pointAt(S.track, d), f = Math.max(0, d - 150000) / 1000;
+      pts += `<trkpt lat="${(p.lat + f * 0.0006).toFixed(6)}" lon="${p.lon.toFixed(6)}"><ele>${p.ele.toFixed(1)}</ele></trkpt>`;
+    }
+    const e = pointAt(S.track, S.track.total);
+    for (let k = 1; k <= 300; k++) pts += `<trkpt lat="${(e.lat + 225 * 0.0006 + k * 0.0009).toFixed(6)}" lon="${e.lon.toFixed(6)}"><ele>300</ele></trkpt>`;
+    return `<gpx><trk><name>New way</name><trkseg>${pts}</trkseg></trk></gpx>`;
+  });
+  fs.writeFileSync(path.join(tmp, "newroute.gpx"), gpx);
+  await ev(() => { $("sec-tour").open = true; });
+  await page.setInputFiles("#replaceFile", path.join(tmp, "newroute.gpx"));
+  await page.waitForFunction(() => /Route replaced/.test($("status").textContent));
+  const after = await ev(() => ({ total: S.track.total, startKm: S.startKm, id: S.tourId, tours: S.tours.length, day: Object.values(S.days)[0], name: S.track.name }));
+  assert.equal(after.id, before.id, "same tour");
+  assert.equal(after.tours, before.tours, "no second tour");
+  assert.equal(after.name, "Test Tour", "the tour keeps its name");
+  assert.ok(after.total > before.total + 30000, `new length ${after.total} vs ${before.total}`);
+  assert.ok(Math.abs(after.startKm - before.startKm) < 1, "position kept: " + after.startKm);
+  assert.ok(Math.abs(after.day.start - before.day.start) < 1 && Math.abs(after.day.end - before.day.end) < 1, "ride placed on the new route");
+  assert.ok(after.day.rec && after.day.rec.parts.length === 1, "the upload is kept");
+  assert.match(await page.textContent("#status"), /Route replaced: \d+ km \(was 37\d\)\. 1 uploaded ride kept\./);
+  // survives a reload
+  await page.reload();
+  await page.waitForFunction(() => S.stages.length > 0);
+  assert.ok(Math.abs((await ev(() => S.track.total)) - after.total) < 1);
+  assert.equal(await ev(() => Object.keys(S.days).length), 1);
+});
+await test("a new route that starts where you are keeps the ridden part in front; Undo brings the old route back", async () => {
+  await ev(() => { setStartKm(40, true, false); setStatus(""); });
+  const old = await ev(() => ({ total: S.track.total, p20: pointAt(S.track, 20000), p40: pointAt(S.track, 40000) }));
+  // planned from here: 100 km straight north
+  const gpx = await ev(() => {
+    const p = pointAt(S.track, 40000);
+    let pts = "";
+    for (let k = 0; k <= 1000; k++) pts += `<trkpt lat="${(p.lat + 0.001 + k * 0.0009).toFixed(6)}" lon="${p.lon.toFixed(6)}"><ele>300</ele></trkpt>`;
+    return `<gpx><trk><trkseg>${pts}</trkseg></trk></gpx>`;
+  });
+  fs.writeFileSync(path.join(tmp, "fromhere.gpx"), gpx);
+  await page.setInputFiles("#replaceFile", path.join(tmp, "fromhere.gpx"));
+  await page.waitForFunction(() => /Route replaced/.test($("status").textContent));
+  const now = await ev(() => ({ total: S.track.total, startKm: S.startKm, p20: pointAt(S.track, 20000), day: Object.values(S.days)[0], gaps: S.track.cumGap[S.track.cumGap.length - 1] }));
+  assert.ok(Math.abs(now.total - 140000) < 2000, "40 km ridden + 100 km new: " + now.total);
+  assert.ok(Math.abs(now.startKm - 40) < 0.5, "you are still at km 40: " + now.startKm);
+  assert.ok(Math.abs(now.p20.lat - old.p20.lat) < 1e-3 && Math.abs(now.p20.lon - old.p20.lon) < 1e-3, "the ridden part is the old route");
+  assert.ok(Math.abs(now.day.end - 40) < 1, "the ride stays where it was");
+  assert.equal(now.gaps, 0, "no gap where the new route starts");
+  assert.match(await page.textContent("#status"), /The 40 km you rode stay in front/);
+  assert.ok((await ev(() => S.stages[0].a)) >= 39500, "the plan continues on the new route");
+  await page.click("#undoBtn");
+  await page.waitForFunction((t) => Math.abs(S.track.total - t) < 1, old.total);
+  assert.ok(Math.abs((await ev(() => S.track.total)) - old.total) < 1, "Undo: the route before");
+  await ev(() => { S.days = {}; setStartKm(0, true, false); return saveTourSettings(); });
+});
 await test("tapping a coming day opens it in place with its own route map, without jumping down", async () => {
   await ev(() => window.scrollTo(0, 0));
   const k = await ev(() => Number(document.querySelectorAll(".day-row")[1].dataset.openStage));
