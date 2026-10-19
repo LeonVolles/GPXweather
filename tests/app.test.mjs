@@ -33,15 +33,20 @@ function tourGpx() {
 // Made-up but plausible hourly forecasts (rain every third day in the afternoon).
 function forecast(url) {
   const u = new URL(url);
-  const lats = u.searchParams.get("latitude").split(","), days = Number(u.searchParams.get("forecast_days"));
-  const seed = u.searchParams.get("models").length, now = new Date();
+  const lats = u.searchParams.get("latitude").split(",");
+  // Past days (start_date/end_date, in GMT) for the weather of ridden days; else the forecast from today.
+  const past = u.searchParams.get("start_date");
+  const days = past ? (Date.parse(u.searchParams.get("end_date")) - Date.parse(past)) / 86400000 + 1 : Number(u.searchParams.get("forecast_days"));
+  const seed = (u.searchParams.get("models") || "past").length, now = new Date();
+  if (past) { pastCalls++; pastUrls.push(url); }
   const out = lats.map(() => {
     const h = { time: [], temperature_2m: [], apparent_temperature: [], precipitation: [], precipitation_probability: [],
       weather_code: [], wind_speed_10m: [], wind_direction_10m: [], wind_gusts_10m: [], sunshine_duration: [], cloud_cover: [] };
     for (let i = 0; i < days * 24; i++) {
-      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate(), i), hr = i % 24, day = Math.floor(i / 24);
+      const d = past ? new Date(Date.parse(past) + i * 3600000) : new Date(now.getFullYear(), now.getMonth(), now.getDate(), i);
+      const hr = past ? d.getUTCHours() : i % 24, day = Math.floor(i / 24);
       const rain = day % 3 === 1 && hr > 12 && hr < 16 ? 1.2 + (seed % 2) : 0;
-      h.time.push(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:00`);
+      h.time.push(past ? d.toISOString().slice(0, 16) : `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:00`);
       h.temperature_2m.push(10 + 6 * Math.sin(((hr - 9) / 24) * 2 * Math.PI) + (seed % 3));
       h.apparent_temperature.push(8 + 6 * Math.sin(((hr - 9) / 24) * 2 * Math.PI));
       h.precipitation.push(rain);
@@ -77,7 +82,7 @@ await ctx.route("**/*", (route) => {
   const url = route.request().url();
   if (url.startsWith("http://127.0.0.1")) return route.continue();
   if (LIB[url]) return route.fulfill({ body: fs.readFileSync(LIB[url]), contentType: url.endsWith(".css") ? "text/css" : "text/javascript" });
-  if (url.includes("api.open-meteo.com/v1/forecast")) return route.fulfill({ json: forecast(url) });
+  if (url.includes("api.open-meteo.com/v1/forecast") || url.includes("archive-api.open-meteo.com")) return route.fulfill({ json: forecast(url) });
   if (url.includes("bigdatacloud")) return route.fulfill({ json: { city: "Town " + new URL(url).searchParams.get("longitude").slice(0, 4) } });
   if (url.includes("overpass")) {
     const q = decodeURIComponent(route.request().postData().replace(/^data=/, "").replace(/\+/g, " "));
@@ -100,7 +105,7 @@ await ctx.route("**/*", (route) => {
   if (url.endsWith(".png")) return route.fulfill({ body: PNG, contentType: "image/png" });
   return route.fulfill({ status: 404, body: "" });
 });
-let campElements = [], campQueries = [];
+let campElements = [], campQueries = [], pastCalls = 0, pastUrls = [];
 let brouterCalls = [], brouterHill = null, brouterDown = false;   // BRouter mock   // what the campsite search returns / was asked
 const page = await ctx.newPage();
 const errors = [];
@@ -209,8 +214,8 @@ await test("next stage offers Today / Tomorrow / In N days", async () => {
   assert.match(opts[0], /^Today/); assert.match(opts[1], /^Tomorrow/); assert.match(opts[2], /^In 2 days/);
 });
 await test("coming days list shows weather and a GPX button per day", async () => {
-  assert.equal(await page.locator(".day-row").count(), 4);
-  assert.match(await page.locator(".day-row").first().innerText(), /°.*☔/s);
+  assert.equal(await page.locator("#coming .day-row").count(), 4);
+  assert.match(await page.locator("#coming .day-row").first().innerText(), /°.*☔/s);
 });
 await test("dragging the position slider is logged once, not step by step", async () => {
   await ev(() => { $("settings").open = true; });
@@ -249,6 +254,7 @@ await test("your average is only used when switched on, and changing km/day swit
 await test("a day can be removed from the ride log (and restored with Undo)", async () => {
   const d = await ev(() => addDays(todayStr(), -1));
   await ev(() => { $("sec-done").open = true; });
+  await page.click(`[data-open-done="${d}"] .dr-main`);
   await page.click(`[data-del-day="${d}"]`);
   assert.equal(await ev((d) => d in S.days, d), false);
   await page.click("#undoBtn");
@@ -266,7 +272,7 @@ await test("the chosen start day survives a reload", async () => {
   await page.waitForTimeout(1000);
 });
 await test("the GPX button in the coming days opens a preview of the GPX, without opening the day", async () => {
-  await page.locator(".day-row button[data-gpx]").first().click();
+  await page.locator("#coming .day-row button[data-gpx]").first().click();
   assert.equal(await ev(() => $("gpxSheet").open), true);
   assert.match(await page.textContent("#gpxSheetText"), /^<\?xml[\s\S]*<trkpt lat=[\s\S]*more lines$/);
   assert.match(await page.textContent("#gpxSheetInfo"), /stage-\d+-\d{4}-\d\d-\d\d\.gpx · .* km · .* track points/);
@@ -321,7 +327,7 @@ await test("today's card has a single GPX share button and shows sunrise and sun
   assert.match(await page.locator("#next .stage-head").innerText(), /🌅 \d\d:\d\d · 🌇 \d\d:\d\d/);
 });
 await test("every coming day shows sunrise and sunset", async () => {
-  const rows = await page.locator(".day-row .dr-route").allInnerTexts();
+  const rows = await page.locator("#coming .day-row .dr-route").allInnerTexts();
   assert.ok(rows.length > 0);
   for (const r of rows) assert.match(r, /🌅 \d\d:\d\d 🌇 \d\d:\d\d/);
 });
@@ -402,7 +408,7 @@ await test("an uploaded ride counts as you rode it: real km in Completed, the to
   assert.ok(d.real.km > 32 && d.real.km < 33.5, "recorded km " + d.real.km);
   assert.ok(Math.abs(d.km - 30) < 0.5, "planned km " + d.km);
   await ev(() => { $("sec-done").open = true; });
-  assert.match(await page.locator("#done-list tbody tr").first().innerText(), /📍\s*3[23][.,]\d/);
+  assert.match(await page.locator("#done-list .day-row").first().innerText(), /3[23] km[\s\S]*📍 recorded/);
   const total = await ev(() => tourKm()), planned = await ev(() => S.track.total / 1000);
   assert.ok(Math.abs(total - (planned + d.real.km - 30)) < 0.6, `tour total ${total} vs planned ${planned}`);
   assert.match(await page.textContent("#progress"), /Ridden\s*3[23] of [\d.,]+ km · planned/);
@@ -423,7 +429,12 @@ await test("several GPX files of one day add up; the same file twice counts once
   assert.equal(again.rec.parts.length, 2);
   assert.ok(Math.abs(again.real.km - one[0].real.km) < 0.01);
   assert.match(await page.textContent("#status"), /replaced/);
-  const [dl] = await Promise.all([page.waitForEvent("download"), page.locator("#done-list [data-done-gpx]").first().click()]);
+  await ev(() => { $("sec-done").open = true; });
+  if (!(await page.locator("#done-list .day-detail").count())) await page.locator("#done-list .day-row .dr-main").first().click();
+  await page.locator("#done-list [data-done-gpx]").first().click();
+  assert.match(await page.textContent("#gpxSheetTitle"), /Day 1 \(as ridden\)/);
+  const [dl] = await Promise.all([page.waitForEvent("download"), page.click("#gpxSheetShare")]);
+  await ev(() => $("gpxSheet").close());
   const gpx = fs.readFileSync(await dl.path(), "utf8");
   assert.equal((gpx.match(/<trkseg>/g) || []).length, 2, "the recorded GPX has both parts");
   assert.match(gpx, /as ridden/);
@@ -489,8 +500,8 @@ await test("a ride with heart rate, power and cadence shows them in Completed, w
   assert.ok(Math.abs(r.pAvg - 200) < 3 && r.pMax === 250, "power " + r.pAvg);
   assert.ok(Math.abs(r.np - (((150 ** 4 + 250 ** 4) / 2) ** 0.25)) < 3, "normalized power " + r.np);   // ≈ 217 W
   assert.ok(Math.abs(r.cad - 85) < 0.5 && Math.abs(r.vAvg - 20) < 0.5 && r.vMax < 22, `cadence ${r.cad}, speed ${r.vAvg}/${r.vMax}`);
-  await ev(() => { $("sec-done").open = true; });
-  await page.locator("#done-list [data-ride-open]").click();
+  await ev(() => { $("sec-done").open = true; doneOpen.clear(); renderDone(); });
+  await page.locator("#done-list .day-row .dr-main").first().click();
   const text = await page.locator("#done-list .ride-detail").innerText();
   assert.match(text, /❤️ Heart rate\s*14\d bpm\s*average · max 150/);
   assert.match(text, /⚡ Power\s*(199|200|201) W\s*average · normalized \d+ · max 250/);
@@ -515,8 +526,8 @@ await test("a ride with heart rate, power and cadence shows them in Completed, w
   await page.waitForTimeout(300);
   assert.match(await page.textContent("#done-list .tc-readout"), /^km 15[.,]\d · ⛰️ 300 m · 📐 [+]?0[.,]0 % · 🚴 20[.,]\d km\/h · ❤️ 1[34]\d bpm · ⚡ 250 W · 🔄 85 rpm$/);
   assert.equal(await ev(() => document.querySelectorAll("#done-list .day-map-el .leaflet-interactive").length), 2, "track + position marker on the ride's map");
-  await page.locator("#done-list [data-ride-open]").click();
-  assert.equal(await page.locator("#done-list .ride-detail").count(), 0, "📈 closes the details again");
+  await page.locator("#done-list .day-row .dr-main").first().click();
+  assert.equal(await page.locator("#done-list .ride-detail").count(), 0, "tapping the day again closes it");
 });
 await test("a planned day shows its elevation profile coloured by gradient", async () => {
   await ev(() => { const d = document.querySelector("#next details[data-more]"); d.open = true; });
@@ -545,9 +556,9 @@ await test("a planned day shows its elevation profile coloured by gradient", asy
   await ev(() => { document.querySelector("#next details[data-more]").open = false; });
 });
 await test("a ride uploaded by an older version asks for the GPX again instead of showing nothing", async () => {
-  await ev(() => { const e = Object.values(S.days)[0]; e.rec.parts.forEach((p) => delete p.metrics); rideOpen.add(Object.keys(S.days)[0]); renderDone(); });
+  await ev(() => { const e = Object.values(S.days)[0]; e.rec.parts.forEach((p) => delete p.metrics); doneOpen.add(Object.keys(S.days)[0]); renderDone(); });
   assert.match(await page.locator("#done-list .ride-detail").innerText(), /Upload the GPX of .* again/);
-  await ev(() => { rideOpen.clear(); S.days = {}; setStartKm(0, true, false); });
+  await ev(() => { doneOpen.clear(); S.days = {}; setStartKm(0, true, false); });
 });
 // A FIT activity file as a bike computer writes it: file_id, then records. Records alternate between a full
 // timestamp (big-endian definition, with a developer field) and a compressed timestamp header.
@@ -617,6 +628,52 @@ await test("several files can be picked at once; a FIT without GPS is refused wi
   assert.match(await page.textContent("#status"), /No positions found in this FIT file \(recorded without GPS\?\)/);
   await ev(() => { S.days = {}; setStartKm(0, true, false); });
 });
+await test("a ridden day opens like a coming day: the weather where and when you rode, hour by hour, and the night", async () => {
+  await ev(() => { S.days = {}; doneOpen.clear(); setStartKm(0, true, false); $("sec-done").open = false; });
+  const y = new Date(); y.setDate(y.getDate() - 2); y.setHours(8, 0, 0, 0);
+  await upload("long.gpx", await rideAlong(0, 60, y.getTime()));   // 60 km, 8:00 to 11:00
+  const n0 = pastCalls;
+  await ev(() => { $("sec-done").open = true; });
+  await page.waitForFunction(() => /°/.test(document.querySelector("#done-list .day-row").innerText));
+  assert.equal(pastCalls, n0 + 1, "one request for the day");
+  const u = new URL(pastUrls.at(-1));
+  assert.equal(u.searchParams.get("start_date"), y.toISOString().slice(0, 10));
+  assert.equal(u.searchParams.get("timezone"), "GMT");
+  assert.ok(u.searchParams.get("latitude").split(",").length >= 3, "the places you were at during the ride");
+  assert.match(await page.locator("#done-list .day-row").first().innerText(), /60 km · ⏱ 3:00 h[\s\S]*\d+–\d+°[\s\S]*☔[\s\S]*Day 1 ·.*📍 recorded/);
+  await page.locator("#done-list .day-row .dr-main").first().click();
+  const card = await page.locator("#done-list .day-inline").innerText();
+  const [c0, c1, h0] = await ev((t) => [fmtClock(t), fmtClock(t + 3 * 3600000), pad(new Date(t).getHours())], y.getTime());   // in the browser's time zone
+  assert.ok(card.includes(` · ${c0} → ${c1} · 🌅 `), card.split("\n")[0]);
+  assert.match(card, /🌅 \d\d:\d\d · 🌇 \d\d:\d\d/);
+  assert.match(card, /📏 Distance\s*60[.,]0 km/);
+  assert.match(card, /⏱️ On the road\s*3:00 h/);
+  assert.match(card, /Weather\s*\d+–\d+°\s*☔ [\d.,]+ mm · ☁️ \d+ %/);
+  assert.match(card, /💨 Wind\s*\d+ km\/h [NESW]+\s*\d+ km\/h (head|tail)wind/);
+  assert.equal(await page.locator("#done-list .day-inline .hcell").count(), 3, "three hours of riding");
+  assert.match(await page.locator("#done-list .day-inline .hcell").first().innerText(), new RegExp(`${h0}h[\\s\\S]*°[\\s\\S]*km 10`));
+  assert.match(card, /🌙 Night at the end · low -?\d+ °C/);
+  assert.match(card, /Weather: what the weather model \(Open-Meteo\) shows/);
+  assert.equal(await page.locator("#done-list .day-inline [data-done-gpx]").count(), 1);
+  assert.equal(await page.locator("#done-list .day-inline .day-map-el").count(), 1, "the map of the ride");
+  // kept on the device: no new request after a reload
+  await page.reload();
+  await page.waitForFunction(() => S.stages.length > 0);
+  await ev(() => { $("sec-done").open = true; });
+  await page.waitForFunction(() => /°/.test(document.querySelector("#done-list .day-row").innerText));
+  assert.equal(pastCalls, n0 + 1, "cached");
+});
+await test("a day without a recording uses the planned route and times, marked as estimated", async () => {
+  const d = await ev(() => addDays(todayStr(), -1));
+  await ev((d) => { S.days[d] = { start: 60, end: 100, closed: true }; setStartKm(100, true, false); doneOpen.clear(); doneOpen.add(d); renderDone(); }, d);
+  await page.waitForFunction((d) => /\d+–\d+°/.test(document.querySelector(`[data-done-card="${d}"]`)?.innerText || ""), d);
+  const card = await page.locator(`[data-done-card="${d}"]`).innerText();
+  assert.match(card, /09:00 → \d\d:\d\d \(estimated\)/);
+  assert.match(card, /⏱️ On the road\s*≈ \d+:\d\d h\s*estimated – no recording/);
+  assert.match(card, /📍\s*Add recording/);
+  assert.equal(await page.locator(`[data-done-card="${d}"] .day-map-el`).count(), 1, "the planned route of that day on a map");
+  await ev(() => { S.days = {}; doneOpen.clear(); setStartKm(0, true, false); $("sec-done").open = false; return saveTourSettings(); });
+});
 await test("replacing the route keeps the ridden days and uploaded rides, placed on the new route", async () => {
   const y = new Date(); y.setDate(y.getDate() - 1); y.setHours(9, 0, 0, 0);
   await upload("day1.gpx", await rideAlong(0, 40, y.getTime()));
@@ -679,7 +736,7 @@ await test("a new route that starts where you are keeps the ridden part in front
 });
 await test("tapping a coming day opens it in place with its own route map, without jumping down", async () => {
   await ev(() => window.scrollTo(0, 0));
-  const k = await ev(() => Number(document.querySelectorAll(".day-row")[1].dataset.openStage));
+  const k = await ev(() => Number(document.querySelectorAll("#coming .day-row")[1].dataset.openStage));
   const row = page.locator(`.day-row[data-open-stage="${k}"] .dr-main`);   // re-found after every re-render
   await ev((k) => document.querySelector(`.day-row[data-open-stage="${k}"]`).scrollIntoView({ block: "center" }), k);
   await page.waitForTimeout(300);
@@ -698,7 +755,7 @@ await test("tapping a coming day opens it in place with its own route map, witho
   await ev(() => render());
   assert.equal(await page.locator(".day-detail").count(), 1);
   assert.equal(await ev(() => document.querySelector(".day-detail .day-map-el")._leaflet_id), mapId);
-  await page.locator(".day-row.open .dr-main").click();
+  await page.locator("#coming .day-row.open .dr-main").click();
   await page.waitForTimeout(200);
   assert.equal(await page.locator(".day-detail").count(), 0);
 });
@@ -744,7 +801,7 @@ await test("your exact case: old 'use my average' setting + 33 km days, distance
   const kms = await ev(() => S.stages.slice(0, -1).map((s) => Math.round(s.km)));
   assert.ok(kms.every((k) => k === 110), "stage km: " + kms);
   assert.match(await page.locator("#next .next-card").innerText(), /110\.0 km/);
-  assert.match(await page.locator(".day-row").first().innerText(), /110 km/);
+  assert.match(await page.locator("#coming .day-row").first().innerText(), /110 km/);
 });
 
 // Every setting must change the plan and every view of it (today card, coming days, table, summary).

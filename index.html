@@ -521,7 +521,7 @@
 /* ---------- Configuration ---------- */
 
 // Bump with every release (and VERSION in sw.js): the app compares it with the published page to offer updates.
-const APP_VERSION = "2026-10-19.1";
+const APP_VERSION = "2026-10-19.2";
 
 // days = forecast_days requested from Open-Meteo, roughly the model's real horizon.
 const MODELS = [
@@ -3334,37 +3334,242 @@ function renderDone() {
       <div class="btn-row"><label class="button" for="rideFile">📤 Upload a ridden day (GPX or FIT)</label></div>`;
     return;
   }
-  const rows = days.map((d, i) => `<tr>
-    <td>${d.no ? `<b>${d.no}</b>` : ""}</td>
-    <td>${d.date ? fmtDate(d.date) : `<span class="muted">not logged</span>`}</td>
-    <td class="opt">${stageTitle(d)}</td>
-    <td class="r num" title="${d.rec ? `recorded${d.rec.parts && d.rec.parts.length > 1 ? ` (${d.rec.parts.length} files)` : ""} · planned route: ${fmt(d.km, 1)} km` : "along the planned route"}">${d.rec ? "📍" : ""}${fmt(d.real.km, 1)}</td>
-    <td class="r num">${fmt(d.real.up, 0)}</td>
-    <td class="r num opt">${fmt(d.real.down, 0)}</td>
-    <td class="r num">${d.rec && d.rec.elapsedH ? fmtDuration(d.rec.elapsedH) : d.real.km < 0.05 ? "rest day" : "–"}</td>
-    <td class="r num opt">${d.rec && d.rec.elapsedH ? fmt(d.real.km / d.rec.elapsedH, 1) : "–"}</td>
-    <td class="r">${d.real.km >= 0.05 ? `<button type="button" data-done-gpx="${i}" title="${d.rec ? "The GPX of how you rode this day" : "Download the GPX of this part"}" style="min-height:32px;padding:4px 10px;font-size:.85rem">⬇ GPX</button>` : ""}
-      ${d.rec ? `<button type="button" data-ride-open="${d.date}" aria-expanded="${rideOpen.has(d.date)}" title="Speed, heart rate and power of this ride" aria-label="Details of ${fmtDate(d.date)}" style="min-height:32px;padding:4px 10px;font-size:.85rem">📈</button>` : ""}
-      ${d.date ? `<button type="button" data-del-day="${d.date}" title="Remove this day from the ride log" aria-label="Remove ${fmtDate(d.date)}" style="min-height:32px;padding:4px 10px;font-size:.85rem">✕</button>` : ""}</td>
-  </tr>`).join("");
-  // Opened ride details go below the table, at the full width of the card.
-  const details = days.filter((d) => d.rec && rideOpen.has(d.date)).map((d) =>
-    `<div class="ride-detail"><b>📈 ${fmtDate(d.date)}${d.no ? ` · day ${d.no}` : ""}</b>${rideDetail(d)}</div>`).join("");
-  host.innerHTML = `<div class="table-wrap"><table>
-      <thead><tr><th>#</th><th>Date</th><th class="opt">Route</th><th class="r">km</th><th class="r">↑ m</th><th class="r opt">↓ m</th>
-        <th class="r" title="time on the road (recorded rides)">Time</th><th class="r opt">km/h</th><th></th></tr></thead>
-      <tbody>${rows}</tbody></table></div>
-    ${details}
-    <div class="small muted" style="margin-top:8px">📍 = as you rode it (from the GPX you uploaded; several files of one day are added up).
-      Other days: km and climb along the planned route. Time and speed come from your uploads
-      (first to last point, incl. breaks). ✕ removes a day from the log, e.g. one you ended by mistake.</div>
+  // The weather of the ridden days is looked up while the list is open (once per day, then kept).
+  if ($("sec-done").open) for (const d of days) if (d.date && d.real.km >= 0.05) queuePastWeather(d);
+  const rows = days.map((d, i) => {
+    const key = doneKey(d, i), open = doneOpen.has(key);
+    const pw = d.date ? pastWx.get(pastKey(d)) : null;
+    const m = pw && pw.state === "ok" ? pw.m : null;
+    const [icon, text] = m ? wxInfo(m.code) : [];
+    const wxText = !d.date ? `<span class="muted">not logged – no date</span>`
+      : d.real.km < 0.05 ? "😴 rest day"
+      : m ? `<span class="wx-ico" title="${esc(text)}">${icon}</span> <b class="num">${fmt(m.tmin, 0)}–${fmt(m.tmax, 0)}°</b>` +
+        ` · <span class="${(m.rain ?? 0) >= 1 ? "rainy" : ""}">☔ ${fmt(m.rain, 1)}</span>${headShort(m.head)}`
+      : pw && pw.state === "error" ? `<span class="muted">weather not available</span>` : `<span class="muted">weather …</span>`;
+    const time = d.rec && d.rec.elapsedH ? ` · ⏱ ${fmtDuration(d.rec.elapsedH)}` : "";
+    return `<li class="day-row${open ? " open" : ""}" data-open-done="${key}" tabindex="0" role="button" aria-expanded="${open}"
+        aria-label="${d.date ? fmtDate(d.date) : "Not logged"}: ${open ? "hide" : "show"} details">
+      <div class="dr-main">
+        <div class="dr-line"><b>${d.date ? fmtDate(d.date) : "Not logged"}</b> <span class="small"><b class="num">${fmt(d.real.km, d.real.km < 10 ? 1 : 0)} km</b>${time}</span></div>
+        <div class="small dr-line">${wxText}</div>
+        <div class="small muted dr-route">${d.no ? `Day ${d.no} · ` : ""}${stageTitle(d)} · ↑ ${fmt(d.real.up, 0)} m${d.rec ? " · 📍 recorded" : ""}</div>
+      </div>
+      <span class="dr-chev" aria-hidden="true">${open ? "▴" : "▾"}</span>
+    </li>${open ? `<li class="day-detail">${doneCard(d, i)}</li>` : ""}`;
+  }).join("");
+  host.innerHTML = `<ul class="day-list">${rows}</ul>
+    <div class="small muted" style="margin-top:8px">Tap a day for everything about it. 📍 = as you rode it (from the GPX or FIT you uploaded;
+      several files of one day are added up); other days along the planned route.</div>
     <div class="btn-row"><label class="button" for="rideFile">📤 Add a ridden day (GPX or FIT of your ride)</label></div>`;
   attachRideMaps();
   attachTrackCharts();
 }
 
+const doneOpen = new Set();   // opened days in the Completed list
+const doneKey = (d, i) => d.date || `nl${i}`;
+const headShort = (h) => h == null ? "" : Math.abs(h) < 3 ? " · 💨 calm"
+  : h > 0 ? ` · <span title="headwind">💨 ↓${fmt(h, 0)}</span>` : ` · <span title="tailwind">💨 ↑${fmt(-h, 0)}</span>`;
+
+function toggleDone(key) {
+  if (doneOpen.has(key)) doneOpen.delete(key); else doneOpen.add(key);
+  renderDone();
+}
+
+// A ridden day, laid out like the coming days: what it was really like.
+function doneCard(d, i) {
+  const tile = (k, v, sub) => `<div class="tile"><div class="k">${k}</div><div class="v num">${v}</div><div class="s">${sub}</div></div>`;
+  const tl = d.date && d.real.km >= 0.05 ? dayTimeline(d) : null;
+  const pw = d.date ? pastWx.get(pastKey(d)) : null;
+  const m = pw && pw.state === "ok" ? pw.m : null;
+  const sun = d.date ? sunTimes(d.endPt.lat, d.endPt.lon, d.date, -new Date(d.date + "T12:00").getTimezoneOffset() * 60) : null;
+  const [icon, text] = m ? wxInfo(m.code) : ["🌦️", ""];
+  const weatherTile = m
+    ? tile(`${icon} Weather`, `${fmt(m.tmin, 0)}–${fmt(m.tmax, 0)}°`,
+      `☔ ${fmt(m.rain, 1)} mm${m.cloud != null ? ` · ☁️ ${fmt(m.cloud, 0)} %` : ""} · ${text}`)
+    : tile("🌦️ Weather", "–", !d.date ? "no date" : pw && pw.state === "error" ? esc(pw.err) : tl ? "loading …" : "");
+  const windTile = m && m.head != null
+    ? tile("💨 Wind", `${fmt(m.speed, 0)} km/h ${compass(m.dir)}`, Math.abs(m.head) < 3 ? "hardly head- or tailwind"
+      : m.head > 0 ? `${fmt(m.head, 0)} km/h headwind` : `${fmt(-m.head, 0)} km/h tailwind`)
+    : tile("💨 Wind", "–", "");
+  const onRoad = d.rec && d.rec.elapsedH
+    ? tile("⏱️ On the road", fmtDuration(d.rec.elapsedH), d.rec.movingH ? `🚴 ${fmtDuration(d.rec.movingH)} + ☕ ${fmtDuration(Math.max(0, d.rec.elapsedH - d.rec.movingH))}` : "")
+    : tile("⏱️ On the road", tl ? `≈ ${fmtDuration((tl.t1 - tl.t0) / 3600000)}` : "–", tl ? "estimated – no recording" : "");
+  const strip = m && pw.hours.length > 1 ? `<div class="hstrip" aria-label="Hour by hour where you were">${pw.hours.map((h) => `<div class="hcell" title="${fmtClock(h.t)} · km ${fmt(h.km, 0)}">
+      <div class="small muted">${pad(new Date(h.t).getHours())}h</div>
+      <div class="hico">${wxInfo(h.code == null ? null : Math.round(h.code))[0]}</div>
+      <div><b>${fmt(h.temp, 0)}°</b></div>
+      <div class="small ${h.rain >= 0.1 ? "rainy" : "muted"}">${h.rain >= 0.1 ? "☔" + fmt(h.rain, 1) : "–"}</div>
+      <div class="small muted">${h.head == null || Math.abs(h.head) < 3 ? "·" : h.head > 0 ? "↓" + fmt(h.head, 0) : "↑" + fmt(-h.head, 0)}</div>
+      <div class="small muted">km ${fmt(h.km, 0)}</div></div>`).join("")}</div>` : "";
+  const summary = m ? `<div class="summary-box day-summary"><span class="wx">${icon}</span> <strong>${text} · ${fmt(m.tmin, 0)}–${fmt(m.tmax, 0)} °C</strong>
+      ${m.feelMin != null ? `(felt like ${fmt(m.feelMin, 0, " °C")} at the coldest)` : ""} · rain ${fmt(m.rain, 1, " mm")} ·
+      wind ${arrow(m.dir)} ${fmt(m.speed, 0)} km/h from ${compass(m.dir)}, gusts up to ${fmt(m.gust, 0, " km/h")} ·
+      ${headText(m.head)} · sunshine ${fmt(m.sun, 1, " h")}</div>
+    ${pw.night ? `<div class="summary-box night-summary">🌙 <strong>Night at the end</strong> · low ${fmt(pw.night.min, 0, " °C")} · rain ${fmt(pw.night.rain, 1, " mm")}</div>` : ""}` : "";
+  return `<section class="day-inline" data-done-card="${doneKey(d, i)}">
+    <p class="small muted" style="margin:0 0 4px">${d.no ? `Day ${d.no}` : "Not logged"} · ${stageTitle(d)}${tl ? ` · ${fmtClock(tl.t0)} → ${fmtClock(tl.t1)}${tl.estimated ? " (estimated)" : ""}` : ""}${sunText(sun)}</p>
+    <div class="tiles" style="margin-top:12px">
+      ${tile("📏 Distance", fmt(d.real.km, 1, " km"), `↑ ${fmt(d.real.up, 0)} m · ↓ ${fmt(d.real.down, 0)} m${d.rec && Math.abs(d.real.km - d.km) >= 0.5 ? ` · planned ${fmt(d.km, 1)} km` : ""}`)}
+      ${onRoad}
+      ${weatherTile}
+      ${windTile}
+    </div>
+    ${strip}
+    ${summary}
+    ${d.rec ? `<div class="ride-detail">${rideDetail(d)}</div>` : `<div data-ride-map="route:${Math.round(d.a)}-${Math.round(d.b)}"></div>`}
+    <div class="btn-row icons">
+      ${d.real.km >= 0.05 ? `<button type="button" data-done-gpx="${i}" title="${d.rec ? "The GPX of how you rode this day" : "The GPX of this part of the route"}">📤<span>Share GPX</span></button>` : ""}
+      ${d.rec ? "" : `<label class="button" for="rideFile" title="Upload the GPX or FIT you recorded that day">📍<span>Add recording</span></label>`}
+      ${d.date ? `<button type="button" data-del-day="${d.date}" title="Remove this day from the ride log" aria-label="Remove ${fmtDate(d.date)}">✕<span>Remove day</span></button>` : ""}
+    </div>
+    ${m ? `<p class="small muted" style="margin:8px 0 0">Weather: what the weather model (Open-Meteo) shows for the hours and places you rode${tl && tl.estimated ? " (times estimated from the plan)" : ""} – it can differ locally.</p>` : ""}
+  </section>`;
+}
+
+/* ---------- Weather of the ridden days: where you were at each hour (Open-Meteo, looked up afterwards) ---------- */
+
+const pastWx = new Map();      // pastKey -> { state: "loading"|"ok"|"error", hours, m, night, err }
+const pastQueue = [];
+let pastBusy = false;
+const pastKey = (d) => `${d.date}|${d.rec ? `${d.rec.km.toFixed(2)}|${(d.rec.parts || []).length}` : `${Math.round(d.a)}-${Math.round(d.b)}`}`;
+
+// Where you were at any time of a ridden day: the recording, or the planned route at the planned times.
+function dayTimeline(d) {
+  const parts = d.rec ? (d.rec.parts || [d.rec]).filter((p) => p.line && p.line.length > 1 && p.startTime != null && p.endTime > p.startTime)
+    .sort((x, y) => x.startTime - y.startTime) : [];
+  if (parts.length) {
+    let off = 0;
+    const segs = parts.map((p) => {
+      const cum = [0];
+      for (let i = 1; i < p.line.length; i++) cum.push(cum[i - 1] + haversine({ lat: p.line[i - 1][0], lon: p.line[i - 1][1] }, { lat: p.line[i][0], lon: p.line[i][1] }));
+      const seg = { p, cum, off };
+      off += cum[cum.length - 1];
+      return seg;
+    });
+    const at = (seg, f) => {
+      const { p, cum } = seg, want = f * cum[cum.length - 1];
+      let k = 1;
+      while (k < cum.length - 1 && cum[k] < want) k++;
+      const g = (want - cum[k - 1]) / (cum[k] - cum[k - 1] || 1);
+      const a = p.line[k - 1], b = p.line[k];
+      return { lat: a[0] + (b[0] - a[0]) * g, lon: a[1] + (b[1] - a[1]) * g, km: (seg.off + want) / 1000 };
+    };
+    return {
+      t0: parts[0].startTime, t1: parts[parts.length - 1].endTime, estimated: false,
+      pos: (t) => {
+        let seg = segs[0];
+        for (const s2 of segs) if (s2.p.startTime <= t) seg = s2;
+        return at(seg, Math.max(0, Math.min(1, (t - seg.p.startTime) / (seg.p.endTime - seg.p.startTime))));
+      },
+    };
+  }
+  // No recording with times: the planned route, leaving at the departure time with the planned riding time.
+  const [h, mi] = S.dep.split(":").map(Number);
+  const t0 = new Date(`${d.date}T${pad(h)}:${pad(mi)}:00`).getTime();
+  const mp = modelParams();
+  const t1 = t0 + movingTime(d.a, d.b, mp.P, mp.mass) * mp.breaks * 3600000;
+  return {
+    t0, t1, estimated: true,
+    pos: (t) => { const f = Math.max(0, Math.min(1, (t - t0) / (t1 - t0 || 1))); const p = pointAt(S.track, d.a + (d.b - d.a) * f); return { lat: p.lat, lon: p.lon, km: ((d.b - d.a) * f) / 1000 }; },
+  };
+}
+
+function queuePastWeather(d) {
+  const key = pastKey(d);
+  if (pastWx.has(key) || pastQueue.some((x) => pastKey(x) === key)) return;
+  pastQueue.push(d);
+  if (!pastBusy) runPastQueue();
+}
+
+async function runPastQueue() {
+  pastBusy = true;
+  while (pastQueue.length) {
+    const d = pastQueue.shift();
+    await loadPastWeather(d);
+    renderDone();
+  }
+  pastBusy = false;
+}
+
+const PAST_VARS = ["temperature_2m", "apparent_temperature", "precipitation", "weather_code", "wind_speed_10m", "wind_direction_10m",
+  "wind_gusts_10m", "cloud_cover", "sunshine_duration"];
+const utcKey = (t) => new Date(t).toISOString().slice(0, 13) + ":00";
+
+async function loadPastWeather(d) {
+  const key = pastKey(d), idbKey = `past|${S.tourId}|${key}`;
+  const cached = await idb.get(idbKey);
+  if (cached) { pastWx.set(key, cached); return; }
+  pastWx.set(key, { state: "loading" });
+  try {
+    const tl = dayTimeline(d);
+    const H = 3600000;
+    // One point per hour: where you were in the middle of it, and the direction you were riding.
+    const slots = [];
+    for (let h = Math.floor(tl.t0 / H) * H; h < tl.t1; h += H) {
+      const from = Math.max(h, tl.t0), to = Math.min(h + H, tl.t1), mid = (from + to) / 2;
+      if (to <= from) continue;
+      const p = tl.pos(mid), a = tl.pos(Math.max(tl.t0, mid - 600000)), b = tl.pos(Math.min(tl.t1, mid + 600000));
+      slots.push({ h, weight: (to - from) / H, p, brg: a.lat === b.lat && a.lon === b.lon ? null : bearing(a, b) });
+    }
+    const end = tl.pos(tl.t1);
+    const locs = [], locOf = (p) => {
+      const k = `${p.lat.toFixed(2)},${p.lon.toFixed(2)}`;
+      let i = locs.findIndex((x) => x.k === k);
+      if (i < 0) { locs.push({ k, lat: p.lat, lon: p.lon }); i = locs.length - 1; }
+      return i;
+    };
+    slots.forEach((sl) => { sl.loc = locOf(sl.p); });
+    const endLoc = locOf(end);
+    const day = (t) => new Date(t).toISOString().slice(0, 10);
+    const nightEnd = new Date(`${d.date}T07:00:00`).getTime() + 86400000;
+    const last = Math.min(Date.now(), Math.max(tl.t1, nightEnd));
+    const old = Date.now() - tl.t0 > 80 * 86400000;   // the forecast API keeps about three months; older days from the archive
+    const url = `https://${old ? "archive-api.open-meteo.com/v1/archive" : "api.open-meteo.com/v1/forecast"}?latitude=${locs.map((l) => l.lat.toFixed(3)).join(",")}` +
+      `&longitude=${locs.map((l) => l.lon.toFixed(3)).join(",")}&hourly=${PAST_VARS.join(",")}&timezone=GMT&start_date=${day(tl.t0)}&end_date=${day(last)}`;
+    let data = await fetchJson(url);
+    if (!Array.isArray(data)) data = [data];
+    const series = data.map((e) => ({ idx: new Map(e.hourly.time.map((t, i) => [t, i])), h: e.hourly }));
+    const val = (loc, k, t) => { const e = series[loc]; const i = e && e.idx.get(utcKey(t)); return i == null || e.h[k] == null ? null : e.h[k][i]; };
+    const hours = slots.map((sl) => {
+      const speed = val(sl.loc, "wind_speed_10m", sl.h), dir = val(sl.loc, "wind_direction_10m", sl.h);
+      const rain = val(sl.loc, "precipitation", sl.h + H), sunS = val(sl.loc, "sunshine_duration", sl.h + H);
+      return {
+        t: sl.h, weight: sl.weight, km: sl.p.km,
+        temp: val(sl.loc, "temperature_2m", sl.h), feel: val(sl.loc, "apparent_temperature", sl.h),
+        rain: rain == null ? null : rain * sl.weight, code: val(sl.loc, "weather_code", sl.h),
+        speed, dir, gust: val(sl.loc, "wind_gusts_10m", sl.h), cloud: val(sl.loc, "cloud_cover", sl.h),
+        sun: sunS == null ? null : (sunS / 3600) * sl.weight,
+        head: speed != null && dir != null && sl.brg != null ? speed * Math.cos((dir - sl.brg) * rad) : null,
+      };
+    }).filter((x) => x.temp != null);
+    if (!hours.length) throw new Error("no data for that day");
+    const vals = (k) => clean(hours.map((x) => x[k]));
+    const wavg = (k) => { const ok = hours.filter((x) => x[k] != null), w = sum(ok.map((x) => x.weight)); return w ? sum(ok.map((x) => x[k] * x.weight)) / w : null; };
+    const m = {
+      tmin: Math.min(...vals("temp")), tmax: Math.max(...vals("temp")),
+      feelMin: vals("feel").length ? Math.min(...vals("feel")) : null,
+      rain: sum(vals("rain")), speed: wavg("speed"), head: wavg("head"),
+      dir: meanDir(hours.map((x) => x.dir), hours.map((x) => (x.speed || 0) * x.weight)),
+      gust: vals("gust").length ? Math.max(...vals("gust")) : null, cloud: wavg("cloud"), sun: sum(vals("sun")),
+      code: vals("code").length ? Math.max(...vals("code")) : null,
+    };
+    // The night at the end of the day: 19:00 to 07:00 (local time), where you slept.
+    const nT = [], nR = [];
+    for (let t = new Date(`${d.date}T19:00:00`).getTime(); t < nightEnd; t += H) {
+      nT.push(val(endLoc, "temperature_2m", t)); nR.push(val(endLoc, "precipitation", t + H));
+    }
+    const night = clean(nT).length >= 6 ? { min: Math.min(...clean(nT)), rain: sum(clean(nR)) } : null;
+    const res = { state: "ok", hours, m, night, fetched: Date.now() };
+    pastWx.set(key, res);
+    // Keep it: the past doesn't change any more once the day (and its night) is over.
+    if (Date.now() > nightEnd + 3 * H) idb.set(idbKey, res);
+  } catch (e) {
+    console.warn(e);
+    pastWx.set(key, { state: "error", err: navigator.onLine === false ? "offline – shows when you are online" : "weather not available" });
+  }
+}
+
 /* Details of a recorded day: speed, heart rate, power and cadence, with a chart of each along the ride. */
-const rideOpen = new Set();   // dates whose details are open
 
 function rideDetail(d) {
   const r = rideStats(d.rec);
@@ -3561,9 +3766,9 @@ const rideMaps = new Map();
 function attachRideMaps() {
   if (typeof L === "undefined") return;
   for (const slot of document.querySelectorAll("[data-ride-map]")) {
-    const date = slot.dataset.rideMap, e = S.days[date];
-    if (!e || !e.rec) { slot.remove(); continue; }
-    const sig = `${e.rec.km}|${(e.rec.parts || []).length}`;
+    const date = slot.dataset.rideMap, route = /^route:(\d+)-(\d+)$/.exec(date), e = route ? null : S.days[date];
+    if (!route && (!e || !e.rec)) { slot.remove(); continue; }
+    const sig = route ? `${S.tourId}|${date}` : `${e.rec.km}|${(e.rec.parts || []).length}`;
     let rm = rideMaps.get(date);
     if (rm && rm.sig === sig) { slot.replaceWith(rm.el); setTimeout(() => rm.map.invalidateSize(), 0); continue; }
     if (rm) rm.map.remove();
@@ -3574,20 +3779,14 @@ function attachRideMaps() {
     L.tileLayer("https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png", {
       maxZoom: 20, subdomains: "abc", attribution: '<a href="https://www.cyclosm.org/">CyclOSM</a> | © OpenStreetMap',
     }).addTo(m);
-    const lines = recLines(e.rec);
-    for (const line of lines) L.polyline(line, { color: css("--m5"), weight: 4, opacity: 0.95 }).addTo(m);
+    const T = S.track;
+    const lines = route ? [T.pts.slice(idxAt(T, +route[1]), idxAt(T, +route[2]) + 1).map((p) => [p.lat, p.lon])] : recLines(e.rec);
+    for (const line of lines) L.polyline(line, { color: css(route ? "--ridden" : "--m5"), weight: 4, opacity: 0.95 }).addTo(m);
     const all = lines.flat();
     if (all.length) m.fitBounds(L.latLngBounds(all), { padding: [16, 16] });
     rideMaps.set(date, { el, map: m, sig });
     setTimeout(() => m.invalidateSize(), 0);
   }
-}
-
-async function downloadDone(i) {
-  const d = completedDays()[i];
-  if (!d) return;
-  const name = `${slugify(S.track.name)}-${d.no ? `stage-${d.no}-${d.date}` : "ridden-earlier"}.gpx`;
-  await saveFile(new File([d.rec ? recordedGpx(d) : stageGpx(d, -1)], name, { type: "application/gpx+xml" }));
 }
 
 function recordedGpx(d) {
@@ -4484,11 +4683,26 @@ function openGpxSheet(k) {
   const st = S.stages[k];
   if (!st) return;
   sheetStage = k;
-  const text = stageGpx(st, k);
+  showGpxSheet({ text: stageGpx(st, k), name: `${slugify(S.track.name)}-stage-${st.no}-${st.date || "done"}.gpx`,
+    title: `${st.date ? dayLabel(st) + " · " : ""}Stage ${st.no}: ${plainStageTitle(st)}`, km: st.km, up: st.up });
+}
+
+// A ridden day: the recording if there is one, else that part of the route.
+function openDoneSheet(i) {
+  const d = completedDays()[i];
+  if (!d) return;
+  sheetStage = -1;
+  showGpxSheet({ text: d.rec ? recordedGpx(d) : stageGpx(d, -1), name: `${slugify(S.track.name)}-${d.no ? `stage-${d.no}-${d.date}` : "ridden-earlier"}.gpx`,
+    title: `${d.date ? fmtDate(d.date) + " · " : ""}${d.no ? `Day ${d.no}` : "Ridden earlier"}${d.rec ? " (as ridden)" : ""}`, km: d.real.km, up: d.real.up });
+}
+
+let sheetFile = null;   // { text, name } shown in the sheet
+function showGpxSheet({ text, name, title, km, up }) {
+  sheetFile = { text, name };
   const lines = text.split("\n");
   const points = (text.match(/<trkpt/g) || []).length;
-  $("gpxSheetTitle").textContent = `${st.date ? dayLabel(st) + " · " : ""}Stage ${st.no}: ${plainStageTitle(st)}`;
-  $("gpxSheetInfo").textContent = `${slugify(S.track.name)}-stage-${st.no}-${st.date || "done"}.gpx · ${fmt(st.km, 1)} km · ↑ ${fmt(st.up, 0)} m · ` +
+  $("gpxSheetTitle").textContent = title;
+  $("gpxSheetInfo").textContent = `${name} · ${fmt(km, 1)} km · ↑ ${fmt(up, 0)} m · ` +
     `${numFmt(points)} track points · ${numFmt(Math.max(1, Math.round(text.length / 1024)))} KB`;
   $("gpxSheetText").textContent = lines.length > GPX_PREVIEW_LINES
     ? lines.slice(0, GPX_PREVIEW_LINES).join("\n") + `\n      … ${numFmt(lines.length - GPX_PREVIEW_LINES)} more lines`
@@ -5117,9 +5331,11 @@ function initControls() {
   const sheet = $("gpxSheet");
   $("gpxSheetClose").addEventListener("click", () => sheet.close());
   sheet.addEventListener("click", (e) => { if (e.target === sheet) sheet.close(); });   // tap on the dimmed backdrop
-  $("gpxSheetShare").addEventListener("click", () => downloadStage(sheetStage));
+  $("gpxSheetShare").addEventListener("click", () => sheetStage >= 0 ? downloadStage(sheetStage)
+    : saveFile(new File([sheetFile.text], sheetFile.name, { type: "application/gpx+xml" })));
   $("gpxSheetCopy").addEventListener("click", async () => {
-    if (await copyStageGpx(sheetStage)) $("gpxSheetCopy").innerHTML = "✅<span>Copied</span>";
+    const ok = sheetStage >= 0 ? await copyStageGpx(sheetStage) : await copyText(sheetFile.text);
+    if (ok) $("gpxSheetCopy").innerHTML = "✅<span>Copied</span>";
   });
   document.addEventListener("click", (e) => {
     const gpx = e.target.closest("[data-gpx]");
@@ -5133,14 +5349,10 @@ function initControls() {
     if (go) openStage(Number(go.dataset.goto));
     const del = e.target.closest("[data-del-day]");
     if (del) removeDay(del.dataset.delDay);
-    const rideBtn = e.target.closest("[data-ride-open]");
-    if (rideBtn) {
-      const d = rideBtn.dataset.rideOpen;
-      if (rideOpen.has(d)) rideOpen.delete(d); else rideOpen.add(d);
-      renderDone();
-    }
+    const doneRow = e.target.closest("[data-open-done]");
+    if (doneRow) toggleDone(doneRow.dataset.openDone);
     const doneGpx = e.target.closest("[data-done-gpx]");
-    if (doneGpx) downloadDone(Number(doneGpx.dataset.doneGpx));
+    if (doneGpx) openDoneSheet(Number(doneGpx.dataset.doneGpx));
     const campBtn = e.target.closest("[data-camp-open]");
     if (campBtn) {
       const d = campBtn.closest("section").querySelector("details.camp");
@@ -5188,6 +5400,7 @@ function initControls() {
     store("mapView", mapView);
     renderMap();
   }));
+  $("sec-done").addEventListener("toggle", (e) => { if (e.target.open) renderDone(); });   // starts looking up the weather of the ridden days
   $("sec-tour").addEventListener("toggle", (e) => { if (e.target.open) setTimeout(() => { renderTourMap(); renderProfile(); }, 0); });
   // Remember which parts of each day are open; the model charts are drawn when opened.
   document.addEventListener("toggle", (e) => {
@@ -5224,6 +5437,8 @@ function initControls() {
   window.addEventListener("offline", renderOffline);
   // Days in the coming-days list open with Enter or Space too.
   document.addEventListener("keydown", (e) => {
+    const done = e.target.closest && e.target.closest("[data-open-done]");
+    if (done && e.target === done && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); toggleDone(done.dataset.openDone); }
     const row = e.target.closest && e.target.closest("[data-open-stage]");
     if (row && e.target === row && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); toggleComing(Number(row.dataset.openStage)); }
   });

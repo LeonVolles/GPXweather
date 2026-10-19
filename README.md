@@ -231,8 +231,15 @@ opens with a tap:
    (light green), what is left, days to go and the expected arrival.
    **🗺️ Whole tour** folds out the map of the whole route, the elevation
    profile, the route details and the PDF.
-2. **✓ Completed** – the days behind you with km, climb, time and a GPX of
-   each; this is also where you **📤 upload** a ride you recorded.
+2. **✓ Completed** – the days behind you, one line each like the coming days
+   (km, time, the weather you had, head- or tailwind). **Tap a day** and it
+   opens in the same layout as the coming days: distance and climb as you
+   rode it, time on the road, the weather and wind **where and when you were
+   riding** (hour by hour, looked up afterwards from the weather model), the
+   night at the day's end, your ride data with the elevation/gradient chart,
+   the map of your ride and **📤 Share GPX**. Days without a recording use the
+   planned route and estimated times. This is also where you **📤 upload** a
+   ride you recorded.
 3. **Today** (green box) – 📏 distance, ⏱️ time on the road (🚴 riding +
    ☕ breaks), weather with ☁️ cloud cover and 💨 wind, **👕 what to wear**,
    an **hour-by-hour** strip (where you will be and the weather there),
