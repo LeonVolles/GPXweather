@@ -127,7 +127,7 @@ You have two ways to close a day:
 
 - **🏁 End today here** (on today's card) saves your current position as the
   end of today. The plan then continues tomorrow from there. Tapped too early? **Undo** reopens the day.
-- **📤 Upload today's ride (GPX)** – load the track you recorded with your
+- **📤 Upload today's ride (GPX or FIT)** – load the track you recorded with your
   bike computer, watch or phone app (Garmin, Wahoo, Komoot, Strava …). The app
   finds where the ride lies on your route, ends that day there and puts what
   you **really** rode into the **✓ Completed** list (marked 📍): the recorded
@@ -138,7 +138,14 @@ You have two ways to close a day:
   (morning and afternoon)? Upload both – they are added up; uploading the same
   file again replaces it. **⬇ GPX** in the Completed list gives you the track
   as you rode it. You can also add earlier days later with **📤 Add a ridden
-  day** in the Completed list – the date is taken from the GPX.
+  day** in the Completed list – the date is taken from the GPX. FIT files
+  straight from a Garmin, Wahoo or Hammerhead work as well (with heart rate,
+  power, cadence and temperature), and you can pick several files at once.
+
+  *Sharing straight from another app (e.g. Bergfex) into GPX Weather isn't
+  possible on iPhone: iOS doesn't let web apps appear in the share sheet. The
+  quickest way: in the other app **Share → Save to Files** into one folder,
+  then **📤 Upload** in GPX Weather – the file picker opens on that folder.*
 
 **📈 on a recorded day** opens what your bike computer or watch recorded:
 moving time, average and top speed, heart rate (average and max), power

@@ -303,7 +303,7 @@
     <button type="button" id="deleteTour" title="Remove this tour from this device" aria-label="Remove this tour">🗑</button>
   </div>
   <input type="file" id="file" class="file-input">
-  <input type="file" id="rideFile" class="file-input">
+  <input type="file" id="rideFile" class="file-input" multiple>
   <input type="file" id="replaceFile" class="file-input">
   <label class="drop" id="drop" for="file">
     <strong id="drop-title">Drop a GPX file here or tap to choose one</strong>
@@ -521,7 +521,7 @@
 /* ---------- Configuration ---------- */
 
 // Bump with every release (and VERSION in sw.js): the app compares it with the published page to offer updates.
-const APP_VERSION = "2026-10-18.3";
+const APP_VERSION = "2026-10-19.1";
 
 // days = forecast_days requested from Open-Meteo, roughly the model's real horizon.
 const MODELS = [
@@ -1399,7 +1399,66 @@ function rideStats(rec) {
   };
 }
 
-function parseRide(text) {
+/* FIT files (Garmin, Wahoo, Hammerhead …) straight from the bike computer: the "record" messages carry position,
+   time, elevation, heart rate, cadence, power and temperature. */
+const FIT_EPOCH_MS = 631065600000;   // FIT times count seconds from 31 Dec 1989 00:00 UTC
+const isFit = (buf) => buf.byteLength > 12 && new TextDecoder().decode(new Uint8Array(buf, 8, 4)) === ".FIT";
+
+function parseFit(buf) {
+  const dv = new DataView(buf), u8 = new Uint8Array(buf);
+  const headerSize = u8[0];
+  const end = Math.min(buf.byteLength, headerSize + dv.getUint32(4, true));
+  const defs = [];      // local message type -> { global, little, fields: [[num, size, type]], devSize }
+  const pts = [];
+  let pos = headerSize, lastTs = null;
+  const SEMI = 180 / 2 ** 31;
+  const read = (at, size, type, little) => {
+    const signed = [1, 3, 5].includes(type & 0x1f);
+    if (size === 1) { const v = signed ? dv.getInt8(at) : dv.getUint8(at); return v === (signed ? 0x7f : 0xff) ? null : v; }
+    if (size === 2) { const v = signed ? dv.getInt16(at, little) : dv.getUint16(at, little); return v === (signed ? 0x7fff : 0xffff) ? null : v; }
+    if (size === 4) { const v = signed ? dv.getInt32(at, little) : dv.getUint32(at, little); return v === (signed ? 0x7fffffff : 0xffffffff) ? null : v; }
+    return null;
+  };
+  while (pos < end) {
+    const h = u8[pos++];
+    if (!(h & 0x80) && (h & 0x40)) {                       // definition message
+      const little = u8[pos + 1] === 0, global = dv.getUint16(pos + 2, little), n = u8[pos + 4];
+      pos += 5;
+      const fields = [];
+      for (let i = 0; i < n; i++, pos += 3) fields.push([u8[pos], u8[pos + 1], u8[pos + 2]]);
+      let devSize = 0;
+      if (h & 0x20) { const nd = u8[pos++]; for (let i = 0; i < nd; i++, pos += 3) devSize += u8[pos + 1]; }
+      defs[h & 0x0f] = { global, little, fields, devSize };
+      continue;
+    }
+    // Data message, normal header or one with a compressed timestamp (5-bit offset to the last full timestamp).
+    const compressed = !!(h & 0x80);
+    const def = defs[compressed ? (h >> 5) & 0x03 : h & 0x0f];
+    if (!def) throw new Error("This FIT file could not be read.");
+    if (compressed && lastTs != null) {
+      const off = h & 0x1f;
+      lastTs = (lastTs & ~0x1f) + off + (off < (lastTs & 0x1f) ? 0x20 : 0);
+    }
+    const v = {};
+    for (const [num, size, type] of def.fields) { v[num] = read(pos, size, type, def.little); pos += size; }
+    pos += def.devSize;
+    if (v[253] != null) lastTs = v[253];
+    if (def.global !== 20 || v[0] == null || v[1] == null) continue;   // record messages with a position only
+    const alt = v[78] != null ? v[78] / 5 - 500 : v[2] != null ? v[2] / 5 - 500 : null;
+    pts.push({ lat: v[0] * SEMI, lon: v[1] * SEMI, ele: alt, t: lastTs != null ? FIT_EPOCH_MS + lastTs * 1000 : null,
+      hr: v[3] || null, cad: v[4] ?? null, pw: v[7] ?? null, temp: v[13] ?? null });
+  }
+  return pts;
+}
+
+// A recorded ride from GPX text or a FIT file (ArrayBuffer).
+function parseRide(src) {
+  const pts = typeof src === "string" ? gpxRidePoints(src) : parseFit(src);
+  if (pts.length < 2) throw new Error(typeof src === "string" ? "No track points found in this GPX." : "No positions found in this FIT file (recorded without GPS?).");
+  return ridePoints(pts);
+}
+
+function gpxRidePoints(text) {
   const xml = new DOMParser().parseFromString(text, "application/xml");
   if (xml.getElementsByTagName("parsererror").length) throw new Error("This file is not valid GPX.");
   let nodes = [...xml.getElementsByTagNameNS("*", "trkpt")];
@@ -1416,8 +1475,10 @@ function parseRide(text) {
       hr: extValue(n, ["hr", "heartrate"]), pw: extValue(n, ["power", "PowerInWatts", "watts"]), cad: extValue(n, ["cad", "cadence"]),
       temp: extValue(n, ["atemp", "temp", "temperature"]) });
   }
-  if (pts.length < 2) throw new Error("No track points found in this GPX.");
+  return pts;
+}
 
+function ridePoints(pts) {
   let km = 0, moving = 0, up = 0, down = 0, refEle = null;
   for (let i = 1; i < pts.length; i++) {
     const d = haversine(pts[i - 1], pts[i]) / 1000;
@@ -1499,7 +1560,8 @@ function rideRange(track, pts) {
 async function uploadRide(file) {
   if (!S.track) { setStatus("Please load the tour GPX first."); return; }
   try {
-    const { pts, rec } = parseRide(await file.text());
+    const buf = await file.arrayBuffer();
+    const { pts, rec } = parseRide(isFit(buf) ? buf : new TextDecoder().decode(buf));
     const range = rideRange(S.track, pts);
     if (!range) throw new Error("This ride doesn't follow the route of the current tour.");
     const { start, end } = range;
@@ -1533,7 +1595,7 @@ async function uploadRide(file) {
       (parts.length > 1 ? ` That day now has ${parts.length} recordings, ${fmt(day.km, 1)} km in total.` : ""));
     recompute({ weatherDelay: 300 });
   } catch (e) {
-    console.error(e);
+    console.warn(e);
     setStatus("The ride could not be added: " + e.message);
   }
 }
@@ -3119,7 +3181,7 @@ function dayCard(st, k, w, inline = false) {
       ${nightSummary ? `<div class="summary-box night-summary">${nightSummary}</div>` : ""}
       ${st.section ? `<div class="small muted" style="margin-top:8px">GPX section: ${esc(st.section)}</div>` : ""}
       ${today ? `<div class="btn-row">
-        <label class="button" for="rideFile" title="Upload the GPX you recorded today">📤 Upload today's ride</label>
+        <label class="button" for="rideFile" title="Upload the GPX or FIT file you recorded today">📤 Upload today's ride</label>
         <button type="button" data-rest-day title="Stay here today – the plan continues tomorrow">😴 Rest day</button>
       </div>` : ""}
     </details>
@@ -3269,7 +3331,7 @@ function renderDone() {
   if (!days.length) {
     host.innerHTML = `<p class="small muted" style="margin:12px 0 0">Nothing ridden yet. After a day, upload the GPX you recorded –
       the app then knows how fast you ride and plans the next days with it.</p>
-      <div class="btn-row"><label class="button" for="rideFile">📤 Upload a ridden day (GPX)</label></div>`;
+      <div class="btn-row"><label class="button" for="rideFile">📤 Upload a ridden day (GPX or FIT)</label></div>`;
     return;
   }
   const rows = days.map((d, i) => `<tr>
@@ -3296,7 +3358,7 @@ function renderDone() {
     <div class="small muted" style="margin-top:8px">📍 = as you rode it (from the GPX you uploaded; several files of one day are added up).
       Other days: km and climb along the planned route. Time and speed come from your uploads
       (first to last point, incl. breaks). ✕ removes a day from the log, e.g. one you ended by mistake.</div>
-    <div class="btn-row"><label class="button" for="rideFile">📤 Add a ridden day (GPX of your ride)</label></div>`;
+    <div class="btn-row"><label class="button" for="rideFile">📤 Add a ridden day (GPX or FIT of your ride)</label></div>`;
   attachRideMaps();
   attachTrackCharts();
 }
@@ -5042,7 +5104,12 @@ function initControls() {
   $("autoGps").addEventListener("change", (e) => { S.autoGps = e.target.checked; saveGlobalSettings(); });
   $("useRides").addEventListener("change", (e) => { S.useRides = e.target.checked; saveGlobalSettings(); recompute({ weatherDelay: 300 }); });
   $("useHistory").addEventListener("change", (e) => { S.useHistory = e.target.checked; saveGlobalSettings(); recompute({ weatherDelay: 300 }); });
-  $("rideFile").addEventListener("change", (e) => { if (e.target.files[0]) uploadRide(e.target.files[0]); e.target.value = ""; });
+  // Several files at once (GPX or FIT), one after the other.
+  $("rideFile").addEventListener("change", async (e) => {
+    const files = [...e.target.files];
+    e.target.value = "";
+    for (const f of files) await uploadRide(f);
+  });
   $("replaceFile").addEventListener("change", (e) => { if (e.target.files[0]) replaceRoute(e.target.files[0]); e.target.value = ""; });
   $("refresh").addEventListener("click", () => loadWeather(true));
   $("locate").addEventListener("click", () => locate());

@@ -549,6 +549,74 @@ await test("a ride uploaded by an older version asks for the GPX again instead o
   assert.match(await page.locator("#done-list .ride-detail").innerText(), /Upload the GPX of .* again/);
   await ev(() => { rideOpen.clear(); S.days = {}; setStartKm(0, true, false); });
 });
+// A FIT activity file as a bike computer writes it: file_id, then records. Records alternate between a full
+// timestamp (big-endian definition, with a developer field) and a compressed timestamp header.
+function fitFile(points) {
+  const bytes = [];
+  const u8 = (v) => bytes.push(v & 0xff);
+  const u16 = (v, be) => (be ? [v >> 8, v] : [v, v >> 8]).forEach(u8);
+  const u32 = (v, be) => (be ? [v >>> 24, v >>> 16, v >>> 8, v] : [v, v >>> 8, v >>> 16, v >>> 24]).forEach(u8);
+  const ts = (ms) => Math.round((ms - 631065600000) / 1000);
+  // file_id (global 0), little-endian: type (enum) + time_created (uint32)
+  u8(0x40); u8(0); u8(0); u16(0, false); u8(2); u8(0); u8(1); u8(0x00); u8(4); u8(4); u8(0x86);
+  u8(0x00); u8(4); u32(ts(points[0].t), false);
+  const fields = [[0, 4, 0x85], [1, 4, 0x85], [78, 4, 0x86], [3, 1, 0x02], [4, 1, 0x02], [7, 2, 0x84], [13, 1, 0x01]];
+  // local 1: record with timestamp, big-endian, plus one 2-byte developer field
+  u8(0x40 | 0x20 | 1); u8(0); u8(1); u16(20, true); u8(fields.length + 1); [253, 4, 0x86].forEach(u8); fields.flat().forEach(u8); u8(1); [0, 2, 0].forEach(u8);
+  // local 2: record without timestamp (used with compressed timestamp headers), little-endian
+  u8(0x40 | 2); u8(0); u8(0); u16(20, false); u8(fields.length); fields.flat().forEach(u8);
+  const semi = (deg) => Math.round((deg / 180) * 2 ** 31);
+  points.forEach((p, i) => {
+    const vals = [semi(p.lat), semi(p.lon), Math.round((p.ele + 500) * 5), p.hr, p.cad, p.pw, p.temp];
+    const be = i % 2 === 0;
+    if (be) { u8(1); u32(ts(p.t), true); } else u8(0x80 | (2 << 5) | (ts(p.t) & 0x1f));
+    fields.forEach(([, size, type], k) => {
+      let v = vals[k];
+      if (type === 0x85 && v < 0) v = v >>> 0;
+      if (size === 1) u8(v); else if (size === 2) u16(v, be); else u32(v, be);
+    });
+    if (be) u16(1234, true);   // developer field value
+  });
+  const header = Buffer.alloc(14);
+  header[0] = 14; header[1] = 0x20; header.writeUInt16LE(2132, 2); header.writeUInt32LE(bytes.length, 4); header.write(".FIT", 8, "ascii");
+  return Buffer.concat([header, Buffer.from(bytes), Buffer.alloc(2)]);
+}
+await test("a FIT file from the bike computer can be uploaded like a GPX, with its heart rate, power, cadence and temperature", async () => {
+  await ev(() => { S.days = {}; setStartKm(0, true, false); });
+  const y = new Date(); y.setDate(y.getDate() - 2); y.setHours(8, 0, 0, 0);
+  const pts = await ev((t0) => Array.from({ length: 201 }, (_, i) => {
+    const p = pointAt(S.track, 30000 + i * 100);
+    return { lat: p.lat, lon: p.lon, ele: 250 + i * 0.5, t: t0 + i * 18000, hr: i % 2 ? 150 : 130, cad: 90, pw: i <= 100 ? 150 : 250, temp: 14 };
+  }), y.getTime());
+  fs.writeFileSync(path.join(tmp, "Morning_Ride.fit"), fitFile(pts));
+  await page.setInputFiles("#rideFile", path.join(tmp, "Morning_Ride.fit"));
+  await page.waitForFunction(() => /Ride of .* added/.test($("status").textContent));
+  const d = await ev(() => completedDays().find((x) => x.date));
+  assert.equal(d.date, await ev((t) => localDate(t), y.getTime()), "dated from the FIT timestamps");
+  assert.ok(Math.abs(d.km - 20) < 0.6 && Math.abs(d.a / 1000 - 30) < 0.6, `route km ${d.a / 1000}–${d.b / 1000}`);
+  assert.ok(Math.abs(d.rec.elapsedH - 1) < 0.01, "timestamps incl. the compressed ones: " + d.rec.elapsedH);
+  assert.ok(Math.abs(d.real.up - 100) < 4, "climb from the FIT altitude: " + d.real.up);
+  const r = await ev(() => { const s = rideStats(completedDays().find((x) => x.date).rec); return { ...s, series: { temp: s.series.temp.slice(0, 3) } }; });
+  assert.ok(Math.abs(r.hrAvg - 140) < 1.5 && r.hrMax === 150 && Math.abs(r.pAvg - 200) < 3 && r.pMax === 250 && Math.abs(r.cad - 90) < 0.5, JSON.stringify(r));
+  assert.deepEqual(r.series.temp, [14, 14, 14]);
+});
+await test("several files can be picked at once; a FIT without GPS is refused with a clear message", async () => {
+  const y = new Date(); y.setDate(y.getDate() - 1); y.setHours(9, 0, 0, 0);
+  fs.writeFileSync(path.join(tmp, "a.gpx"), await rideAlong(50, 60, y.getTime()));
+  fs.writeFileSync(path.join(tmp, "b.gpx"), await rideAlong(60, 70, y.getTime() + 4 * 3600000));
+  await page.setInputFiles("#rideFile", [path.join(tmp, "a.gpx"), path.join(tmp, "b.gpx")]);
+  await page.waitForFunction(() => (Object.values(S.days).find((e) => e.rec && e.rec.parts.length === 2)));
+  const indoor = fitFile([{ lat: 0, lon: 0, ele: 0, t: Date.now() - 3600000, hr: 120, cad: 80, pw: 150, temp: 20 }]);
+  // strip positions: a record without lat/lon is written as "invalid" (0x7fffffff)
+  const at = indoor.indexOf(Buffer.from([0x40 | 0x20 | 1])); assert.ok(at > 0);
+  const buf = Buffer.from(indoor); const rec0 = buf.length - 2 - (1 + 4 + 4 + 4 + 4 + 1 + 1 + 2 + 1 + 2);
+  buf.writeUInt32BE(0x7fffffff, rec0 + 5); buf.writeUInt32BE(0x7fffffff, rec0 + 9);
+  fs.writeFileSync(path.join(tmp, "indoor.fit"), buf);
+  await page.setInputFiles("#rideFile", path.join(tmp, "indoor.fit"));
+  await page.waitForFunction(() => /could not be added/.test($("status").textContent));
+  assert.match(await page.textContent("#status"), /No positions found in this FIT file \(recorded without GPS\?\)/);
+  await ev(() => { S.days = {}; setStartKm(0, true, false); });
+});
 await test("replacing the route keeps the ridden days and uploaded rides, placed on the new route", async () => {
   const y = new Date(); y.setDate(y.getDate() - 1); y.setHours(9, 0, 0, 0);
   await upload("day1.gpx", await rideAlong(0, 40, y.getTime()));
