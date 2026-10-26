@@ -1,5 +1,8 @@
 # GPX Weather
 
+> **GPX Weather is now [Trekast](https://github.com/LeonVolles/trekast): https://leonvolles.github.io/trekast/**  
+> This address keeps working and shows a link to the new app.
+
 **Plan the weather for your bike tour, day by day.**
 
 👉 **Open the app: https://leonvolles.github.io/GPXweather/**

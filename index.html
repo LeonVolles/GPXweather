@@ -259,6 +259,9 @@
   .day-inline { background: var(--surface-2); border-radius: 12px; padding: 12px; }
   .day-inline .tile, .day-inline .hcell { background: var(--surface); }
   .day-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
+  .moved { margin: 0 0 12px; padding: 12px 14px; border-radius: 12px; background: #f4b63f; color: #18412d; }
+  .moved a { color: inherit; font-weight: 700; }
+  .moved p { margin: 4px 0 0; font-size: .9rem; }
   .offline { margin-top: 10px; padding: 8px 12px; border-radius: 10px; background: var(--night-bg);
              border-left: 4px solid var(--night-line); font-weight: 600; font-size: 0.92rem; }
   footer { margin: 30px 0 10px; font-size: 0.82rem; color: var(--muted); }
@@ -294,6 +297,11 @@
   <h1>🚲 GPX Weather</h1>
   <p>Daily stages and multi-model weather for your bike tour.</p>
 </header>
+
+<div class="moved" role="note">
+  <strong>GPX Weather is now Trekast:</strong> <a href="https://leonvolles.github.io/trekast/">open Trekast →</a>
+  <p>In a browser tab your tours are already there. Using GPX Weather from your home screen? Save a backup here (⚙️ Settings → 💾 Backup), add Trekast to your home screen and load it with 📥 Restore. This app keeps working.</p>
+</div>
 
 <div class="card">
   <div class="tour-row">
@@ -521,7 +529,7 @@
 /* ---------- Configuration ---------- */
 
 // Bump with every release (and VERSION in sw.js): the app compares it with the published page to offer updates.
-const APP_VERSION = "2026-10-19.2";
+const APP_VERSION = "2026-10-26.1";
 
 // days = forecast_days requested from Open-Meteo, roughly the model's real horizon.
 const MODELS = [

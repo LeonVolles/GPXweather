@@ -1,6 +1,6 @@
 // Offline support: keeps the app and its two libraries available without a connection.
 // Weather, elevation, place-name, campsite and map-tile requests are never cached here.
-const VERSION = "gpxweather-2026-10-19.2";   // same as APP_VERSION in index.html
+const VERSION = "gpxweather-2026-10-26.1";   // same as APP_VERSION in index.html
 const APP = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 const LIBS = [
   "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css",
@@ -23,7 +23,8 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("activate", (event) => {
   event.waitUntil((async () => {
-    for (const key of await caches.keys()) if (key !== VERSION) await caches.delete(key);
+    // Only our own old caches: Trekast, the new app, lives on the same origin and keeps its own.
+    for (const key of await caches.keys()) if (key.startsWith("gpxweather-") && key !== VERSION) await caches.delete(key);
     await self.clients.claim();
   })());
 });
