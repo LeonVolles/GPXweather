@@ -8,7 +8,17 @@ Erstellt am 08.11.2026 aus den Originaldateien der Deutschen Limes-Straße und v
 - `limes-radweg_2026_bis-wien.gpx`: derselbe Track, durchgehend weiter auf EuroVelo 6 bis Wien (1.539,2 km insgesamt), dieselben POIs.
 - `limes-poi.csv`: alle 359 POIs mit Typ, neuem Namen, Routen-km, Abstand und ob aufgenommen.
 
-Die Höhenangaben wurden weggelassen: 76 % der Punkte im Gesamttrack haben `ele = 0`, und erst ab km 265 gibt es echte Werte. GPX Weather holt fehlende Höhen selbst aus dem Höhenmodell. Ein doppelter Punkt (Abstand 0 m) wurde entfernt.
+**Höhen:** Die Originalhöhen sind unbrauchbar: 76 % der Punkte im Gesamttrack haben `ele = 0`, und echte Werte gibt es erst ab km 265. Außerdem liegt das Maximum bei nur 339 m, obwohl die Route im Taunus über 500 m erreicht. Deshalb habe ich die Höhe für jeden Trackpunkt neu aus dem Höhenmodell EU-DEM (25-m-Raster, über OpenTopoData) übernommen, auch auf der EuroVelo-Strecke.
+
+| Strecke | Anstieg | Abstieg | tiefster Punkt | höchster Punkt |
+|---|---|---|---|---|
+| Limes-Radweg Kleve – Passau | 12.115 m | 11.834 m | 11 m | 780 m |
+| EuroVelo 6 Passau – Wien | 1.907 m | 2.035 m | 157 m | 312 m |
+| Gesamt bis Wien | 14.022 m | 13.869 m | 11 m | 780 m |
+
+Die Werte für Anstieg und Abstieg zählen nur Höhenänderungen ab 3 m, damit kleines Rauschen im Höhenmodell nicht mitgezählt wird. Andere Apps rechnen mit anderen Schwellen und können deshalb etwas andere Summen zeigen. Trackpunkte ohne Höhe: 0.
+
+Ein doppelter Punkt (Abstand 0 m) wurde entfernt.
 
 ## 1. Gesamttrack (02/2026) gegen Etappen (07/2023)
 
