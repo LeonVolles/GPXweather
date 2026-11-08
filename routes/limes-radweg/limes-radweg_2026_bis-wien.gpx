@@ -1,351 +1,351 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="GPXweather / Limes-Radweg-Aufbereitung" xmlns="http://www.topografix.com/GPX/1/1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
-<metadata><name>Limes-Radweg (02/2026) + EuroVelo 6 Passau – Wien</name><desc>Limes-Radweg 02/2026 (km 0–1227.3) durchgehend weiter auf EuroVelo 6 Passau – Wien (Etappen 01–07, Nordufer-Hauptroute), gesamt 1539.2 km.</desc><time>2026-11-08T23:05:02Z</time></metadata>
-<wpt lat="50.503636" lon="7.317805"><name>Kastell-Standort (km 256)</name><desc>Originaltyp K-KASTELL; 30 m neben der Route; Abschnitt RP</desc><type>K-KASTELL</type></wpt>
-<wpt lat="50.513210" lon="7.342467"><name>Wachturm-Reste (km 258)</name><desc>Originaltyp TURMRESTE; 560 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.513765" lon="7.356088"><name>Wachturm-Reste (km 259)</name><desc>Originaltyp TURMRESTE; 254 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
+<metadata><name>Limes-Radweg (02/2026) + EuroVelo 6 Passau – Wien</name><desc>Limes-Radweg 02/2026 (km 0–1227.3) durchgehend weiter auf EuroVelo 6 Passau – Wien (Etappen 01–07, Nordufer-Hauptroute), gesamt 1539.2 km.</desc><time>2026-11-08T23:11:34Z</time></metadata>
+<wpt lat="50.503636" lon="7.317805"><name>Kleinkastell (teilrekonstruiert) (km 256)</name><desc>Kleinkastell mit rekonstruierten Mauerstücken. Originaltyp K-KASTELL; 30 m neben der Route; Abschnitt RP</desc><type>K-KASTELL</type></wpt>
+<wpt lat="50.513210" lon="7.342467"><name>Wachturm-Reste (km 258)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 560 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.513765" lon="7.356088"><name>Wachturm-Reste (km 259)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 254 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
 <wpt lat="50.513024" lon="7.365605"><name>Wachturm-Ausgrabung (km 260)</name><desc>Originaltyp TURMAUSGR; 206 m neben der Route; Abschnitt RP</desc><type>TURMAUSGR</type></wpt>
-<wpt lat="50.511502" lon="7.371119"><name>Wachturm-Reste (km 261)</name><desc>Originaltyp TURMRESTE; 289 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.509994" lon="7.376245"><name>Wachturm-Reste (km 261)</name><desc>Originaltyp TURMRESTE; 136 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.504006" lon="7.376718"><name>Wachturm-Reste (km 262)</name><desc>Originaltyp TURMRESTE; 147 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.499814" lon="7.379960"><name>Wachturm-Reste (km 263)</name><desc>Originaltyp TURMRESTE; 41 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.494581" lon="7.385992"><name>Wachturm-Reste (km 263)</name><desc>Originaltyp TURMRESTE; 50 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.494295" lon="7.392834"><name>Wachturm-Reste (km 264)</name><desc>Originaltyp TURMRESTE; 191 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.493996" lon="7.393262"><name>Kleinkastell-Reste (km 264)</name><desc>Originaltyp KK-RESTE; 233 m neben der Route; Abschnitt RP</desc><type>KK-RESTE</type></wpt>
-<wpt lat="50.491176" lon="7.398489"><name>Wachturm-Reste (km 265)</name><desc>Originaltyp TURMRESTE; 102 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.486978" lon="7.399078"><name>Wachturm-Reste (km 265)</name><desc>Originaltyp TURMRESTE; 60 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.482127" lon="7.404074"><name>Wachturm-Reste (km 266)</name><desc>Originaltyp TURMRESTE; 204 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.476710" lon="7.406001"><name>Wachturm-Reste (km 267)</name><desc>Originaltyp TURMRESTE; 52 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.472579" lon="7.407258"><name>Wachturm-Reste (km 267)</name><desc>Originaltyp TURMRESTE; 48 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.466688" lon="7.419070"><name>Wachturm-Reste (km 269)</name><desc>Originaltyp TURMRESTE; 14 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.466044" lon="7.425637"><name>Wachturm-Reste (km 269)</name><desc>Originaltyp TURMRESTE; 17 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.477376" lon="7.480447"><name>Wachturm-Reste (km 275)</name><desc>Originaltyp TURMRESTE; 162 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.477434" lon="7.509693"><name>Wachturm-Nachbau (km 278)</name><desc>Originaltyp TURM; 63 m neben der Route; Abschnitt RP</desc><type>TURM</type></wpt>
-<wpt lat="50.442129" lon="7.613198"><name>Wachturm-Reste (km 293)</name><desc>Originaltyp TURMRESTE; 273 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.437305" lon="7.622070"><name>Wachturm-Reste (km 294)</name><desc>Originaltyp TURMRESTE; 20 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.437290" lon="7.640188"><name>Wachturm-Reste (km 295)</name><desc>Originaltyp TURMRESTE; 52 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.423134" lon="7.666838"><name>Wachturm-Reste (km 299)</name><desc>Originaltyp TURMRESTE; 1153 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.416065" lon="7.688921"><name>Wachturm-Nachbau (km 302)</name><desc>Originaltyp TURM; 310 m neben der Route; Abschnitt RP</desc><type>TURM</type></wpt>
-<wpt lat="50.402950" lon="7.716596"><name>Wachturm-Reste (km 305)</name><desc>Originaltyp TURMRESTE; 331 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.407225" lon="7.712549"><name>Wachturm-Reste (km 305)</name><desc>Originaltyp TURMRESTE; 221 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.411099" lon="7.710062"><name>Kastell-Standort (km 305)</name><desc>Originaltyp K-KASTELL; 671 m neben der Route; Abschnitt RP</desc><type>K-KASTELL</type></wpt>
-<wpt lat="50.397219" lon="7.723330"><name>Wachturm-Fundament (km 311)</name><desc>Originaltyp TURMGRUND; 28 m neben der Route; Abschnitt RP</desc><type>TURMGRUND</type></wpt>
-<wpt lat="50.374843" lon="7.744703"><name>Römerkastell (km 317)</name><desc>Originaltyp KASTELL; 406 m neben der Route; Abschnitt RP</desc><type>KASTELL</type></wpt>
-<wpt lat="50.369903" lon="7.756510"><name>Wachturm-Nachbau (km 317)</name><desc>Originaltyp TURM; 1272 m neben der Route; Abschnitt RP</desc><type>TURM</type></wpt>
-<wpt lat="50.338015" lon="7.737466"><name>Wachturm-Reste (km 324)</name><desc>Originaltyp TURMRESTE; 1212 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.323209" lon="7.727038"><name>Wachturm-Nachbau (km 324)</name><desc>Originaltyp TURM; 323 m neben der Route; Abschnitt RP</desc><type>TURM</type></wpt>
-<wpt lat="50.315201" lon="7.722229"><name>Wachturm-Fundament (km 326)</name><desc>Originaltyp TURMGRUND; 59 m neben der Route; Abschnitt RP</desc><type>TURMGRUND</type></wpt>
-<wpt lat="50.307470" lon="7.716641"><name>Wachturm-Reste (km 327)</name><desc>Originaltyp TURMRESTE; 258 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.304375" lon="7.713901"><name>Wachturm-Reste (km 330)</name><desc>Originaltyp TURMRESTE; 107 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.300173" lon="7.715976"><name>Wachturm-Reste (km 330)</name><desc>Originaltyp TURMRESTE; 42 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.292411" lon="7.727911"><name>Wachturm-Reste (km 332)</name><desc>Originaltyp TURMRESTE; 2 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.289430" lon="7.733320"><name>Wachturm-Fundament (km 332)</name><desc>Originaltyp TURMGRUND; 23 m neben der Route; Abschnitt RP</desc><type>TURMGRUND</type></wpt>
-<wpt lat="50.286450" lon="7.738474"><name>Kastell-Standort (km 333)</name><desc>Originaltyp K-KASTELL; 21 m neben der Route; Abschnitt RP</desc><type>K-KASTELL</type></wpt>
-<wpt lat="50.284247" lon="7.744087"><name>Wachturm-Reste (km 333)</name><desc>Originaltyp TURMRESTE; 25 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.273326" lon="7.771101"><name>Wachturm-Reste (km 336)</name><desc>Originaltyp TURMRESTE; 877 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.269436" lon="7.781237"><name>Wachturm-Reste (km 337)</name><desc>Originaltyp TURMRESTE; 1270 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.263504" lon="7.789108"><name>Wachturm-Fundament (km 339)</name><desc>Originaltyp TURMGRUND; 1064 m neben der Route; Abschnitt RP</desc><type>TURMGRUND</type></wpt>
-<wpt lat="50.249129" lon="7.852276"><name>Wachturm-Reste (km 346)</name><desc>Originaltyp TURMRESTE; 240 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.252029" lon="7.866632"><name>Kastell-Standort (km 347)</name><desc>Originaltyp K-KASTELL; 154 m neben der Route; Abschnitt RP</desc><type>K-KASTELL</type></wpt>
-<wpt lat="50.244320" lon="7.876223"><name>Wachturm-Fundament (km 348)</name><desc>Originaltyp TURMGRUND; 402 m neben der Route; Abschnitt RP</desc><type>TURMGRUND</type></wpt>
-<wpt lat="50.234091" lon="7.889162"><name>Wachturm-Reste (km 350)</name><desc>Originaltyp TURMRESTE; 245 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.226869" lon="7.890250"><name>Kleinkastell-Reste (km 350)</name><desc>Originaltyp KK-RESTE; 229 m neben der Route; Abschnitt RP</desc><type>KK-RESTE</type></wpt>
-<wpt lat="50.210418" lon="7.934107"><name>Wachturm-Reste (km 356)</name><desc>Originaltyp TURMRESTE; 933 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.213995" lon="7.942332"><name>Wachturm-Reste (km 357)</name><desc>Originaltyp TURMRESTE; 790 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.214934" lon="7.947324"><name>Kastell-Reste (km 357)</name><desc>Originaltyp KASTELL-R; 766 m neben der Route; Abschnitt HE</desc><type>KASTELL-R</type></wpt>
-<wpt lat="50.215471" lon="7.954104"><name>Wachturm-Reste (km 357)</name><desc>Originaltyp TURMRESTE; 837 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.215713" lon="7.955522"><name>Wachturm-Reste (km 357)</name><desc>Originaltyp TURMRESTE; 858 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.212604" lon="7.965496"><name>Wachturm-Reste (km 358)</name><desc>Originaltyp TURMRESTE; 377 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.214920" lon="7.964793"><name>Wachturm-Reste (km 358)</name><desc>Originaltyp TURMRESTE; 635 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.206154" lon="7.967770"><name>Wachturm-Reste (km 358)</name><desc>Originaltyp TURMRESTE; 323 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.202699" lon="7.973063"><name>Wachturm-Reste (km 359)</name><desc>Originaltyp TURMRESTE; 628 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.198746" lon="7.989324"><name>Wachturm-Reste (km 362)</name><desc>Originaltyp TURMRESTE; 240 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.178997" lon="8.008150"><name>Wachturm-Fundament (km 366)</name><desc>Originaltyp TURMGRUND; 185 m neben der Route; Abschnitt HE</desc><type>TURMGRUND</type></wpt>
-<wpt lat="50.167517" lon="8.016435"><name>Kastell-Standort (km 369)</name><desc>Originaltyp K-KASTELL; 202 m neben der Route; Abschnitt HE</desc><type>K-KASTELL</type></wpt>
-<wpt lat="50.162955" lon="8.046127"><name>Wachturm-Reste (km 371)</name><desc>Originaltyp TURMRESTE; 100 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.162908" lon="8.054605"><name>Wachturm-Reste (km 372)</name><desc>Originaltyp TURMRESTE; 171 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.165007" lon="8.077576"><name>Kleinkastell-Reste (km 375)</name><desc>Originaltyp KK-RESTE; 298 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
-<wpt lat="50.165392" lon="8.103809"><name>Wachturm-Reste (km 378)</name><desc>Originaltyp TURMRESTE; 154 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.169790" lon="8.102887"><name>Wachturm-Reste (km 378)</name><desc>Originaltyp TURMRESTE; 638 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.171973" lon="8.112084"><name>Wachturm-Reste (km 378)</name><desc>Originaltyp TURMRESTE; 680 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.173990" lon="8.117296"><name>Wachturm-Reste (km 378)</name><desc>Originaltyp TURMRESTE; 1018 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.168889" lon="8.114381"><name>Wachturm-Reste (km 378)</name><desc>Originaltyp TURMRESTE; 422 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.179907" lon="8.139166"><name>Wachturm-Reste (km 381)</name><desc>Originaltyp TURMRESTE; 458 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.180277" lon="8.140490"><name>Wachturm-Reste (km 381)</name><desc>Originaltyp TURMRESTE; 419 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.182954" lon="8.162422"><name>Wachturm-Reste (km 383)</name><desc>Originaltyp TURMRESTE; 108 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.184515" lon="8.173385"><name>Wachturm-Reste (km 384)</name><desc>Originaltyp TURMRESTE; 22 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.191967" lon="8.197692"><name>Wachturm-Reste (km 386)</name><desc>Originaltyp TURMRESTE; 290 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.189940" lon="8.203607"><name>Kastell-Reste (km 386)</name><desc>Originaltyp KASTELL-R; 85 m neben der Route; Abschnitt HE</desc><type>KASTELL-R</type></wpt>
-<wpt lat="50.192992" lon="8.202996"><name>Wachturm-Nachbau (km 386)</name><desc>Originaltyp TURM; 251 m neben der Route; Abschnitt HE</desc><type>TURM</type></wpt>
-<wpt lat="50.192474" lon="8.212667"><name>Wachturm-Reste (km 387)</name><desc>Originaltyp TURMRESTE; 120 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.191497" lon="8.221084"><name>Wachturm-Reste (km 387)</name><desc>Originaltyp TURMRESTE; 90 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.191918" lon="8.236204"><name>Wachturm-Reste (km 388)</name><desc>Originaltyp TURMRESTE; 653 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.192779" lon="8.245079"><name>Wachturm-Reste (km 389)</name><desc>Originaltyp TURMRESTE; 895 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.193485" lon="8.250039"><name>Wachturm-Fundament (km 393)</name><desc>Originaltyp TURMGRUND; 705 m neben der Route; Abschnitt HE</desc><type>TURMGRUND</type></wpt>
-<wpt lat="50.194295" lon="8.257098"><name>Wachturm-Reste (km 394)</name><desc>Originaltyp TURMRESTE; 250 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.194722" lon="8.260732"><name>Wachturm-Reste (km 394)</name><desc>Originaltyp TURMRESTE; 105 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.196326" lon="8.272751"><name>Wachturm-Reste (km 396)</name><desc>Originaltyp TURMRESTE; 72 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.197715" lon="8.283239"><name>Wachturm-Nachbau (km 398)</name><desc>Originaltyp TURM; 28 m neben der Route; Abschnitt HE</desc><type>TURM</type></wpt>
-<wpt lat="50.201695" lon="8.313076"><name>Wachturm-Reste (km 400)</name><desc>Originaltyp TURMRESTE; 320 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.201218" lon="8.315954"><name>Kleinkastell-Reste (km 400)</name><desc>Originaltyp KK-RESTE; 498 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
-<wpt lat="50.204021" lon="8.318715"><name>Wachturm-Reste (km 400)</name><desc>Originaltyp TURMRESTE; 454 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.206438" lon="8.324704"><name>Wachturm-Reste (km 401)</name><desc>Originaltyp TURMRESTE; 108 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.208283" lon="8.332942"><name>Kastell-Reste (km 402)</name><desc>Originaltyp KASTELL-R; 80 m neben der Route; Abschnitt HE</desc><type>KASTELL-R</type></wpt>
-<wpt lat="50.214098" lon="8.351844"><name>Wachturm-Reste (km 404)</name><desc>Originaltyp TURMRESTE; 425 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.215778" lon="8.371365"><name>Wachturm-Reste (km 407)</name><desc>Originaltyp TURMRESTE; 1149 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.216343" lon="8.375981"><name>Wachturm-Reste (km 407)</name><desc>Originaltyp TURMRESTE; 1072 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.216960" lon="8.382207"><name>Wachturm-Reste (km 408)</name><desc>Originaltyp TURMRESTE; 757 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.218487" lon="8.390454"><name>Kleinkastell-Reste (km 408)</name><desc>Originaltyp KK-REST; 600 m neben der Route; Abschnitt HE</desc><type>KK-REST</type></wpt>
-<wpt lat="50.219451" lon="8.394364"><name>Wachturm-Reste (km 409)</name><desc>Originaltyp TURMRESTE; 623 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.220631" lon="8.414035"><name>Wachturm-Reste (km 410)</name><desc>Originaltyp TURMRESTE; 265 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.223948" lon="8.421211"><name>Wachturm-Reste (km 411)</name><desc>Originaltyp TURMRESTE; 55 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.224137" lon="8.423100"><name>Wachturm-Fundament (km 411)</name><desc>Originaltyp TURMGRUND; 102 m neben der Route; Abschnitt HE</desc><type>TURMGRUND</type></wpt>
-<wpt lat="50.224462" lon="8.425198"><name>Wachturm-Reste (km 411)</name><desc>Originaltyp TURMRESTE; 207 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.224623" lon="8.439909"><name>Wachturm-Reste (km 413)</name><desc>Originaltyp TURMRESTE; 165 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.227477" lon="8.444570"><name>Römerkastell (km 413)</name><desc>Originaltyp KASTELL; 89 m neben der Route; Abschnitt HE</desc><type>KASTELL</type></wpt>
-<wpt lat="50.236262" lon="8.458554"><name>Wachturm-Reste (km 415)</name><desc>Originaltyp TURMRESTE; 212 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.238371" lon="8.457759"><name>Wachturm-Fundament (km 415)</name><desc>Originaltyp TURMGRUND; 29 m neben der Route; Abschnitt HE</desc><type>TURMGRUND</type></wpt>
-<wpt lat="50.239809" lon="8.467485"><name>Wachturm-Fundament (km 415)</name><desc>Originaltyp TURMGRUND; 18 m neben der Route; Abschnitt HE</desc><type>TURMGRUND</type></wpt>
-<wpt lat="50.240416" lon="8.472314"><name>Wachturm-Reste (km 416)</name><desc>Originaltyp TURMRESTE; 31 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.244241" lon="8.483416"><name>Wachturm-Reste (km 417)</name><desc>Originaltyp TURMRESTE; 52 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.244508" lon="8.492945"><name>Kastell-Standort (km 418)</name><desc>Originaltyp K-KASTELL; 85 m neben der Route; Abschnitt HE</desc><type>K-KASTELL</type></wpt>
-<wpt lat="50.247104" lon="8.501049"><name>Wachturm-Reste (km 418)</name><desc>Originaltyp TURMRESTE; 23 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.253582" lon="8.513039"><name>Kastell-Standort (km 419)</name><desc>Originaltyp K-KASTELL; 105 m neben der Route; Abschnitt HE</desc><type>K-KASTELL</type></wpt>
-<wpt lat="50.257235" lon="8.527024"><name>Wachturm-Reste (km 421)</name><desc>Originaltyp TURMRESTE; 185 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.258698" lon="8.533109"><name>Wachturm-Fundament (km 421)</name><desc>Originaltyp TURMGRUND; 256 m neben der Route; Abschnitt HE</desc><type>TURMGRUND</type></wpt>
-<wpt lat="50.261826" lon="8.539809"><name>Wachturm-Fundament (km 422)</name><desc>Originaltyp TURMGRUND; 268 m neben der Route; Abschnitt HE</desc><type>TURMGRUND</type></wpt>
-<wpt lat="50.268118" lon="8.551109"><name>Wachturm-Fundament (km 423)</name><desc>Originaltyp TURMGRUND; 121 m neben der Route; Abschnitt HE</desc><type>TURMGRUND</type></wpt>
-<wpt lat="50.271591" lon="8.566365"><name>Römerkastell (km 424)</name><desc>Originaltyp KASTELL; 117 m neben der Route; Abschnitt HE</desc><type>KASTELL</type></wpt>
-<wpt lat="50.275536" lon="8.575727"><name>Wachturm-Fundament (km 426)</name><desc>Originaltyp TURMGRUND; 3 m neben der Route; Abschnitt HE</desc><type>TURMGRUND</type></wpt>
-<wpt lat="50.278660" lon="8.582012"><name>Wachturm-Fundament (km 426)</name><desc>Originaltyp TURMGRUND; 0 m neben der Route; Abschnitt HE</desc><type>TURMGRUND</type></wpt>
-<wpt lat="50.282001" lon="8.586402"><name>Kleinkastell-Reste (km 427)</name><desc>Originaltyp KK-RESTE; 33 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
-<wpt lat="50.290062" lon="8.591033"><name>Wachturm-Reste (km 429)</name><desc>Originaltyp TURMRESTE; 252 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.290625" lon="8.597553"><name>Wachturm-Reste (km 430)</name><desc>Originaltyp TURMRESTE; 342 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.292864" lon="8.608549"><name>Wachturm-Reste (km 430)</name><desc>Originaltyp TURMRESTE; 451 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.293898" lon="8.608611"><name>Wachturm-Reste (km 431)</name><desc>Originaltyp TURMRESTE; 368 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.297971" lon="8.617068"><name>Wachturm-Reste (km 431)</name><desc>Originaltyp TURMRESTE; 595 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.304098" lon="8.621580"><name>Wachturm-Reste (km 432)</name><desc>Originaltyp TURMRESTE; 531 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.304686" lon="8.622558"><name>Wachturm-Reste (km 432)</name><desc>Originaltyp TURMRESTE; 561 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.305275" lon="8.624027"><name>Kleinkastell-Reste (km 432)</name><desc>Originaltyp KK-RESTE; 611 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
-<wpt lat="50.308485" lon="8.630108"><name>Wachturm-Reste (km 432)</name><desc>Originaltyp TURMRESTE; 836 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.312905" lon="8.635057"><name>Römerkastell (km 433)</name><desc>Originaltyp KASTELL; 1034 m neben der Route; Abschnitt HE</desc><type>KASTELL</type></wpt>
-<wpt lat="50.319203" lon="8.636764"><name>Wachturm-Reste (km 434)</name><desc>Originaltyp TURMRESTE; 568 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.319746" lon="8.638024"><name>Kleinkastell-Reste (km 434)</name><desc>Originaltyp KK-RESTE; 602 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
-<wpt lat="50.323886" lon="8.639537"><name>Wachturm-Reste (km 435)</name><desc>Originaltyp TURMRESTE; 465 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.333843" lon="8.647677"><name>Wachturm-Reste (km 436)</name><desc>Originaltyp TURMRESTE; 129 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.334428" lon="8.647814"><name>Wachturm-Reste (km 436)</name><desc>Originaltyp TURMRESTE; 130 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.337030" lon="8.646460"><name>Kleinkastell-Reste (km 436)</name><desc>Originaltyp KK-RESTE; 96 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
-<wpt lat="50.342595" lon="8.643680"><name>Wachturm-Reste (km 437)</name><desc>Originaltyp TURMRESTE; 67 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.348560" lon="8.639701"><name>Wachturm-Reste (km 438)</name><desc>Originaltyp TURMRESTE; 144 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.356380" lon="8.639783"><name>Kleinkastell-Reste (km 439)</name><desc>Originaltyp KK-RESTE; 350 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
-<wpt lat="50.414278" lon="8.629285"><name>Kleinkastell-Reste (km 450)</name><desc>Originaltyp KK-RESTE; 53 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
-<wpt lat="50.423722" lon="8.631040"><name>Wachturm-Reste (km 450)</name><desc>Originaltyp TURMRESTE; 582 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.426883" lon="8.635941"><name>Wachturm-Reste (km 454)</name><desc>Originaltyp TURMRESTE; 894 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.428690" lon="8.638812"><name>Wachturm-Reste (km 454)</name><desc>Originaltyp TURMRESTE; 739 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.434426" lon="8.648057"><name>Wachturm-Nachbau (km 455)</name><desc>Originaltyp TURM; 37 m neben der Route; Abschnitt HE</desc><type>TURM</type></wpt>
-<wpt lat="50.432904" lon="8.650039"><name>Wachturm-Reste (km 455)</name><desc>Originaltyp TURMRESTE; 66 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.433175" lon="8.650600"><name>Kleinkastell-Reste (km 455)</name><desc>Originaltyp KK-RESTE; 33 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
-<wpt lat="50.443432" lon="8.655605"><name>Kleinkastell-Reste (km 456)</name><desc>Originaltyp KK-RESTE; 302 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
-<wpt lat="50.453272" lon="8.668685"><name>Wachturm-Reste (km 459)</name><desc>Originaltyp TURMRESTE; 370 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.458031" lon="8.666962"><name>Wachturm-Reste (km 460)</name><desc>Originaltyp TURMRESTE; 296 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.463309" lon="8.673896"><name>Wachturm-Reste (km 461)</name><desc>Originaltyp TURMRESTE; 256 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.466199" lon="8.678735"><name>Kleinkastell-Reste (km 462)</name><desc>Originaltyp KK-RESTE; 28 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
-<wpt lat="50.467986" lon="8.675061"><name>Wachturm-Reste (km 462)</name><desc>Originaltyp TURMRESTE; 200 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.469922" lon="8.676386"><name>Kleinkastell-Reste (km 462)</name><desc>Originaltyp KK-RESTE; 211 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
-<wpt lat="50.475957" lon="8.680782"><name>Wachturm-Reste (km 463)</name><desc>Originaltyp TURMRESTE; 245 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.480641" lon="8.684413"><name>Wachturm-Reste (km 463)</name><desc>Originaltyp TURMRESTE; 244 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.484919" lon="8.687836"><name>Wachturm-Reste (km 464)</name><desc>Originaltyp TURMRESTE; 165 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.491360" lon="8.693008"><name>Wachturm-Reste (km 465)</name><desc>Originaltyp TURMRESTE; 532 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.499916" lon="8.699788"><name>Kastell-Standort (km 467)</name><desc>Originaltyp K-KASTELL; 49 m neben der Route; Abschnitt HE</desc><type>K-KASTELL</type></wpt>
-<wpt lat="50.504229" lon="8.702604"><name>Wachturm-Reste (km 468)</name><desc>Originaltyp TURMRESTE; 7 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.514286" lon="8.710769"><name>Wachturm-Reste (km 469)</name><desc>Originaltyp TURMRESTE; 6 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.517678" lon="8.713799"><name>Wachturm-Nachbau (km 469)</name><desc>Originaltyp TURM; 21 m neben der Route; Abschnitt HE</desc><type>TURM</type></wpt>
-<wpt lat="50.521731" lon="8.724849"><name>Kleinkastell-Reste (km 471)</name><desc>Originaltyp KK-RESTE; 19 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
-<wpt lat="50.518072" lon="8.757055"><name>Wachturm-Reste (km 473)</name><desc>Originaltyp TURMRESTE; 903 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.519441" lon="8.745769"><name>Wachturm-Reste (km 473)</name><desc>Originaltyp TURMRESTE; 172 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.508951" lon="8.780854"><name>Wachturm-Reste (km 478)</name><desc>Originaltyp TURMRESTE; 1003 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.488045" lon="8.784583"><name>Kastell-Reste (km 479)</name><desc>Originaltyp KASTELL-R; 652 m neben der Route; Abschnitt HE</desc><type>KASTELL-R</type></wpt>
-<wpt lat="50.488157" lon="8.814907"><name>Wachturm-Reste (km 483)</name><desc>Originaltyp TURMRESTE; 651 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.483047" lon="8.855700"><name>Kleinkastell-Reste (km 487)</name><desc>Originaltyp KK-RESTE; 534 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
-<wpt lat="50.470530" lon="8.875259"><name>Kleinkastell-Reste (km 488)</name><desc>Originaltyp KK-RESTE; 823 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
-<wpt lat="50.460807" lon="8.906547"><name>Kleinkastell-Reste (km 492)</name><desc>Originaltyp KK-RESTE; 204 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
-<wpt lat="50.459996" lon="8.904013"><name>Kleinkastell-Reste (km 492)</name><desc>Originaltyp KK-RESTE; 187 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
-<wpt lat="50.437535" lon="8.916304"><name>Kleinkastell-Reste (km 497)</name><desc>Originaltyp KK-RESTE; 187 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
-<wpt lat="50.422429" lon="8.909436"><name>Kleinkastell-Reste (km 498)</name><desc>Originaltyp KK-RESTE; 1044 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
-<wpt lat="50.388491" lon="8.901908"><name>Kleinkastell-Reste (km 508)</name><desc>Originaltyp KK-RESTE; 339 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
-<wpt lat="50.360667" lon="8.896274"><name>Kleinkastell-Reste (km 510)</name><desc>Originaltyp KK-RESTE; 881 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
-<wpt lat="50.326435" lon="8.914814"><name>Kleinkastell-Reste (km 519)</name><desc>Originaltyp KK-RESTE; 32 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
-<wpt lat="50.312509" lon="8.923332"><name>Kleinkastell-Reste (km 521)</name><desc>Originaltyp KK-RESTE; 335 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
-<wpt lat="50.303075" lon="8.929032"><name>Wachturm-Reste (km 522)</name><desc>Originaltyp TURMRESTE; 56 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.260034" lon="8.960717"><name>Kleinkastell-Reste (km 528)</name><desc>Originaltyp KK-RESTE; 88 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
-<wpt lat="50.252710" lon="8.966541"><name>Wachturm-Reste (km 529)</name><desc>Originaltyp TURMRESTE; 53 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.243678" lon="8.973346"><name>Wachturm-Reste (km 530)</name><desc>Originaltyp TURMRESTE; 45 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.222691" lon="8.984427"><name>Kastell-Reste (km 534)</name><desc>Originaltyp KASTELL-R; 43 m neben der Route; Abschnitt HE</desc><type>KASTELL-R</type></wpt>
-<wpt lat="50.167912" lon="8.986031"><name>Kleinkastell-Reste (km 541)</name><desc>Originaltyp KK-RESTE; 221 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
-<wpt lat="50.129253" lon="8.984877"><name>Wachturm-Reste (km 548)</name><desc>Originaltyp TURMRESTE; 751 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.120713" lon="8.984600"><name>Wachturm-Reste (km 550)</name><desc>Originaltyp TURMRESTE; 370 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.113162" lon="8.983834"><name>Wachturm-Reste (km 551)</name><desc>Originaltyp TURMRESTE; 79 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.111050" lon="8.983555"><name>Kleinkastell-Reste (km 551)</name><desc>Originaltyp KK-RESTE; 49 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
-<wpt lat="50.097701" lon="8.982930"><name>Wachturm-Reste (km 553)</name><desc>Originaltyp TURMRESTE; 9 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.088532" lon="8.981816"><name>Wachturm-Reste (km 554)</name><desc>Originaltyp TURMRESTE; 45 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
-<wpt lat="50.079763" lon="8.980247"><name>Kastell-Reste (km 555)</name><desc>Originaltyp KASTELL-R; 2 m neben der Route; Abschnitt HE</desc><type>KASTELL-R</type></wpt>
+<wpt lat="50.511502" lon="7.371119"><name>Wachturm-Reste (km 261)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 289 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.509994" lon="7.376245"><name>Wachturm-Reste (km 261)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 136 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.504006" lon="7.376718"><name>Wachturm-Reste (km 262)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 147 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.499814" lon="7.379960"><name>Wachturm-Reste (km 263)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 41 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.494581" lon="7.385992"><name>Wachturm-Reste (km 263)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 50 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.494295" lon="7.392834"><name>Wachturm-Reste (km 264)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 191 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.493996" lon="7.393262"><name>Kleinkastell-Reste (km 264)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 233 m neben der Route; Abschnitt RP</desc><type>KK-RESTE</type></wpt>
+<wpt lat="50.491176" lon="7.398489"><name>Wachturm-Reste (km 265)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 102 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.486978" lon="7.399078"><name>Wachturm-Reste (km 265)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 60 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.482127" lon="7.404074"><name>Wachturm-Reste (km 266)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 204 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.476710" lon="7.406001"><name>Wachturm-Reste (km 267)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 52 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.472579" lon="7.407258"><name>Wachturm-Reste (km 267)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 48 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.466688" lon="7.419070"><name>Wachturm-Reste (km 269)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 14 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.466044" lon="7.425637"><name>Wachturm-Reste (km 269)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 17 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.477376" lon="7.480447"><name>Wachturm-Reste (km 275)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 162 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.477434" lon="7.509693"><name>Wachturm (rekonstruiert) (km 278)</name><desc>komplett rekonstruierter Limeswachturm. Originaltyp TURM; 63 m neben der Route; Abschnitt RP</desc><type>TURM</type></wpt>
+<wpt lat="50.442129" lon="7.613198"><name>Wachturm-Reste (km 293)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 273 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.437305" lon="7.622070"><name>Wachturm-Reste (km 294)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 20 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.437290" lon="7.640188"><name>Wachturm-Reste (km 295)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 52 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.423134" lon="7.666838"><name>Wachturm-Reste (km 299)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 1153 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.416065" lon="7.688921"><name>Wachturm (rekonstruiert) (km 302)</name><desc>komplett rekonstruierter Limeswachturm. Originaltyp TURM; 310 m neben der Route; Abschnitt RP</desc><type>TURM</type></wpt>
+<wpt lat="50.402950" lon="7.716596"><name>Wachturm-Reste (km 305)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 331 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.407225" lon="7.712549"><name>Wachturm-Reste (km 305)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 221 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.411099" lon="7.710062"><name>Kleinkastell (teilrekonstruiert) (km 305)</name><desc>Kleinkastell mit rekonstruierten Mauerstücken. Originaltyp K-KASTELL; 671 m neben der Route; Abschnitt RP</desc><type>K-KASTELL</type></wpt>
+<wpt lat="50.397219" lon="7.723330"><name>Wachturm-Grundriss (km 311)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 28 m neben der Route; Abschnitt RP</desc><type>TURMGRUND</type></wpt>
+<wpt lat="50.374843" lon="7.744703"><name>Kastell (rekonstruiert) (km 317)</name><desc>ganz oder teilweise rekonstruiertes Erscheinungsbild. Originaltyp KASTELL; 406 m neben der Route; Abschnitt RP</desc><type>KASTELL</type></wpt>
+<wpt lat="50.369903" lon="7.756510"><name>Wachturm (rekonstruiert) (km 317)</name><desc>komplett rekonstruierter Limeswachturm. Originaltyp TURM; 1272 m neben der Route; Abschnitt RP</desc><type>TURM</type></wpt>
+<wpt lat="50.338015" lon="7.737466"><name>Wachturm-Reste (km 324)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 1212 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.323209" lon="7.727038"><name>Wachturm (rekonstruiert) (km 324)</name><desc>komplett rekonstruierter Limeswachturm. Originaltyp TURM; 323 m neben der Route; Abschnitt RP</desc><type>TURM</type></wpt>
+<wpt lat="50.315201" lon="7.722229"><name>Wachturm-Grundriss (km 326)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 59 m neben der Route; Abschnitt RP</desc><type>TURMGRUND</type></wpt>
+<wpt lat="50.307470" lon="7.716641"><name>Wachturm-Reste (km 327)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 258 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.304375" lon="7.713901"><name>Wachturm-Reste (km 330)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 107 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.300173" lon="7.715976"><name>Wachturm-Reste (km 330)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 42 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.292411" lon="7.727911"><name>Wachturm-Reste (km 332)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 2 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.289430" lon="7.733320"><name>Wachturm-Grundriss (km 332)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 23 m neben der Route; Abschnitt RP</desc><type>TURMGRUND</type></wpt>
+<wpt lat="50.286450" lon="7.738474"><name>Kleinkastell (teilrekonstruiert) (km 333)</name><desc>Kleinkastell mit rekonstruierten Mauerstücken. Originaltyp K-KASTELL; 21 m neben der Route; Abschnitt RP</desc><type>K-KASTELL</type></wpt>
+<wpt lat="50.284247" lon="7.744087"><name>Wachturm-Reste (km 333)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 25 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.273326" lon="7.771101"><name>Wachturm-Reste (km 336)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 877 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.269436" lon="7.781237"><name>Wachturm-Reste (km 337)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 1270 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.263504" lon="7.789108"><name>Wachturm-Grundriss (km 339)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 1064 m neben der Route; Abschnitt RP</desc><type>TURMGRUND</type></wpt>
+<wpt lat="50.249129" lon="7.852276"><name>Wachturm-Reste (km 346)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 240 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.252029" lon="7.866632"><name>Kleinkastell (teilrekonstruiert) (km 347)</name><desc>Kleinkastell mit rekonstruierten Mauerstücken. Originaltyp K-KASTELL; 154 m neben der Route; Abschnitt RP</desc><type>K-KASTELL</type></wpt>
+<wpt lat="50.244320" lon="7.876223"><name>Wachturm-Grundriss (km 348)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 402 m neben der Route; Abschnitt RP</desc><type>TURMGRUND</type></wpt>
+<wpt lat="50.234091" lon="7.889162"><name>Wachturm-Reste (km 350)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 245 m neben der Route; Abschnitt RP</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.226869" lon="7.890250"><name>Kleinkastell-Reste (km 350)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 229 m neben der Route; Abschnitt RP</desc><type>KK-RESTE</type></wpt>
+<wpt lat="50.210418" lon="7.934107"><name>Wachturm-Reste (km 356)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 933 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.213995" lon="7.942332"><name>Wachturm-Reste (km 357)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 790 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.214934" lon="7.947324"><name>Kastell-Reste (km 357)</name><desc>Reste oder Erhebung erkennbar. Originaltyp KASTELL-R; 766 m neben der Route; Abschnitt HE</desc><type>KASTELL-R</type></wpt>
+<wpt lat="50.215471" lon="7.954104"><name>Wachturm-Reste (km 357)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 837 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.215713" lon="7.955522"><name>Wachturm-Reste (km 357)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 858 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.212604" lon="7.965496"><name>Wachturm-Reste (km 358)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 377 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.214920" lon="7.964793"><name>Wachturm-Reste (km 358)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 635 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.206154" lon="7.967770"><name>Wachturm-Reste (km 358)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 323 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.202699" lon="7.973063"><name>Wachturm-Reste (km 359)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 628 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.198746" lon="7.989324"><name>Wachturm-Reste (km 362)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 240 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.178997" lon="8.008150"><name>Wachturm-Grundriss (km 366)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 185 m neben der Route; Abschnitt HE</desc><type>TURMGRUND</type></wpt>
+<wpt lat="50.167517" lon="8.016435"><name>Kleinkastell (teilrekonstruiert) (km 369)</name><desc>Kleinkastell mit rekonstruierten Mauerstücken. Originaltyp K-KASTELL; 202 m neben der Route; Abschnitt HE</desc><type>K-KASTELL</type></wpt>
+<wpt lat="50.162955" lon="8.046127"><name>Wachturm-Reste (km 371)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 100 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.162908" lon="8.054605"><name>Wachturm-Reste (km 372)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 171 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.165007" lon="8.077576"><name>Kleinkastell-Reste (km 375)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 298 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
+<wpt lat="50.165392" lon="8.103809"><name>Wachturm-Reste (km 378)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 154 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.169790" lon="8.102887"><name>Wachturm-Reste (km 378)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 638 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.171973" lon="8.112084"><name>Wachturm-Reste (km 378)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 680 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.173990" lon="8.117296"><name>Wachturm-Reste (km 378)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 1018 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.168889" lon="8.114381"><name>Wachturm-Reste (km 378)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 422 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.179907" lon="8.139166"><name>Wachturm-Reste (km 381)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 458 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.180277" lon="8.140490"><name>Wachturm-Reste (km 381)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 419 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.182954" lon="8.162422"><name>Wachturm-Reste (km 383)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 108 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.184515" lon="8.173385"><name>Wachturm-Reste (km 384)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 22 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.191967" lon="8.197692"><name>Wachturm-Reste (km 386)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 290 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.189940" lon="8.203607"><name>Kastell-Reste (km 386)</name><desc>Reste oder Erhebung erkennbar. Originaltyp KASTELL-R; 85 m neben der Route; Abschnitt HE</desc><type>KASTELL-R</type></wpt>
+<wpt lat="50.192992" lon="8.202996"><name>Wachturm (rekonstruiert) (km 386)</name><desc>komplett rekonstruierter Limeswachturm. Originaltyp TURM; 251 m neben der Route; Abschnitt HE</desc><type>TURM</type></wpt>
+<wpt lat="50.192474" lon="8.212667"><name>Wachturm-Reste (km 387)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 120 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.191497" lon="8.221084"><name>Wachturm-Reste (km 387)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 90 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.191918" lon="8.236204"><name>Wachturm-Reste (km 388)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 653 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.192779" lon="8.245079"><name>Wachturm-Reste (km 389)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 895 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.193485" lon="8.250039"><name>Wachturm-Grundriss (km 393)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 705 m neben der Route; Abschnitt HE</desc><type>TURMGRUND</type></wpt>
+<wpt lat="50.194295" lon="8.257098"><name>Wachturm-Reste (km 394)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 250 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.194722" lon="8.260732"><name>Wachturm-Reste (km 394)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 105 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.196326" lon="8.272751"><name>Wachturm-Reste (km 396)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 72 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.197715" lon="8.283239"><name>Wachturm (rekonstruiert) (km 398)</name><desc>komplett rekonstruierter Limeswachturm. Originaltyp TURM; 28 m neben der Route; Abschnitt HE</desc><type>TURM</type></wpt>
+<wpt lat="50.201695" lon="8.313076"><name>Wachturm-Reste (km 400)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 320 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.201218" lon="8.315954"><name>Kleinkastell-Reste (km 400)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 498 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
+<wpt lat="50.204021" lon="8.318715"><name>Wachturm-Reste (km 400)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 454 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.206438" lon="8.324704"><name>Wachturm-Reste (km 401)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 108 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.208283" lon="8.332942"><name>Kastell-Reste (km 402)</name><desc>Reste oder Erhebung erkennbar. Originaltyp KASTELL-R; 80 m neben der Route; Abschnitt HE</desc><type>KASTELL-R</type></wpt>
+<wpt lat="50.214098" lon="8.351844"><name>Wachturm-Reste (km 404)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 425 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.215778" lon="8.371365"><name>Wachturm-Reste (km 407)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 1149 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.216343" lon="8.375981"><name>Wachturm-Reste (km 407)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 1072 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.216960" lon="8.382207"><name>Wachturm-Reste (km 408)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 757 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.218487" lon="8.390454"><name>Kleinkastell-Reste (km 408)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-REST; 600 m neben der Route; Abschnitt HE</desc><type>KK-REST</type></wpt>
+<wpt lat="50.219451" lon="8.394364"><name>Wachturm-Reste (km 409)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 623 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.220631" lon="8.414035"><name>Wachturm-Reste (km 410)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 265 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.223948" lon="8.421211"><name>Wachturm-Reste (km 411)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 55 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.224137" lon="8.423100"><name>Wachturm-Grundriss (km 411)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 102 m neben der Route; Abschnitt HE</desc><type>TURMGRUND</type></wpt>
+<wpt lat="50.224462" lon="8.425198"><name>Wachturm-Reste (km 411)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 207 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.224623" lon="8.439909"><name>Wachturm-Reste (km 413)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 165 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.227477" lon="8.444570"><name>Kastell (rekonstruiert) (km 413)</name><desc>ganz oder teilweise rekonstruiertes Erscheinungsbild. Originaltyp KASTELL; 89 m neben der Route; Abschnitt HE</desc><type>KASTELL</type></wpt>
+<wpt lat="50.236262" lon="8.458554"><name>Wachturm-Reste (km 415)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 212 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.238371" lon="8.457759"><name>Wachturm-Grundriss (km 415)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 29 m neben der Route; Abschnitt HE</desc><type>TURMGRUND</type></wpt>
+<wpt lat="50.239809" lon="8.467485"><name>Wachturm-Grundriss (km 415)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 18 m neben der Route; Abschnitt HE</desc><type>TURMGRUND</type></wpt>
+<wpt lat="50.240416" lon="8.472314"><name>Wachturm-Reste (km 416)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 31 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.244241" lon="8.483416"><name>Wachturm-Reste (km 417)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 52 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.244508" lon="8.492945"><name>Kleinkastell (teilrekonstruiert) (km 418)</name><desc>Kleinkastell mit rekonstruierten Mauerstücken. Originaltyp K-KASTELL; 85 m neben der Route; Abschnitt HE</desc><type>K-KASTELL</type></wpt>
+<wpt lat="50.247104" lon="8.501049"><name>Wachturm-Reste (km 418)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 23 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.253582" lon="8.513039"><name>Kleinkastell (teilrekonstruiert) (km 419)</name><desc>Kleinkastell mit rekonstruierten Mauerstücken. Originaltyp K-KASTELL; 105 m neben der Route; Abschnitt HE</desc><type>K-KASTELL</type></wpt>
+<wpt lat="50.257235" lon="8.527024"><name>Wachturm-Reste (km 421)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 185 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.258698" lon="8.533109"><name>Wachturm-Grundriss (km 421)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 256 m neben der Route; Abschnitt HE</desc><type>TURMGRUND</type></wpt>
+<wpt lat="50.261826" lon="8.539809"><name>Wachturm-Grundriss (km 422)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 268 m neben der Route; Abschnitt HE</desc><type>TURMGRUND</type></wpt>
+<wpt lat="50.268118" lon="8.551109"><name>Wachturm-Grundriss (km 423)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 121 m neben der Route; Abschnitt HE</desc><type>TURMGRUND</type></wpt>
+<wpt lat="50.271591" lon="8.566365"><name>Kastell (rekonstruiert) (km 424)</name><desc>ganz oder teilweise rekonstruiertes Erscheinungsbild. Originaltyp KASTELL; 117 m neben der Route; Abschnitt HE</desc><type>KASTELL</type></wpt>
+<wpt lat="50.275536" lon="8.575727"><name>Wachturm-Grundriss (km 426)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 3 m neben der Route; Abschnitt HE</desc><type>TURMGRUND</type></wpt>
+<wpt lat="50.278660" lon="8.582012"><name>Wachturm-Grundriss (km 426)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 0 m neben der Route; Abschnitt HE</desc><type>TURMGRUND</type></wpt>
+<wpt lat="50.282001" lon="8.586402"><name>Kleinkastell-Reste (km 427)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 33 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
+<wpt lat="50.290062" lon="8.591033"><name>Wachturm-Reste (km 429)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 252 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.290625" lon="8.597553"><name>Wachturm-Reste (km 430)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 342 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.292864" lon="8.608549"><name>Wachturm-Reste (km 430)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 451 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.293898" lon="8.608611"><name>Wachturm-Reste (km 431)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 368 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.297971" lon="8.617068"><name>Wachturm-Reste (km 431)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 595 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.304098" lon="8.621580"><name>Wachturm-Reste (km 432)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 531 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.304686" lon="8.622558"><name>Wachturm-Reste (km 432)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 561 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.305275" lon="8.624027"><name>Kleinkastell-Reste (km 432)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 611 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
+<wpt lat="50.308485" lon="8.630108"><name>Wachturm-Reste (km 432)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 836 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.312905" lon="8.635057"><name>Kastell (rekonstruiert) (km 433)</name><desc>ganz oder teilweise rekonstruiertes Erscheinungsbild. Originaltyp KASTELL; 1034 m neben der Route; Abschnitt HE</desc><type>KASTELL</type></wpt>
+<wpt lat="50.319203" lon="8.636764"><name>Wachturm-Reste (km 434)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 568 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.319746" lon="8.638024"><name>Kleinkastell-Reste (km 434)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 602 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
+<wpt lat="50.323886" lon="8.639537"><name>Wachturm-Reste (km 435)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 465 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.333843" lon="8.647677"><name>Wachturm-Reste (km 436)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 129 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.334428" lon="8.647814"><name>Wachturm-Reste (km 436)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 130 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.337030" lon="8.646460"><name>Kleinkastell-Reste (km 436)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 96 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
+<wpt lat="50.342595" lon="8.643680"><name>Wachturm-Reste (km 437)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 67 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.348560" lon="8.639701"><name>Wachturm-Reste (km 438)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 144 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.356380" lon="8.639783"><name>Kleinkastell-Reste (km 439)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 350 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
+<wpt lat="50.414278" lon="8.629285"><name>Kleinkastell-Reste (km 450)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 53 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
+<wpt lat="50.423722" lon="8.631040"><name>Wachturm-Reste (km 450)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 582 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.426883" lon="8.635941"><name>Wachturm-Reste (km 454)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 894 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.428690" lon="8.638812"><name>Wachturm-Reste (km 454)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 739 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.434426" lon="8.648057"><name>Wachturm (rekonstruiert) (km 455)</name><desc>komplett rekonstruierter Limeswachturm. Originaltyp TURM; 37 m neben der Route; Abschnitt HE</desc><type>TURM</type></wpt>
+<wpt lat="50.432904" lon="8.650039"><name>Wachturm-Reste (km 455)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 66 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.433175" lon="8.650600"><name>Kleinkastell-Reste (km 455)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 33 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
+<wpt lat="50.443432" lon="8.655605"><name>Kleinkastell-Reste (km 456)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 302 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
+<wpt lat="50.453272" lon="8.668685"><name>Wachturm-Reste (km 459)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 370 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.458031" lon="8.666962"><name>Wachturm-Reste (km 460)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 296 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.463309" lon="8.673896"><name>Wachturm-Reste (km 461)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 256 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.466199" lon="8.678735"><name>Kleinkastell-Reste (km 462)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 28 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
+<wpt lat="50.467986" lon="8.675061"><name>Wachturm-Reste (km 462)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 200 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.469922" lon="8.676386"><name>Kleinkastell-Reste (km 462)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 211 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
+<wpt lat="50.475957" lon="8.680782"><name>Wachturm-Reste (km 463)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 245 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.480641" lon="8.684413"><name>Wachturm-Reste (km 463)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 244 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.484919" lon="8.687836"><name>Wachturm-Reste (km 464)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 165 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.491360" lon="8.693008"><name>Wachturm-Reste (km 465)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 532 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.499916" lon="8.699788"><name>Kleinkastell (teilrekonstruiert) (km 467)</name><desc>Kleinkastell mit rekonstruierten Mauerstücken. Originaltyp K-KASTELL; 49 m neben der Route; Abschnitt HE</desc><type>K-KASTELL</type></wpt>
+<wpt lat="50.504229" lon="8.702604"><name>Wachturm-Reste (km 468)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 7 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.514286" lon="8.710769"><name>Wachturm-Reste (km 469)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 6 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.517678" lon="8.713799"><name>Wachturm (rekonstruiert) (km 469)</name><desc>komplett rekonstruierter Limeswachturm. Originaltyp TURM; 21 m neben der Route; Abschnitt HE</desc><type>TURM</type></wpt>
+<wpt lat="50.521731" lon="8.724849"><name>Kleinkastell-Reste (km 471)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 19 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
+<wpt lat="50.518072" lon="8.757055"><name>Wachturm-Reste (km 473)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 903 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.519441" lon="8.745769"><name>Wachturm-Reste (km 473)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 172 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.508951" lon="8.780854"><name>Wachturm-Reste (km 478)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 1003 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.488045" lon="8.784583"><name>Kastell-Reste (km 479)</name><desc>Reste oder Erhebung erkennbar. Originaltyp KASTELL-R; 652 m neben der Route; Abschnitt HE</desc><type>KASTELL-R</type></wpt>
+<wpt lat="50.488157" lon="8.814907"><name>Wachturm-Reste (km 483)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 651 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.483047" lon="8.855700"><name>Kleinkastell-Reste (km 487)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 534 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
+<wpt lat="50.470530" lon="8.875259"><name>Kleinkastell-Reste (km 488)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 823 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
+<wpt lat="50.460807" lon="8.906547"><name>Kleinkastell-Reste (km 492)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 204 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
+<wpt lat="50.459996" lon="8.904013"><name>Kleinkastell-Reste (km 492)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 187 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
+<wpt lat="50.437535" lon="8.916304"><name>Kleinkastell-Reste (km 497)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 187 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
+<wpt lat="50.422429" lon="8.909436"><name>Kleinkastell-Reste (km 498)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 1044 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
+<wpt lat="50.388491" lon="8.901908"><name>Kleinkastell-Reste (km 508)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 339 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
+<wpt lat="50.360667" lon="8.896274"><name>Kleinkastell-Reste (km 510)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 881 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
+<wpt lat="50.326435" lon="8.914814"><name>Kleinkastell-Reste (km 519)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 32 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
+<wpt lat="50.312509" lon="8.923332"><name>Kleinkastell-Reste (km 521)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 335 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
+<wpt lat="50.303075" lon="8.929032"><name>Wachturm-Reste (km 522)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 56 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.260034" lon="8.960717"><name>Kleinkastell-Reste (km 528)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 88 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
+<wpt lat="50.252710" lon="8.966541"><name>Wachturm-Reste (km 529)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 53 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.243678" lon="8.973346"><name>Wachturm-Reste (km 530)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 45 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.222691" lon="8.984427"><name>Kastell-Reste (km 534)</name><desc>Reste oder Erhebung erkennbar. Originaltyp KASTELL-R; 43 m neben der Route; Abschnitt HE</desc><type>KASTELL-R</type></wpt>
+<wpt lat="50.167912" lon="8.986031"><name>Kleinkastell-Reste (km 541)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 221 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
+<wpt lat="50.129253" lon="8.984877"><name>Wachturm-Reste (km 548)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 751 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.120713" lon="8.984600"><name>Wachturm-Reste (km 550)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 370 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.113162" lon="8.983834"><name>Wachturm-Reste (km 551)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 79 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.111050" lon="8.983555"><name>Kleinkastell-Reste (km 551)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 49 m neben der Route; Abschnitt HE</desc><type>KK-RESTE</type></wpt>
+<wpt lat="50.097701" lon="8.982930"><name>Wachturm-Reste (km 553)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 9 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.088532" lon="8.981816"><name>Wachturm-Reste (km 554)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 45 m neben der Route; Abschnitt HE</desc><type>TURMRESTE</type></wpt>
+<wpt lat="50.079763" lon="8.980247"><name>Kastell-Reste (km 555)</name><desc>Reste oder Erhebung erkennbar. Originaltyp KASTELL-R; 2 m neben der Route; Abschnitt HE</desc><type>KASTELL-R</type></wpt>
 <wpt lat="49.953592" lon="9.116730"><name>Römisches Bad (km 585)</name><desc>Originaltyp BAD; 38 m neben der Route; Abschnitt HE</desc><type>BAD</type></wpt>
 <wpt lat="49.919202" lon="9.140361"><name>Römischer Grabstein (km 590)</name><desc>Originaltyp GRABSTEIN; 10 m neben der Route; Abschnitt HE</desc><type>GRABSTEIN</type></wpt>
 <wpt lat="49.843436" lon="9.146870"><name>Römische Inschrift (km 600)</name><desc>Originaltyp INSCHRIFT; 311 m neben der Route; Abschnitt HE</desc><type>INSCHRIFT</type></wpt>
 <wpt lat="49.838388" lon="9.146847"><name>Mithras-Heiligtum (km 601)</name><desc>Originaltyp MITHRAS; 48 m neben der Route; Abschnitt HE</desc><type>MITHRAS</type></wpt>
-<wpt lat="49.801380" lon="9.144286"><name>Kastell-Reste (km 606)</name><desc>Originaltyp KASTELL-R; 177 m neben der Route; Abschnitt HE</desc><type>KASTELL-R</type></wpt>
+<wpt lat="49.801380" lon="9.144286"><name>Kastell-Reste (km 606)</name><desc>Reste oder Erhebung erkennbar. Originaltyp KASTELL-R; 177 m neben der Route; Abschnitt HE</desc><type>KASTELL-R</type></wpt>
 <wpt lat="49.775579" lon="9.177077"><name>Römische Inschrift (km 610)</name><desc>Originaltyp INSCHRIFT; 168 m neben der Route; Abschnitt HE</desc><type>INSCHRIFT</type></wpt>
-<wpt lat="49.709277" lon="9.230017"><name>Kastell-Reste (km 619)</name><desc>Originaltyp KASTELL-R; 84 m neben der Route; Abschnitt HE</desc><type>KASTELL-R</type></wpt>
+<wpt lat="49.709277" lon="9.230017"><name>Kastell-Reste (km 619)</name><desc>Reste oder Erhebung erkennbar. Originaltyp KASTELL-R; 84 m neben der Route; Abschnitt HE</desc><type>KASTELL-R</type></wpt>
 <wpt lat="49.707949" lon="9.230883"><name>Römisches Bad (km 620)</name><desc>Originaltyp BAD; 29 m neben der Route; Abschnitt HE</desc><type>BAD</type></wpt>
 <wpt lat="49.703165" lon="9.259982"><name>Römischer Brennofen (km 621)</name><desc>Originaltyp OFEN; 1847 m neben der Route; Abschnitt HE</desc><type>OFEN</type></wpt>
-<wpt lat="49.609707" lon="9.362334"><name>Wachturm-Reste (km 641)</name><desc>Originaltyp TURMRESTE; 1386 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.605721" lon="9.366233"><name>Wachturm-Fundament (km 641)</name><desc>Originaltyp TURMGRUND; 1253 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
-<wpt lat="49.602104" lon="9.370540"><name>Wachturm-Reste (km 642)</name><desc>Originaltyp TURMRESTE; 1276 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.598824" lon="9.373811"><name>Wachturm-Fundament (km 643)</name><desc>Originaltyp TURMGRUND; 1325 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
-<wpt lat="49.593241" lon="9.379842"><name>Wachturm-Fundament (km 643)</name><desc>Originaltyp TURMGRUND; 1245 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
+<wpt lat="49.609707" lon="9.362334"><name>Wachturm-Reste (km 641)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 1386 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.605721" lon="9.366233"><name>Wachturm-Grundriss (km 641)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 1253 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
+<wpt lat="49.602104" lon="9.370540"><name>Wachturm-Reste (km 642)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 1276 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.598824" lon="9.373811"><name>Wachturm-Grundriss (km 643)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 1325 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
+<wpt lat="49.593241" lon="9.379842"><name>Wachturm-Grundriss (km 643)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 1245 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
 <wpt lat="49.579148" lon="9.385071"><name>Römisches Bad (km 645)</name><desc>Originaltyp BAD; 406 m neben der Route; Abschnitt BW</desc><type>BAD</type></wpt>
-<wpt lat="49.578417" lon="9.386981"><name>Kastell-Reste (km 645)</name><desc>Originaltyp KASTELL-R; 374 m neben der Route; Abschnitt BW</desc><type>KASTELL-R</type></wpt>
-<wpt lat="49.548875" lon="9.386357"><name>Wachturm-Fundament (km 649)</name><desc>Originaltyp TURMGRUND; 405 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
-<wpt lat="49.545108" lon="9.383515"><name>Kleinkastell-Reste (km 650)</name><desc>Originaltyp KK-RESTE; 351 m neben der Route; Abschnitt BW</desc><type>KK-RESTE</type></wpt>
-<wpt lat="49.542857" lon="9.387522"><name>Kastell-Standort (km 650)</name><desc>Originaltyp K-KASTELL; 72 m neben der Route; Abschnitt BW</desc><type>K-KASTELL</type></wpt>
-<wpt lat="49.540955" lon="9.389500"><name>Wachturm-Fundament (km 650)</name><desc>Originaltyp TURMGRUND; 61 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
-<wpt lat="49.534971" lon="9.391895"><name>Wachturm-Fundament (km 651)</name><desc>Originaltyp TURMGRUND; 231 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
-<wpt lat="49.530447" lon="9.392278"><name>Wachturm-Reste (km 652)</name><desc>Originaltyp TURMRESTE; 128 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.514818" lon="9.395209"><name>Kleinkastell-Reste (km 653)</name><desc>Originaltyp KK-RESTE; 138 m neben der Route; Abschnitt BW</desc><type>KK-RESTE</type></wpt>
-<wpt lat="49.499834" lon="9.404872"><name>Wachturm-Reste (km 656)</name><desc>Originaltyp TURMRESTE; 619 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.493730" lon="9.406783"><name>Wachturm-Reste (km 657)</name><desc>Originaltyp TURMRESTE; 330 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.463772" lon="9.418016"><name>Wachturm-Reste (km 660)</name><desc>Originaltyp TURMRESTE; 242 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.456813" lon="9.420648"><name>Wachturm-Reste (km 661)</name><desc>Originaltyp TURMRESTE; 341 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.450683" lon="9.422858"><name>Wachturm-Fundament (km 663)</name><desc>Originaltyp TURMGRUND; 504 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
-<wpt lat="49.426752" lon="9.424632"><name>Römerkastell (km 666)</name><desc>Originaltyp KASTELL; 84 m neben der Route; Abschnitt BW</desc><type>KASTELL</type></wpt>
-<wpt lat="49.409808" lon="9.438233"><name>Wachturm-Fundament (km 668)</name><desc>Originaltyp TURMGRUND; 20 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
-<wpt lat="49.399372" lon="9.442309"><name>Wachturm-Reste (km 672)</name><desc>Originaltyp TURMRESTE; 1050 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.396380" lon="9.443296"><name>Wachturm-Reste (km 672)</name><desc>Originaltyp TURMRESTE; 730 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.391592" lon="9.445142"><name>Wachturm-Reste (km 672)</name><desc>Originaltyp TURMRESTE; 261 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.375175" lon="9.451831"><name>Wachturm-Reste (km 674)</name><desc>Originaltyp TURMRESTE; 551 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.354764" lon="9.458908"><name>Wachturm-Reste (km 681)</name><desc>Originaltyp TURMRESTE; 1613 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.350784" lon="9.458812"><name>Kleinkastell-Reste (km 681)</name><desc>Originaltyp KK-RESTE; 1294 m neben der Route; Abschnitt BW</desc><type>KK-RESTE</type></wpt>
-<wpt lat="49.348440" lon="9.461446"><name>Wachturm-Reste (km 683)</name><desc>Originaltyp TURMRESTE; 1255 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.344780" lon="9.462610"><name>Wachturm-Reste (km 683)</name><desc>Originaltyp TURMRESTE; 985 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.279524" lon="9.478961"><name>Kleinkastell-Reste (km 693)</name><desc>Originaltyp KK-RESTE; 59 m neben der Route; Abschnitt BW</desc><type>KK-RESTE</type></wpt>
-<wpt lat="49.273818" lon="9.489795"><name>Wachturm-Fundament (km 695)</name><desc>Originaltyp TURMGRUND; 229 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
-<wpt lat="49.267401" lon="9.492399"><name>Wachturm-Reste (km 696)</name><desc>Originaltyp TURMRESTE; 18 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.264321" lon="9.493371"><name>Wachturm-Reste (km 696)</name><desc>Originaltyp TURMRESTE; 16 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.261839" lon="9.494528"><name>Wachturm-Reste (km 696)</name><desc>Originaltyp TURMRESTE; 15 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.243310" lon="9.501284"><name>Wachturm-Reste (km 699)</name><desc>Originaltyp TURMRESTE; 136 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.230824" lon="9.503533"><name>Kastell-Reste (km 701)</name><desc>Originaltyp KASTELL-R; 421 m neben der Route; Abschnitt BW</desc><type>KASTELL-R</type></wpt>
-<wpt lat="49.210227" lon="9.513645"><name>Wachturm-Fundament (km 703)</name><desc>Originaltyp TURMGRUND; 724 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
-<wpt lat="49.145434" lon="9.537959"><name>Wachturm-Fundament (km 717)</name><desc>Originaltyp TURMGRUND; 843 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
-<wpt lat="49.141607" lon="9.536560"><name>Wachturm-Reste (km 717)</name><desc>Originaltyp TURMRESTE; 444 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.139262" lon="9.534965"><name>Wachturm-Reste (km 717)</name><desc>Originaltyp TURMRESTE; 181 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.135424" lon="9.538529"><name>Wachturm-Reste (km 717)</name><desc>Originaltyp TURMRESTE; 31 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.129574" lon="9.543988"><name>Wachturm-Reste (km 719)</name><desc>Originaltyp TURMRESTE; 291 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.124453" lon="9.545908"><name>Wachturm-Reste (km 721)</name><desc>Originaltyp TURMRESTE; 249 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.114389" lon="9.549788"><name>Wachturm-Reste (km 722)</name><desc>Originaltyp TURMRESTE; 201 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.108409" lon="9.551853"><name>Wachturm-Reste (km 722)</name><desc>Originaltyp TURMRESTE; 510 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.106166" lon="9.552719"><name>Wachturm-Reste (km 723)</name><desc>Originaltyp TURMRESTE; 370 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.102407" lon="9.554131"><name>Wachturm-Nachbau (km 723)</name><desc>Originaltyp TURM; 10 m neben der Route; Abschnitt BW</desc><type>TURM</type></wpt>
-<wpt lat="49.080760" lon="9.561868"><name>Kleinkastell-Reste (km 727)</name><desc>Originaltyp KK-RESTE; 125 m neben der Route; Abschnitt BW</desc><type>KK-RESTE</type></wpt>
-<wpt lat="49.080984" lon="9.554719"><name>Römerkastell (km 727)</name><desc>Originaltyp KASTELL; 208 m neben der Route; Abschnitt BW</desc><type>KASTELL</type></wpt>
-<wpt lat="49.068706" lon="9.566635"><name>Wachturm-Reste (km 729)</name><desc>Originaltyp TURMRESTE; 752 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.059960" lon="9.569922"><name>Wachturm-Fundament (km 731)</name><desc>Originaltyp TURMGRUND; 57 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
-<wpt lat="49.055284" lon="9.574250"><name>Kastell-Standort (km 731)</name><desc>Originaltyp K-KASTELL; 69 m neben der Route; Abschnitt BW</desc><type>K-KASTELL</type></wpt>
-<wpt lat="49.052661" lon="9.572381"><name>Wachturm-Fundament (km 732)</name><desc>Originaltyp TURMGRUND; 21 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
-<wpt lat="49.031033" lon="9.580631"><name>Wachturm-Nachbau (km 735)</name><desc>Originaltyp TURM; 255 m neben der Route; Abschnitt BW</desc><type>TURM</type></wpt>
-<wpt lat="49.018315" lon="9.584648"><name>Wachturm-Reste (km 739)</name><desc>Originaltyp TURMRESTE; 586 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.000358" lon="9.592415"><name>Wachturm-Fundament (km 743)</name><desc>Originaltyp TURMGRUND; 54 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
-<wpt lat="48.985772" lon="9.597339"><name>Wachturm-Fundament (km 744)</name><desc>Originaltyp TURMGRUND; 761 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
-<wpt lat="48.980973" lon="9.599446"><name>Wachturm-Fundament (km 747)</name><desc>Originaltyp TURMGRUND; 706 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
-<wpt lat="48.969458" lon="9.602621"><name>Wachturm-Reste (km 748)</name><desc>Originaltyp TURMRESTE; 153 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="48.963225" lon="9.605923"><name>Wachturm-Fundament (km 750)</name><desc>Originaltyp TURMGRUND; 10 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
-<wpt lat="48.953242" lon="9.609548"><name>Wachturm-Reste (km 750)</name><desc>Originaltyp TURMRESTE; 1116 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="48.944097" lon="9.612347"><name>Wachturm-Reste (km 757)</name><desc>Originaltyp TURMRESTE; 1884 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="48.926201" lon="9.620011"><name>Kleinkastell-Reste (km 762)</name><desc>Originaltyp KK-RESTE; 28 m neben der Route; Abschnitt BW</desc><type>KK-RESTE</type></wpt>
-<wpt lat="48.929159" lon="9.618572"><name>Wachturm-Fundament (km 762)</name><desc>Originaltyp TURMGRUND; 256 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
-<wpt lat="48.904886" lon="9.627170"><name>Wachturm-Reste (km 765)</name><desc>Originaltyp TURMRESTE; 157 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="48.892561" lon="9.632280"><name>Wachturm-Reste (km 766)</name><desc>Originaltyp TURMRESTE; 200 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="48.886591" lon="9.633899"><name>Kastell-Standort (km 767)</name><desc>Originaltyp K-KASTELL; 164 m neben der Route; Abschnitt BW</desc><type>K-KASTELL</type></wpt>
-<wpt lat="48.871453" lon="9.642311"><name>Römerkastell (km 769)</name><desc>Originaltyp KASTELL; 122 m neben der Route; Abschnitt BW</desc><type>KASTELL</type></wpt>
-<wpt lat="48.861252" lon="9.642778"><name>Wachturm-Reste (km 771)</name><desc>Originaltyp TURMRESTE; 477 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="48.854247" lon="9.645850"><name>Wachturm-Reste (km 773)</name><desc>Originaltyp TURMRESTE; 271 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="48.842559" lon="9.663005"><name>Wachturm-Reste (km 775)</name><desc>Originaltyp TURMRESTE; 0 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="48.826863" lon="9.687105"><name>Wachturm-Fundament (km 778)</name><desc>Originaltyp TURMGRUND; 24 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
-<wpt lat="48.822266" lon="9.687088"><name>Wachturm-Fundament (km 779)</name><desc>Originaltyp TURMGRUND; 127 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
-<wpt lat="48.811535" lon="9.690965"><name>Wachturm-Fundament (km 781)</name><desc>Originaltyp TURMGRUND; 368 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
-<wpt lat="48.803103" lon="9.700605"><name>Wachturm-Reste (km 782)</name><desc>Originaltyp TURMRESTE; 18 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="48.799784" lon="9.705611"><name>Wachturm-Nachbau (km 782)</name><desc>Originaltyp TURM; 249 m neben der Route; Abschnitt BW</desc><type>TURM</type></wpt>
-<wpt lat="48.800540" lon="9.727405"><name>Wachturm-Reste (km 784)</name><desc>Originaltyp TURMRESTE; 1127 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="48.798150" lon="9.737812"><name>Wachturm-Reste (km 786)</name><desc>Originaltyp TURMRESTE; 1009 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="48.797437" lon="9.755272"><name>Kleinkastell-Reste (km 788)</name><desc>Originaltyp KK-RESTE; 940 m neben der Route; Abschnitt BW</desc><type>KK-RESTE</type></wpt>
-<wpt lat="48.818441" lon="9.923858"><name>Römerkastell (km 803)</name><desc>Originaltyp KASTELL; 166 m neben der Route; Abschnitt BW</desc><type>KASTELL</type></wpt>
-<wpt lat="48.835680" lon="10.084650"><name>Römerkastell (km 820)</name><desc>Originaltyp KASTELL; 201 m neben der Route; Abschnitt BW</desc><type>KASTELL</type></wpt>
-<wpt lat="48.915800" lon="10.130774"><name>Wachturm-Nachbau (km 833)</name><desc>Originaltyp TURM; 807 m neben der Route; Abschnitt BW</desc><type>TURM</type></wpt>
-<wpt lat="48.909705" lon="10.145065"><name>Römerkastell (km 834)</name><desc>Originaltyp KASTELL; 200 m neben der Route; Abschnitt BW</desc><type>KASTELL</type></wpt>
+<wpt lat="49.578417" lon="9.386981"><name>Kastell-Reste (km 645)</name><desc>Reste oder Erhebung erkennbar. Originaltyp KASTELL-R; 374 m neben der Route; Abschnitt BW</desc><type>KASTELL-R</type></wpt>
+<wpt lat="49.548875" lon="9.386357"><name>Wachturm-Grundriss (km 649)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 405 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
+<wpt lat="49.545108" lon="9.383515"><name>Kleinkastell-Reste (km 650)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 351 m neben der Route; Abschnitt BW</desc><type>KK-RESTE</type></wpt>
+<wpt lat="49.542857" lon="9.387522"><name>Kleinkastell (teilrekonstruiert) (km 650)</name><desc>Kleinkastell mit rekonstruierten Mauerstücken. Originaltyp K-KASTELL; 72 m neben der Route; Abschnitt BW</desc><type>K-KASTELL</type></wpt>
+<wpt lat="49.540955" lon="9.389500"><name>Wachturm-Grundriss (km 650)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 61 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
+<wpt lat="49.534971" lon="9.391895"><name>Wachturm-Grundriss (km 651)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 231 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
+<wpt lat="49.530447" lon="9.392278"><name>Wachturm-Reste (km 652)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 128 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.514818" lon="9.395209"><name>Kleinkastell-Reste (km 653)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 138 m neben der Route; Abschnitt BW</desc><type>KK-RESTE</type></wpt>
+<wpt lat="49.499834" lon="9.404872"><name>Wachturm-Reste (km 656)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 619 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.493730" lon="9.406783"><name>Wachturm-Reste (km 657)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 330 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.463772" lon="9.418016"><name>Wachturm-Reste (km 660)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 242 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.456813" lon="9.420648"><name>Wachturm-Reste (km 661)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 341 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.450683" lon="9.422858"><name>Wachturm-Grundriss (km 663)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 504 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
+<wpt lat="49.426752" lon="9.424632"><name>Kastell (rekonstruiert) (km 666)</name><desc>ganz oder teilweise rekonstruiertes Erscheinungsbild. Originaltyp KASTELL; 84 m neben der Route; Abschnitt BW</desc><type>KASTELL</type></wpt>
+<wpt lat="49.409808" lon="9.438233"><name>Wachturm-Grundriss (km 668)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 20 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
+<wpt lat="49.399372" lon="9.442309"><name>Wachturm-Reste (km 672)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 1050 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.396380" lon="9.443296"><name>Wachturm-Reste (km 672)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 730 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.391592" lon="9.445142"><name>Wachturm-Reste (km 672)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 261 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.375175" lon="9.451831"><name>Wachturm-Reste (km 674)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 551 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.354764" lon="9.458908"><name>Wachturm-Reste (km 681)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 1613 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.350784" lon="9.458812"><name>Kleinkastell-Reste (km 681)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 1294 m neben der Route; Abschnitt BW</desc><type>KK-RESTE</type></wpt>
+<wpt lat="49.348440" lon="9.461446"><name>Wachturm-Reste (km 683)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 1255 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.344780" lon="9.462610"><name>Wachturm-Reste (km 683)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 985 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.279524" lon="9.478961"><name>Kleinkastell-Reste (km 693)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 59 m neben der Route; Abschnitt BW</desc><type>KK-RESTE</type></wpt>
+<wpt lat="49.273818" lon="9.489795"><name>Wachturm-Grundriss (km 695)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 229 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
+<wpt lat="49.267401" lon="9.492399"><name>Wachturm-Reste (km 696)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 18 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.264321" lon="9.493371"><name>Wachturm-Reste (km 696)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 16 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.261839" lon="9.494528"><name>Wachturm-Reste (km 696)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 15 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.243310" lon="9.501284"><name>Wachturm-Reste (km 699)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 136 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.230824" lon="9.503533"><name>Kastell-Reste (km 701)</name><desc>Reste oder Erhebung erkennbar. Originaltyp KASTELL-R; 421 m neben der Route; Abschnitt BW</desc><type>KASTELL-R</type></wpt>
+<wpt lat="49.210227" lon="9.513645"><name>Wachturm-Grundriss (km 703)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 724 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
+<wpt lat="49.145434" lon="9.537959"><name>Wachturm-Grundriss (km 717)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 843 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
+<wpt lat="49.141607" lon="9.536560"><name>Wachturm-Reste (km 717)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 444 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.139262" lon="9.534965"><name>Wachturm-Reste (km 717)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 181 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.135424" lon="9.538529"><name>Wachturm-Reste (km 717)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 31 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.129574" lon="9.543988"><name>Wachturm-Reste (km 719)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 291 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.124453" lon="9.545908"><name>Wachturm-Reste (km 721)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 249 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.114389" lon="9.549788"><name>Wachturm-Reste (km 722)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 201 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.108409" lon="9.551853"><name>Wachturm-Reste (km 722)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 510 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.106166" lon="9.552719"><name>Wachturm-Reste (km 723)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 370 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.102407" lon="9.554131"><name>Wachturm (rekonstruiert) (km 723)</name><desc>komplett rekonstruierter Limeswachturm. Originaltyp TURM; 10 m neben der Route; Abschnitt BW</desc><type>TURM</type></wpt>
+<wpt lat="49.080760" lon="9.561868"><name>Kleinkastell-Reste (km 727)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 125 m neben der Route; Abschnitt BW</desc><type>KK-RESTE</type></wpt>
+<wpt lat="49.080984" lon="9.554719"><name>Kastell (rekonstruiert) (km 727)</name><desc>ganz oder teilweise rekonstruiertes Erscheinungsbild. Originaltyp KASTELL; 208 m neben der Route; Abschnitt BW</desc><type>KASTELL</type></wpt>
+<wpt lat="49.068706" lon="9.566635"><name>Wachturm-Reste (km 729)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 752 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.059960" lon="9.569922"><name>Wachturm-Grundriss (km 731)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 57 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
+<wpt lat="49.055284" lon="9.574250"><name>Kleinkastell (teilrekonstruiert) (km 731)</name><desc>Kleinkastell mit rekonstruierten Mauerstücken. Originaltyp K-KASTELL; 69 m neben der Route; Abschnitt BW</desc><type>K-KASTELL</type></wpt>
+<wpt lat="49.052661" lon="9.572381"><name>Wachturm-Grundriss (km 732)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 21 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
+<wpt lat="49.031033" lon="9.580631"><name>Wachturm (rekonstruiert) (km 735)</name><desc>komplett rekonstruierter Limeswachturm. Originaltyp TURM; 255 m neben der Route; Abschnitt BW</desc><type>TURM</type></wpt>
+<wpt lat="49.018315" lon="9.584648"><name>Wachturm-Reste (km 739)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 586 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.000358" lon="9.592415"><name>Wachturm-Grundriss (km 743)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 54 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
+<wpt lat="48.985772" lon="9.597339"><name>Wachturm-Grundriss (km 744)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 761 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
+<wpt lat="48.980973" lon="9.599446"><name>Wachturm-Grundriss (km 747)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 706 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
+<wpt lat="48.969458" lon="9.602621"><name>Wachturm-Reste (km 748)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 153 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="48.963225" lon="9.605923"><name>Wachturm-Grundriss (km 750)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 10 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
+<wpt lat="48.953242" lon="9.609548"><name>Wachturm-Reste (km 750)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 1116 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="48.944097" lon="9.612347"><name>Wachturm-Reste (km 757)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 1884 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="48.926201" lon="9.620011"><name>Kleinkastell-Reste (km 762)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 28 m neben der Route; Abschnitt BW</desc><type>KK-RESTE</type></wpt>
+<wpt lat="48.929159" lon="9.618572"><name>Wachturm-Grundriss (km 762)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 256 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
+<wpt lat="48.904886" lon="9.627170"><name>Wachturm-Reste (km 765)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 157 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="48.892561" lon="9.632280"><name>Wachturm-Reste (km 766)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 200 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="48.886591" lon="9.633899"><name>Kleinkastell (teilrekonstruiert) (km 767)</name><desc>Kleinkastell mit rekonstruierten Mauerstücken. Originaltyp K-KASTELL; 164 m neben der Route; Abschnitt BW</desc><type>K-KASTELL</type></wpt>
+<wpt lat="48.871453" lon="9.642311"><name>Kastell (rekonstruiert) (km 769)</name><desc>ganz oder teilweise rekonstruiertes Erscheinungsbild. Originaltyp KASTELL; 122 m neben der Route; Abschnitt BW</desc><type>KASTELL</type></wpt>
+<wpt lat="48.861252" lon="9.642778"><name>Wachturm-Reste (km 771)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 477 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="48.854247" lon="9.645850"><name>Wachturm-Reste (km 773)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 271 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="48.842559" lon="9.663005"><name>Wachturm-Reste (km 775)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 0 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="48.826863" lon="9.687105"><name>Wachturm-Grundriss (km 778)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 24 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
+<wpt lat="48.822266" lon="9.687088"><name>Wachturm-Grundriss (km 779)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 127 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
+<wpt lat="48.811535" lon="9.690965"><name>Wachturm-Grundriss (km 781)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 368 m neben der Route; Abschnitt BW</desc><type>TURMGRUND</type></wpt>
+<wpt lat="48.803103" lon="9.700605"><name>Wachturm-Reste (km 782)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 18 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="48.799784" lon="9.705611"><name>Wachturm (rekonstruiert) (km 782)</name><desc>komplett rekonstruierter Limeswachturm. Originaltyp TURM; 249 m neben der Route; Abschnitt BW</desc><type>TURM</type></wpt>
+<wpt lat="48.800540" lon="9.727405"><name>Wachturm-Reste (km 784)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 1127 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="48.798150" lon="9.737812"><name>Wachturm-Reste (km 786)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 1009 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="48.797437" lon="9.755272"><name>Kleinkastell-Reste (km 788)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 940 m neben der Route; Abschnitt BW</desc><type>KK-RESTE</type></wpt>
+<wpt lat="48.818441" lon="9.923858"><name>Kastell (rekonstruiert) (km 803)</name><desc>ganz oder teilweise rekonstruiertes Erscheinungsbild. Originaltyp KASTELL; 166 m neben der Route; Abschnitt BW</desc><type>KASTELL</type></wpt>
+<wpt lat="48.835680" lon="10.084650"><name>Kastell (rekonstruiert) (km 820)</name><desc>ganz oder teilweise rekonstruiertes Erscheinungsbild. Originaltyp KASTELL; 201 m neben der Route; Abschnitt BW</desc><type>KASTELL</type></wpt>
+<wpt lat="48.915800" lon="10.130774"><name>Wachturm (rekonstruiert) (km 833)</name><desc>komplett rekonstruierter Limeswachturm. Originaltyp TURM; 807 m neben der Route; Abschnitt BW</desc><type>TURM</type></wpt>
+<wpt lat="48.909705" lon="10.145065"><name>Kastell (rekonstruiert) (km 834)</name><desc>ganz oder teilweise rekonstruiertes Erscheinungsbild. Originaltyp KASTELL; 200 m neben der Route; Abschnitt BW</desc><type>KASTELL</type></wpt>
 <wpt lat="48.910882" lon="10.147793"><name>Römisches Bad (km 834)</name><desc>Originaltyp BAD; 156 m neben der Route; Abschnitt BW</desc><type>BAD</type></wpt>
 <wpt lat="48.926901" lon="10.155606"><name>Limestor (km 837)</name><desc>Originaltyp LIMESTOR; 15 m neben der Route; Abschnitt BW</desc><type>LIMESTOR</type></wpt>
-<wpt lat="48.983148" lon="10.285605"><name>Kastell-Reste (km 853)</name><desc>Originaltyp KASTELL-R; 47 m neben der Route; Abschnitt BW</desc><type>KASTELL-R</type></wpt>
-<wpt lat="49.008273" lon="10.356641"><name>Wachturm-Reste (km 862)</name><desc>Originaltyp TURMRESTE; 612 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.014969" lon="10.372700"><name>Wachturm-Reste (km 864)</name><desc>Originaltyp TURMRESTE; 585 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.021329" lon="10.393248"><name>Wachturm-Reste (km 865)</name><desc>Originaltyp TURMRESTE; 521 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.027177" lon="10.410381"><name>Wachturm-Reste (km 868)</name><desc>Originaltyp TURMRESTE; 832 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.029908" lon="10.418033"><name>Wachturm-Fundament (km 868)</name><desc>Originaltyp TURMGRUND; 561 m neben der Route; Abschnitt BY</desc><type>TURMGRUND</type></wpt>
-<wpt lat="49.046566" lon="10.480392"><name>Römerkastell (km 873)</name><desc>Originaltyp KASTELL; 519 m neben der Route; Abschnitt BY</desc><type>KASTELL</type></wpt>
-<wpt lat="49.089638" lon="10.483673"><name>Wachturm-Fundament (km 880)</name><desc>Originaltyp TURMGRUND; 152 m neben der Route; Abschnitt BY</desc><type>TURMGRUND</type></wpt>
-<wpt lat="49.102592" lon="10.578776"><name>Kastell-Reste (km 888)</name><desc>Originaltyp KASTELL-R; 59 m neben der Route; Abschnitt BY</desc><type>KASTELL-R</type></wpt>
-<wpt lat="49.105191" lon="10.591553"><name>Wachturm-Reste (km 890)</name><desc>Originaltyp TURMRESTE; 83 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.107785" lon="10.609393"><name>Wachturm-Reste (km 891)</name><desc>Originaltyp TURMRESTE; 522 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.111508" lon="10.662399"><name>Wachturm-Reste (km 896)</name><desc>Originaltyp TURMRESTE; 113 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.112097" lon="10.678187"><name>Wachturm-Fundament (km 897)</name><desc>Originaltyp TURMGRUND; 173 m neben der Route; Abschnitt BY</desc><type>TURMGRUND</type></wpt>
-<wpt lat="49.116833" lon="10.771910"><name>Wachturm-Fundament (km 906)</name><desc>Originaltyp TURMGRUND; 209 m neben der Route; Abschnitt BY</desc><type>TURMGRUND</type></wpt>
-<wpt lat="49.116932" lon="10.774058"><name>Wachturm-Fundament (km 906)</name><desc>Originaltyp TURMGRUND; 214 m neben der Route; Abschnitt BY</desc><type>TURMGRUND</type></wpt>
-<wpt lat="49.116702" lon="10.781193"><name>Kleinkastell-Reste (km 906)</name><desc>Originaltyp KK-RESTE; 264 m neben der Route; Abschnitt BY</desc><type>KK-RESTE</type></wpt>
-<wpt lat="49.116918" lon="10.782370"><name>Wachturm-Reste (km 906)</name><desc>Originaltyp TURMRESTE; 254 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.090237" lon="10.847583"><name>Kastell-Reste (km 914)</name><desc>Originaltyp KASTELL-R; 321 m neben der Route; Abschnitt BY</desc><type>KASTELL-R</type></wpt>
-<wpt lat="49.104445" lon="10.874071"><name>Wachturm-Fundament (km 918)</name><desc>Originaltyp TURMGRUND; 182 m neben der Route; Abschnitt BY</desc><type>TURMGRUND</type></wpt>
-<wpt lat="49.099557" lon="10.899908"><name>Wachturm-Fundament (km 920)</name><desc>Originaltyp TURMGRUND; 40 m neben der Route; Abschnitt BY</desc><type>TURMGRUND</type></wpt>
-<wpt lat="49.090363" lon="10.936521"><name>Wachturm-Reste (km 925)</name><desc>Originaltyp TURMRESTE; 397 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.086719" lon="10.951103"><name>Kleinkastell-Reste (km 926)</name><desc>Originaltyp KK-RESTE; 332 m neben der Route; Abschnitt BY</desc><type>KK-RESTE</type></wpt>
-<wpt lat="49.084739" lon="10.970606"><name>Wachturm-Reste (km 927)</name><desc>Originaltyp TURMRESTE; 585 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.064075" lon="10.987946"><name>Römerkastell (km 931)</name><desc>Originaltyp KASTELL; 1509 m neben der Route; Abschnitt BY</desc><type>KASTELL</type></wpt>
-<wpt lat="49.034257" lon="11.052295"><name>Kastell-Reste (km 940)</name><desc>Originaltyp KASTELL-R; 383 m neben der Route; Abschnitt BY</desc><type>KASTELL-R</type></wpt>
+<wpt lat="48.983148" lon="10.285605"><name>Kastell-Reste (km 853)</name><desc>Reste oder Erhebung erkennbar. Originaltyp KASTELL-R; 47 m neben der Route; Abschnitt BW</desc><type>KASTELL-R</type></wpt>
+<wpt lat="49.008273" lon="10.356641"><name>Wachturm-Reste (km 862)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 612 m neben der Route; Abschnitt BW</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.014969" lon="10.372700"><name>Wachturm-Reste (km 864)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 585 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.021329" lon="10.393248"><name>Wachturm-Reste (km 865)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 521 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.027177" lon="10.410381"><name>Wachturm-Reste (km 868)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 832 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.029908" lon="10.418033"><name>Wachturm-Grundriss (km 868)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 561 m neben der Route; Abschnitt BY</desc><type>TURMGRUND</type></wpt>
+<wpt lat="49.046566" lon="10.480392"><name>Kastell (rekonstruiert) (km 873)</name><desc>ganz oder teilweise rekonstruiertes Erscheinungsbild. Originaltyp KASTELL; 519 m neben der Route; Abschnitt BY</desc><type>KASTELL</type></wpt>
+<wpt lat="49.089638" lon="10.483673"><name>Wachturm-Grundriss (km 880)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 152 m neben der Route; Abschnitt BY</desc><type>TURMGRUND</type></wpt>
+<wpt lat="49.102592" lon="10.578776"><name>Kastell-Reste (km 888)</name><desc>Reste oder Erhebung erkennbar. Originaltyp KASTELL-R; 59 m neben der Route; Abschnitt BY</desc><type>KASTELL-R</type></wpt>
+<wpt lat="49.105191" lon="10.591553"><name>Wachturm-Reste (km 890)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 83 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.107785" lon="10.609393"><name>Wachturm-Reste (km 891)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 522 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.111508" lon="10.662399"><name>Wachturm-Reste (km 896)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 113 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.112097" lon="10.678187"><name>Wachturm-Grundriss (km 897)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 173 m neben der Route; Abschnitt BY</desc><type>TURMGRUND</type></wpt>
+<wpt lat="49.116833" lon="10.771910"><name>Wachturm-Grundriss (km 906)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 209 m neben der Route; Abschnitt BY</desc><type>TURMGRUND</type></wpt>
+<wpt lat="49.116932" lon="10.774058"><name>Wachturm-Grundriss (km 906)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 214 m neben der Route; Abschnitt BY</desc><type>TURMGRUND</type></wpt>
+<wpt lat="49.116702" lon="10.781193"><name>Kleinkastell-Reste (km 906)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 264 m neben der Route; Abschnitt BY</desc><type>KK-RESTE</type></wpt>
+<wpt lat="49.116918" lon="10.782370"><name>Wachturm-Reste (km 906)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 254 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.090237" lon="10.847583"><name>Kastell-Reste (km 914)</name><desc>Reste oder Erhebung erkennbar. Originaltyp KASTELL-R; 321 m neben der Route; Abschnitt BY</desc><type>KASTELL-R</type></wpt>
+<wpt lat="49.104445" lon="10.874071"><name>Wachturm-Grundriss (km 918)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 182 m neben der Route; Abschnitt BY</desc><type>TURMGRUND</type></wpt>
+<wpt lat="49.099557" lon="10.899908"><name>Wachturm-Grundriss (km 920)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 40 m neben der Route; Abschnitt BY</desc><type>TURMGRUND</type></wpt>
+<wpt lat="49.090363" lon="10.936521"><name>Wachturm-Reste (km 925)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 397 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.086719" lon="10.951103"><name>Kleinkastell-Reste (km 926)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 332 m neben der Route; Abschnitt BY</desc><type>KK-RESTE</type></wpt>
+<wpt lat="49.084739" lon="10.970606"><name>Wachturm-Reste (km 927)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 585 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.064075" lon="10.987946"><name>Kastell (rekonstruiert) (km 931)</name><desc>ganz oder teilweise rekonstruiertes Erscheinungsbild. Originaltyp KASTELL; 1509 m neben der Route; Abschnitt BY</desc><type>KASTELL</type></wpt>
+<wpt lat="49.034257" lon="11.052295"><name>Kastell-Reste (km 940)</name><desc>Reste oder Erhebung erkennbar. Originaltyp KASTELL-R; 383 m neben der Route; Abschnitt BY</desc><type>KASTELL-R</type></wpt>
 <wpt lat="49.019259" lon="11.076375"><name>Burgus (röm. Wachposten) (km 943)</name><desc>Originaltyp BURGUS; 122 m neben der Route; Abschnitt BY</desc><type>BURGUS</type></wpt>
-<wpt lat="49.022430" lon="11.097792"><name>Wachturm-Nachbau (km 946)</name><desc>Originaltyp TURM; 11 m neben der Route; Abschnitt BY</desc><type>TURM</type></wpt>
-<wpt lat="49.015891" lon="11.105716"><name>Kleinkastell-Reste (km 946)</name><desc>Originaltyp KK-RESTE; 153 m neben der Route; Abschnitt BY</desc><type>KK-RESTE</type></wpt>
-<wpt lat="49.014374" lon="11.108233"><name>Wachturm-Reste (km 947)</name><desc>Originaltyp TURMRESTE; 388 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
-<wpt lat="49.000691" lon="11.125989"><name>Wachturm-Reste (km 950)</name><desc>Originaltyp TURMRESTE; 691 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
-<wpt lat="48.994726" lon="11.133495"><name>Wachturm-Reste (km 951)</name><desc>Originaltyp TURMRESTE; 471 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
-<wpt lat="48.987319" lon="11.143784"><name>Wachturm-Fundament (km 952)</name><desc>Originaltyp TURMGRUND; 239 m neben der Route; Abschnitt BY</desc><type>TURMGRUND</type></wpt>
-<wpt lat="48.983664" lon="11.150760"><name>Kleinkastell-Reste (km 952)</name><desc>Originaltyp KK-RESTE; 500 m neben der Route; Abschnitt BY</desc><type>KK-RESTE</type></wpt>
-<wpt lat="48.978066" lon="11.231760"><name>Wachturm-Nachbau (km 960)</name><desc>Originaltyp TURM; 156 m neben der Route; Abschnitt BY</desc><type>TURM</type></wpt>
-<wpt lat="48.977476" lon="11.243866"><name>Wachturm-Reste (km 962)</name><desc>Originaltyp TURMRESTE; 680 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
-<wpt lat="48.976594" lon="11.252873"><name>Wachturm-Reste (km 962)</name><desc>Originaltyp TURMRESTE; 755 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
-<wpt lat="48.976144" lon="11.265987"><name>Wachturm-Reste (km 963)</name><desc>Originaltyp TURMRESTE; 928 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
-<wpt lat="48.975663" lon="11.266362"><name>Kleinkastell-Reste (km 963)</name><desc>Originaltyp KK-RESTE; 907 m neben der Route; Abschnitt BY</desc><type>KK-RESTE</type></wpt>
-<wpt lat="48.975805" lon="11.270706"><name>Kleinkastell-Reste (km 964)</name><desc>Originaltyp KK-RESTE; 1073 m neben der Route; Abschnitt BY</desc><type>KK-RESTE</type></wpt>
-<wpt lat="48.975176" lon="11.284537"><name>Wachturm-Reste (km 966)</name><desc>Originaltyp TURMRESTE; 664 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
-<wpt lat="48.953969" lon="11.363830"><name>Wachturm-Reste (km 973)</name><desc>Originaltyp TURMRESTE; 43 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
-<wpt lat="48.946259" lon="11.360176"><name>Kastell-Reste (km 973)</name><desc>Originaltyp KASTELL-R; 771 m neben der Route; Abschnitt BY</desc><type>KASTELL-R</type></wpt>
-<wpt lat="48.951025" lon="11.376560"><name>Wachturm-Nachbau (km 974)</name><desc>Originaltyp TURM; 30 m neben der Route; Abschnitt BY</desc><type>TURM</type></wpt>
-<wpt lat="48.948640" lon="11.398908"><name>Wachturm-Reste (km 977)</name><desc>Originaltyp TURMRESTE; 62 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
-<wpt lat="48.945210" lon="11.414079"><name>Wachturm-Reste (km 978)</name><desc>Originaltyp TURMRESTE; 16 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
-<wpt lat="48.941278" lon="11.430507"><name>Wachturm-Reste (km 979)</name><desc>Originaltyp TURMRESTE; 523 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
-<wpt lat="48.931797" lon="11.468545"><name>Wachturm-Reste (km 983)</name><desc>Originaltyp TURMRESTE; 522 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
-<wpt lat="48.921803" lon="11.507768"><name>Wachturm-Reste (km 986)</name><desc>Originaltyp TURMRESTE; 775 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
-<wpt lat="48.914655" lon="11.536730"><name>Wachturm-Reste (km 991)</name><desc>Originaltyp TURMRESTE; 452 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
-<wpt lat="48.914286" lon="11.537817"><name>Kleinkastell-Reste (km 991)</name><desc>Originaltyp KK-RESTE; 451 m neben der Route; Abschnitt BY</desc><type>KK-RESTE</type></wpt>
-<wpt lat="48.910091" lon="11.554678"><name>Wachturm-Reste (km 992)</name><desc>Originaltyp TURMRESTE; 453 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
-<wpt lat="48.905866" lon="11.570621"><name>Kleinkastell-Reste (km 993)</name><desc>Originaltyp KK-RESTE; 679 m neben der Route; Abschnitt BY</desc><type>KK-RESTE</type></wpt>
-<wpt lat="48.904825" lon="11.581666"><name>Wachturm-Reste (km 994)</name><desc>Originaltyp TURMRESTE; 822 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
-<wpt lat="48.906811" lon="11.600225"><name>Wachturm-Reste (km 996)</name><desc>Originaltyp TURMRESTE; 284 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
-<wpt lat="48.893301" lon="11.642218"><name>Wachturm-Reste (km 1001)</name><desc>Originaltyp TURMRESTE; 627 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
-<wpt lat="48.890792" lon="11.645033"><name>Wachturm-Reste (km 1002)</name><desc>Originaltyp TURMRESTE; 738 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
-<wpt lat="48.884669" lon="11.740555"><name>Wachturm-Reste (km 1010)</name><desc>Originaltyp TURMRESTE; 204 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
-<wpt lat="48.884386" lon="11.749789"><name>Wachturm-Reste (km 1011)</name><desc>Originaltyp TURMRESTE; 303 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
-<wpt lat="48.883988" lon="11.759369"><name>Wachturm-Fundament (km 1011)</name><desc>Originaltyp TURMGRUND; 642 m neben der Route; Abschnitt BY</desc><type>TURMGRUND</type></wpt>
-<wpt lat="48.883451" lon="11.769108"><name>Kleinkastell-Reste (km 1012)</name><desc>Originaltyp KK-RESTE; 1083 m neben der Route; Abschnitt BY</desc><type>KK-RESTE</type></wpt>
-<wpt lat="48.883520" lon="11.773619"><name>Wachturm-Nachbau (km 1013)</name><desc>Originaltyp TURM; 1166 m neben der Route; Abschnitt BY</desc><type>TURM</type></wpt>
-<wpt lat="48.859251" lon="11.776358"><name>Kastell-Reste (km 1015)</name><desc>Originaltyp KASTELL-R; 455 m neben der Route; Abschnitt BY</desc><type>KASTELL-R</type></wpt>
-<wpt lat="48.849936" lon="11.771135"><name>Römerkastell (km 1016)</name><desc>Originaltyp KASTELL; 159 m neben der Route; Abschnitt BY</desc><type>KASTELL</type></wpt>
+<wpt lat="49.022430" lon="11.097792"><name>Wachturm (rekonstruiert) (km 946)</name><desc>komplett rekonstruierter Limeswachturm. Originaltyp TURM; 11 m neben der Route; Abschnitt BY</desc><type>TURM</type></wpt>
+<wpt lat="49.015891" lon="11.105716"><name>Kleinkastell-Reste (km 946)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 153 m neben der Route; Abschnitt BY</desc><type>KK-RESTE</type></wpt>
+<wpt lat="49.014374" lon="11.108233"><name>Wachturm-Reste (km 947)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 388 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
+<wpt lat="49.000691" lon="11.125989"><name>Wachturm-Reste (km 950)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 691 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
+<wpt lat="48.994726" lon="11.133495"><name>Wachturm-Reste (km 951)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 471 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
+<wpt lat="48.987319" lon="11.143784"><name>Wachturm-Grundriss (km 952)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 239 m neben der Route; Abschnitt BY</desc><type>TURMGRUND</type></wpt>
+<wpt lat="48.983664" lon="11.150760"><name>Kleinkastell-Reste (km 952)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 500 m neben der Route; Abschnitt BY</desc><type>KK-RESTE</type></wpt>
+<wpt lat="48.978066" lon="11.231760"><name>Wachturm (rekonstruiert) (km 960)</name><desc>komplett rekonstruierter Limeswachturm. Originaltyp TURM; 156 m neben der Route; Abschnitt BY</desc><type>TURM</type></wpt>
+<wpt lat="48.977476" lon="11.243866"><name>Wachturm-Reste (km 962)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 680 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
+<wpt lat="48.976594" lon="11.252873"><name>Wachturm-Reste (km 962)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 755 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
+<wpt lat="48.976144" lon="11.265987"><name>Wachturm-Reste (km 963)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 928 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
+<wpt lat="48.975663" lon="11.266362"><name>Kleinkastell-Reste (km 963)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 907 m neben der Route; Abschnitt BY</desc><type>KK-RESTE</type></wpt>
+<wpt lat="48.975805" lon="11.270706"><name>Kleinkastell-Reste (km 964)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 1073 m neben der Route; Abschnitt BY</desc><type>KK-RESTE</type></wpt>
+<wpt lat="48.975176" lon="11.284537"><name>Wachturm-Reste (km 966)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 664 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
+<wpt lat="48.953969" lon="11.363830"><name>Wachturm-Reste (km 973)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 43 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
+<wpt lat="48.946259" lon="11.360176"><name>Kastell-Reste (km 973)</name><desc>Reste oder Erhebung erkennbar. Originaltyp KASTELL-R; 771 m neben der Route; Abschnitt BY</desc><type>KASTELL-R</type></wpt>
+<wpt lat="48.951025" lon="11.376560"><name>Wachturm (rekonstruiert) (km 974)</name><desc>komplett rekonstruierter Limeswachturm. Originaltyp TURM; 30 m neben der Route; Abschnitt BY</desc><type>TURM</type></wpt>
+<wpt lat="48.948640" lon="11.398908"><name>Wachturm-Reste (km 977)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 62 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
+<wpt lat="48.945210" lon="11.414079"><name>Wachturm-Reste (km 978)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 16 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
+<wpt lat="48.941278" lon="11.430507"><name>Wachturm-Reste (km 979)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 523 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
+<wpt lat="48.931797" lon="11.468545"><name>Wachturm-Reste (km 983)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 522 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
+<wpt lat="48.921803" lon="11.507768"><name>Wachturm-Reste (km 986)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 775 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
+<wpt lat="48.914655" lon="11.536730"><name>Wachturm-Reste (km 991)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 452 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
+<wpt lat="48.914286" lon="11.537817"><name>Kleinkastell-Reste (km 991)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 451 m neben der Route; Abschnitt BY</desc><type>KK-RESTE</type></wpt>
+<wpt lat="48.910091" lon="11.554678"><name>Wachturm-Reste (km 992)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 453 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
+<wpt lat="48.905866" lon="11.570621"><name>Kleinkastell-Reste (km 993)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 679 m neben der Route; Abschnitt BY</desc><type>KK-RESTE</type></wpt>
+<wpt lat="48.904825" lon="11.581666"><name>Wachturm-Reste (km 994)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 822 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
+<wpt lat="48.906811" lon="11.600225"><name>Wachturm-Reste (km 996)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 284 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
+<wpt lat="48.893301" lon="11.642218"><name>Wachturm-Reste (km 1001)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 627 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
+<wpt lat="48.890792" lon="11.645033"><name>Wachturm-Reste (km 1002)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 738 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
+<wpt lat="48.884669" lon="11.740555"><name>Wachturm-Reste (km 1010)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 204 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
+<wpt lat="48.884386" lon="11.749789"><name>Wachturm-Reste (km 1011)</name><desc>Schutthügel erkennbar. Originaltyp TURMRESTE; 303 m neben der Route; Abschnitt BY</desc><type>TURMRESTE</type></wpt>
+<wpt lat="48.883988" lon="11.759369"><name>Wachturm-Grundriss (km 1011)</name><desc>Grundriss des Turmes erkennbar bzw. rekonstruiert. Originaltyp TURMGRUND; 642 m neben der Route; Abschnitt BY</desc><type>TURMGRUND</type></wpt>
+<wpt lat="48.883451" lon="11.769108"><name>Kleinkastell-Reste (km 1012)</name><desc>Kleinkastell als Erhebung erkennbar. Originaltyp KK-RESTE; 1083 m neben der Route; Abschnitt BY</desc><type>KK-RESTE</type></wpt>
+<wpt lat="48.883520" lon="11.773619"><name>Wachturm (rekonstruiert) (km 1013)</name><desc>komplett rekonstruierter Limeswachturm. Originaltyp TURM; 1166 m neben der Route; Abschnitt BY</desc><type>TURM</type></wpt>
+<wpt lat="48.859251" lon="11.776358"><name>Kastell-Reste (km 1015)</name><desc>Reste oder Erhebung erkennbar. Originaltyp KASTELL-R; 455 m neben der Route; Abschnitt BY</desc><type>KASTELL-R</type></wpt>
+<wpt lat="48.849936" lon="11.771135"><name>Kastell (rekonstruiert) (km 1016)</name><desc>ganz oder teilweise rekonstruiertes Erscheinungsbild. Originaltyp KASTELL; 159 m neben der Route; Abschnitt BY</desc><type>KASTELL</type></wpt>
 <wpt lat="49.019823" lon="12.097356"><name>Porta Praetoria (Römertor) (km 1076)</name><desc>Originaltyp PRAETORIA; 116 m neben der Route; Abschnitt BY</desc><type>PRAETORIA</type></wpt>
 <trk><name>Limes-Radweg (02/2026) + EuroVelo 6 Passau – Wien</name><trkseg>
 <trkpt lat="51.860162" lon="6.060157"/>

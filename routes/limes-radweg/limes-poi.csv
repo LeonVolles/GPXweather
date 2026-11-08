@@ -1,5 +1,5 @@
 typ,name,gpx_name,route_km,abstand_m,abschnitt,lat,lon,aufgenommen
-K-KASTELL,Kastell-Standort,Kastell-Standort (km 256),255.8,30,RP,50.503636,7.317805,ja
+K-KASTELL,Kleinkastell (teilrekonstruiert),Kleinkastell (teilrekonstruiert) (km 256),255.8,30,RP,50.503636,7.317805,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 258),258.5,560,RP,50.513210,7.342467,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 259),259.4,254,RP,50.513765,7.356088,ja
 TURMAUSGR,Wachturm-Ausgrabung,Wachturm-Ausgrabung (km 260),260.1,206,RP,50.513024,7.365605,ja
@@ -18,35 +18,35 @@ TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 267),267.4,48,RP,50.472579,7.407258,
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 269),268.5,14,RP,50.466688,7.419070,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 269),269.0,17,RP,50.466044,7.425637,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 275),275.1,162,RP,50.477376,7.480447,ja
-TURM,Wachturm-Nachbau,Wachturm-Nachbau (km 278),278.4,63,RP,50.477434,7.509693,ja
+TURM,Wachturm (rekonstruiert),Wachturm (rekonstruiert) (km 278),278.4,63,RP,50.477434,7.509693,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 293),293.4,273,RP,50.442129,7.613198,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 294),294.1,20,RP,50.437305,7.622070,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 295),295.4,52,RP,50.437290,7.640188,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 299),299.2,1153,RP,50.423134,7.666838,ja
-TURM,Wachturm-Nachbau,Wachturm-Nachbau (km 302),302.2,310,RP,50.416065,7.688921,ja
+TURM,Wachturm (rekonstruiert),Wachturm (rekonstruiert) (km 302),302.2,310,RP,50.416065,7.688921,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 305),304.6,331,RP,50.402950,7.716596,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 305),304.7,221,RP,50.407225,7.712549,ja
-K-KASTELL,Kastell-Standort,Kastell-Standort (km 305),304.8,671,RP,50.411099,7.710062,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 311),311.0,28,RP,50.397219,7.723330,ja
-KASTELL,Römerkastell,Römerkastell (km 317),316.5,406,RP,50.374843,7.744703,ja
-TURM,Wachturm-Nachbau,Wachturm-Nachbau (km 317),316.5,1272,RP,50.369903,7.756510,ja
+K-KASTELL,Kleinkastell (teilrekonstruiert),Kleinkastell (teilrekonstruiert) (km 305),304.8,671,RP,50.411099,7.710062,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 311),311.0,28,RP,50.397219,7.723330,ja
+KASTELL,Kastell (rekonstruiert),Kastell (rekonstruiert) (km 317),316.5,406,RP,50.374843,7.744703,ja
+TURM,Wachturm (rekonstruiert),Wachturm (rekonstruiert) (km 317),316.5,1272,RP,50.369903,7.756510,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 317),316.9,2126,RP,50.358015,7.760318,nein (>2 km)
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 324),323.5,1212,RP,50.338015,7.737466,ja
-TURM,Wachturm-Nachbau,Wachturm-Nachbau (km 324),324.2,323,RP,50.323209,7.727038,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 326),326.1,59,RP,50.315201,7.722229,ja
+TURM,Wachturm (rekonstruiert),Wachturm (rekonstruiert) (km 324),324.2,323,RP,50.323209,7.727038,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 326),326.1,59,RP,50.315201,7.722229,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 327),326.8,258,RP,50.307470,7.716641,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 330),329.8,107,RP,50.304375,7.713901,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 330),330.3,42,RP,50.300173,7.715976,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 332),331.7,2,RP,50.292411,7.727911,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 332),332.2,23,RP,50.289430,7.733320,ja
-K-KASTELL,Kastell-Standort,Kastell-Standort (km 333),332.7,21,RP,50.286450,7.738474,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 332),332.2,23,RP,50.289430,7.733320,ja
+K-KASTELL,Kleinkastell (teilrekonstruiert),Kleinkastell (teilrekonstruiert) (km 333),332.7,21,RP,50.286450,7.738474,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 333),333.2,25,RP,50.284247,7.744087,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 336),336.2,877,RP,50.273326,7.771101,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 337),336.8,1270,RP,50.269436,7.781237,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 339),339.2,1064,RP,50.263504,7.789108,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 339),339.2,1064,RP,50.263504,7.789108,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 346),345.7,240,RP,50.249129,7.852276,ja
-K-KASTELL,Kastell-Standort,Kastell-Standort (km 347),346.9,154,RP,50.252029,7.866632,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 348),348.1,402,RP,50.244320,7.876223,ja
+K-KASTELL,Kleinkastell (teilrekonstruiert),Kleinkastell (teilrekonstruiert) (km 347),346.9,154,RP,50.252029,7.866632,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 348),348.1,402,RP,50.244320,7.876223,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 350),349.8,245,RP,50.234091,7.889162,ja
 KK-RESTE,Kleinkastell-Reste,Kleinkastell-Reste (km 350),350.4,229,RP,50.226869,7.890250,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 356),356.4,933,HE,50.210418,7.934107,ja
@@ -59,8 +59,8 @@ TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 358),358.0,635,HE,50.214920,7.964793
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 358),358.2,323,HE,50.206154,7.967770,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 359),358.5,628,HE,50.202699,7.973063,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 362),362.1,240,HE,50.198746,7.989324,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 366),366.2,185,HE,50.178997,8.008150,ja
-K-KASTELL,Kastell-Standort,Kastell-Standort (km 369),368.7,202,HE,50.167517,8.016435,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 366),366.2,185,HE,50.178997,8.008150,ja
+K-KASTELL,Kleinkastell (teilrekonstruiert),Kleinkastell (teilrekonstruiert) (km 369),368.7,202,HE,50.167517,8.016435,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 371),371.5,100,HE,50.162955,8.046127,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 372),372.1,171,HE,50.162908,8.054605,ja
 KK-RESTE,Kleinkastell-Reste,Kleinkastell-Reste (km 375),374.9,298,HE,50.165007,8.077576,ja
@@ -75,16 +75,16 @@ TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 383),382.9,108,HE,50.182954,8.162422
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 384),383.7,22,HE,50.184515,8.173385,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 386),385.7,290,HE,50.191967,8.197692,ja
 KASTELL-R,Kastell-Reste,Kastell-Reste (km 386),386.0,85,HE,50.189940,8.203607,ja
-TURM,Wachturm-Nachbau,Wachturm-Nachbau (km 386),386.1,251,HE,50.192992,8.202996,ja
+TURM,Wachturm (rekonstruiert),Wachturm (rekonstruiert) (km 386),386.1,251,HE,50.192992,8.202996,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 387),386.7,120,HE,50.192474,8.212667,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 387),387.3,90,HE,50.191497,8.221084,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 388),387.8,653,HE,50.191918,8.236204,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 389),389.1,895,HE,50.192779,8.245079,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 393),393.4,705,HE,50.193485,8.250039,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 393),393.4,705,HE,50.193485,8.250039,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 394),393.6,250,HE,50.194295,8.257098,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 394),393.6,105,HE,50.194722,8.260732,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 396),395.7,72,HE,50.196326,8.272751,ja
-TURM,Wachturm-Nachbau,Wachturm-Nachbau (km 398),397.5,28,HE,50.197715,8.283239,ja
+TURM,Wachturm (rekonstruiert),Wachturm (rekonstruiert) (km 398),397.5,28,HE,50.197715,8.283239,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 400),400.0,320,HE,50.201695,8.313076,ja
 KK-RESTE,Kleinkastell-Reste,Kleinkastell-Reste (km 400),400.1,498,HE,50.201218,8.315954,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 400),400.3,454,HE,50.204021,8.318715,ja
@@ -98,25 +98,25 @@ KK-REST,Kleinkastell-Reste,Kleinkastell-Reste (km 408),408.2,600,HE,50.218487,8.
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 409),408.7,623,HE,50.219451,8.394364,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 410),410.4,265,HE,50.220631,8.414035,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 411),411.0,55,HE,50.223948,8.421211,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 411),411.1,102,HE,50.224137,8.423100,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 411),411.1,102,HE,50.224137,8.423100,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 411),411.4,207,HE,50.224462,8.425198,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 413),412.6,165,HE,50.224623,8.439909,ja
-KASTELL,Römerkastell,Römerkastell (km 413),413.0,89,HE,50.227477,8.444570,ja
+KASTELL,Kastell (rekonstruiert),Kastell (rekonstruiert) (km 413),413.0,89,HE,50.227477,8.444570,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 415),414.6,212,HE,50.236262,8.458554,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 415),414.6,29,HE,50.238371,8.457759,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 415),415.4,18,HE,50.239809,8.467485,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 415),414.6,29,HE,50.238371,8.457759,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 415),415.4,18,HE,50.239809,8.467485,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 416),415.8,31,HE,50.240416,8.472314,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 417),416.8,52,HE,50.244241,8.483416,ja
-K-KASTELL,Kastell-Standort,Kastell-Standort (km 418),417.5,85,HE,50.244508,8.492945,ja
+K-KASTELL,Kleinkastell (teilrekonstruiert),Kleinkastell (teilrekonstruiert) (km 418),417.5,85,HE,50.244508,8.492945,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 418),418.1,23,HE,50.247104,8.501049,ja
-K-KASTELL,Kastell-Standort,Kastell-Standort (km 419),419.3,105,HE,50.253582,8.513039,ja
+K-KASTELL,Kleinkastell (teilrekonstruiert),Kleinkastell (teilrekonstruiert) (km 419),419.3,105,HE,50.253582,8.513039,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 421),420.6,185,HE,50.257235,8.527024,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 421),421.0,256,HE,50.258698,8.533109,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 422),421.5,268,HE,50.261826,8.539809,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 423),422.7,121,HE,50.268118,8.551109,ja
-KASTELL,Römerkastell,Römerkastell (km 424),424.2,117,HE,50.271591,8.566365,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 426),425.6,3,HE,50.275536,8.575727,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 426),426.2,0,HE,50.278660,8.582012,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 421),421.0,256,HE,50.258698,8.533109,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 422),421.5,268,HE,50.261826,8.539809,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 423),422.7,121,HE,50.268118,8.551109,ja
+KASTELL,Kastell (rekonstruiert),Kastell (rekonstruiert) (km 424),424.2,117,HE,50.271591,8.566365,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 426),425.6,3,HE,50.275536,8.575727,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 426),426.2,0,HE,50.278660,8.582012,ja
 KK-RESTE,Kleinkastell-Reste,Kleinkastell-Reste (km 427),427.3,33,HE,50.282001,8.586402,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 429),429.1,252,HE,50.290062,8.591033,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 430),429.6,342,HE,50.290625,8.597553,ja
@@ -127,7 +127,7 @@ TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 432),431.9,531,HE,50.304098,8.621580
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 432),432.0,561,HE,50.304686,8.622558,ja
 KK-RESTE,Kleinkastell-Reste,Kleinkastell-Reste (km 432),432.1,611,HE,50.305275,8.624027,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 432),432.4,836,HE,50.308485,8.630108,ja
-KASTELL,Römerkastell,Römerkastell (km 433),433.3,1034,HE,50.312905,8.635057,ja
+KASTELL,Kastell (rekonstruiert),Kastell (rekonstruiert) (km 433),433.3,1034,HE,50.312905,8.635057,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 434),434.1,568,HE,50.319203,8.636764,ja
 KK-RESTE,Kleinkastell-Reste,Kleinkastell-Reste (km 434),434.1,602,HE,50.319746,8.638024,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 435),434.5,465,HE,50.323886,8.639537,ja
@@ -141,7 +141,7 @@ KK-RESTE,Kleinkastell-Reste,Kleinkastell-Reste (km 450),449.6,53,HE,50.414278,8.
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 450),450.3,582,HE,50.423722,8.631040,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 454),453.6,894,HE,50.426883,8.635941,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 454),454.1,739,HE,50.428690,8.638812,ja
-TURM,Wachturm-Nachbau,Wachturm-Nachbau (km 455),454.7,37,HE,50.434426,8.648057,ja
+TURM,Wachturm (rekonstruiert),Wachturm (rekonstruiert) (km 455),454.7,37,HE,50.434426,8.648057,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 455),454.9,66,HE,50.432904,8.650039,ja
 KK-RESTE,Kleinkastell-Reste,Kleinkastell-Reste (km 455),454.9,33,HE,50.433175,8.650600,ja
 KK-RESTE,Kleinkastell-Reste,Kleinkastell-Reste (km 456),456.3,302,HE,50.443432,8.655605,ja
@@ -155,10 +155,10 @@ TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 463),462.9,245,HE,50.475957,8.680782
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 463),463.5,244,HE,50.480641,8.684413,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 464),464.4,165,HE,50.484919,8.687836,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 465),464.7,532,HE,50.491360,8.693008,ja
-K-KASTELL,Kastell-Standort,Kastell-Standort (km 467),467.0,49,HE,50.499916,8.699788,ja
+K-KASTELL,Kleinkastell (teilrekonstruiert),Kleinkastell (teilrekonstruiert) (km 467),467.0,49,HE,50.499916,8.699788,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 468),467.5,7,HE,50.504229,8.702604,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 469),468.8,6,HE,50.514286,8.710769,ja
-TURM,Wachturm-Nachbau,Wachturm-Nachbau (km 469),469.2,21,HE,50.517678,8.713799,ja
+TURM,Wachturm (rekonstruiert),Wachturm (rekonstruiert) (km 469),469.2,21,HE,50.517678,8.713799,ja
 KK-RESTE,Kleinkastell-Reste,Kleinkastell-Reste (km 471),471.1,19,HE,50.521731,8.724849,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 473),472.7,903,HE,50.518072,8.757055,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 473),472.8,172,HE,50.519441,8.745769,ja
@@ -198,34 +198,34 @@ KASTELL-R,Kastell-Reste,Kastell-Reste (km 619),619.4,84,HE,49.709277,9.230017,ja
 BAD,Römisches Bad,Römisches Bad (km 620),619.6,29,HE,49.707949,9.230883,ja
 OFEN,Römischer Brennofen,Römischer Brennofen (km 621),620.6,1847,HE,49.703165,9.259982,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 621),620.6,4219,HE,49.688128,9.287537,nein (>2 km)
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 633),632.7,3962,HE,49.669900,9.288693,nein (>2 km)
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 633),632.7,3962,HE,49.669900,9.288693,nein (>2 km)
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 633),632.7,3435,HE,49.664226,9.289002,nein (>2 km)
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 633),633.4,3305,HE,49.658393,9.298012,nein (>2 km)
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 633),633.4,3204,HE,49.654688,9.302063,nein (>2 km)
-K-KASTELL,Kastell-Standort,Kastell-Standort (km 638),637.5,2231,BW,49.633539,9.330586,nein (>2 km)
+K-KASTELL,Kleinkastell (teilrekonstruiert),Kleinkastell (teilrekonstruiert) (km 638),637.5,2231,BW,49.633539,9.330586,nein (>2 km)
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 638),637.6,2212,BW,49.631363,9.334685,nein (>2 km)
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 639),638.7,2089,BW,49.627474,9.340024,nein (>2 km)
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 641),641.3,1386,BW,49.609707,9.362334,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 641),641.5,1253,BW,49.605721,9.366233,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 641),641.5,1253,BW,49.605721,9.366233,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 642),641.6,1276,BW,49.602104,9.370540,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 643),642.7,1325,BW,49.598824,9.373811,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 643),643.2,1245,BW,49.593241,9.379842,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 643),642.7,1325,BW,49.598824,9.373811,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 643),643.2,1245,BW,49.593241,9.379842,ja
 BAD,Römisches Bad,Römisches Bad (km 645),645.1,406,BW,49.579148,9.385071,ja
 KASTELL-R,Kastell-Reste,Kastell-Reste (km 645),645.4,374,BW,49.578417,9.386981,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 649),649.3,405,BW,49.548875,9.386357,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 649),649.3,405,BW,49.548875,9.386357,ja
 KK-RESTE,Kleinkastell-Reste,Kleinkastell-Reste (km 650),649.7,351,BW,49.545108,9.383515,ja
-K-KASTELL,Kastell-Standort,Kastell-Standort (km 650),649.8,72,BW,49.542857,9.387522,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 650),650.0,61,BW,49.540955,9.389500,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 651),650.8,231,BW,49.534971,9.391895,ja
+K-KASTELL,Kleinkastell (teilrekonstruiert),Kleinkastell (teilrekonstruiert) (km 650),649.8,72,BW,49.542857,9.387522,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 650),650.0,61,BW,49.540955,9.389500,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 651),650.8,231,BW,49.534971,9.391895,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 652),651.6,128,BW,49.530447,9.392278,ja
 KK-RESTE,Kleinkastell-Reste,Kleinkastell-Reste (km 653),653.5,138,BW,49.514818,9.395209,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 656),656.3,619,BW,49.499834,9.404872,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 657),656.6,330,BW,49.493730,9.406783,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 660),660.5,242,BW,49.463772,9.418016,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 661),661.3,341,BW,49.456813,9.420648,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 663),662.6,504,BW,49.450683,9.422858,ja
-KASTELL,Römerkastell,Römerkastell (km 666),665.6,84,BW,49.426752,9.424632,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 668),668.0,20,BW,49.409808,9.438233,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 663),662.6,504,BW,49.450683,9.422858,ja
+KASTELL,Kastell (rekonstruiert),Kastell (rekonstruiert) (km 666),665.6,84,BW,49.426752,9.424632,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 668),668.0,20,BW,49.409808,9.438233,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 672),672.3,1050,BW,49.399372,9.442309,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 672),672.3,730,BW,49.396380,9.443296,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 672),672.5,261,BW,49.391592,9.445142,ja
@@ -235,14 +235,14 @@ KK-RESTE,Kleinkastell-Reste,Kleinkastell-Reste (km 681),681.4,1294,BW,49.350784,
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 683),683.1,1255,BW,49.348440,9.461446,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 683),683.3,985,BW,49.344780,9.462610,ja
 KK-RESTE,Kleinkastell-Reste,Kleinkastell-Reste (km 693),693.2,59,BW,49.279524,9.478961,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 695),695.0,229,BW,49.273818,9.489795,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 695),695.0,229,BW,49.273818,9.489795,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 696),695.6,18,BW,49.267401,9.492399,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 696),696.0,16,BW,49.264321,9.493371,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 696),696.3,15,BW,49.261839,9.494528,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 699),698.8,136,BW,49.243310,9.501284,ja
 KASTELL-R,Kastell-Reste,Kastell-Reste (km 701),700.5,421,BW,49.230824,9.503533,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 703),702.7,724,BW,49.210227,9.513645,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 717),716.8,843,BW,49.145434,9.537959,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 703),702.7,724,BW,49.210227,9.513645,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 717),716.8,843,BW,49.145434,9.537959,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 717),716.9,444,BW,49.141607,9.536560,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 717),717.0,181,BW,49.139262,9.534965,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 717),717.4,31,BW,49.135424,9.538529,ja
@@ -251,46 +251,46 @@ TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 721),720.7,249,BW,49.124453,9.545908
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 722),721.5,201,BW,49.114389,9.549788,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 722),722.1,510,BW,49.108409,9.551853,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 723),723.3,370,BW,49.106166,9.552719,ja
-TURM,Wachturm-Nachbau,Wachturm-Nachbau (km 723),723.4,10,BW,49.102407,9.554131,ja
+TURM,Wachturm (rekonstruiert),Wachturm (rekonstruiert) (km 723),723.4,10,BW,49.102407,9.554131,ja
 KK-RESTE,Kleinkastell-Reste,Kleinkastell-Reste (km 727),727.0,125,BW,49.080760,9.561868,ja
-KASTELL,Römerkastell,Römerkastell (km 727),727.3,208,BW,49.080984,9.554719,ja
+KASTELL,Kastell (rekonstruiert),Kastell (rekonstruiert) (km 727),727.3,208,BW,49.080984,9.554719,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 729),728.5,752,BW,49.068706,9.566635,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 731),730.9,57,BW,49.059960,9.569922,ja
-K-KASTELL,Kastell-Standort,Kastell-Standort (km 731),731.4,69,BW,49.055284,9.574250,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 732),731.9,21,BW,49.052661,9.572381,ja
-TURM,Wachturm-Nachbau,Wachturm-Nachbau (km 735),734.6,255,BW,49.031033,9.580631,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 731),730.9,57,BW,49.059960,9.569922,ja
+K-KASTELL,Kleinkastell (teilrekonstruiert),Kleinkastell (teilrekonstruiert) (km 731),731.4,69,BW,49.055284,9.574250,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 732),731.9,21,BW,49.052661,9.572381,ja
+TURM,Wachturm (rekonstruiert),Wachturm (rekonstruiert) (km 735),734.6,255,BW,49.031033,9.580631,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 739),739.4,586,BW,49.018315,9.584648,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 743),742.8,54,BW,49.000358,9.592415,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 744),744.2,761,BW,48.985772,9.597339,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 747),747.1,706,BW,48.980973,9.599446,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 743),742.8,54,BW,49.000358,9.592415,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 744),744.2,761,BW,48.985772,9.597339,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 747),747.1,706,BW,48.980973,9.599446,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 748),748.1,153,BW,48.969458,9.602621,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 750),749.9,10,BW,48.963225,9.605923,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 750),749.9,10,BW,48.963225,9.605923,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 750),750.0,1116,BW,48.953242,9.609548,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 757),757.4,1884,BW,48.944097,9.612347,ja
 KK-RESTE,Kleinkastell-Reste,Kleinkastell-Reste (km 762),762.1,28,BW,48.926201,9.620011,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 762),762.3,256,BW,48.929159,9.618572,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 762),762.3,256,BW,48.929159,9.618572,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 765),764.9,157,BW,48.904886,9.627170,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 766),766.3,200,BW,48.892561,9.632280,ja
-K-KASTELL,Kastell-Standort,Kastell-Standort (km 767),767.0,164,BW,48.886591,9.633899,ja
-KASTELL,Römerkastell,Römerkastell (km 769),769.4,122,BW,48.871453,9.642311,ja
+K-KASTELL,Kleinkastell (teilrekonstruiert),Kleinkastell (teilrekonstruiert) (km 767),767.0,164,BW,48.886591,9.633899,ja
+KASTELL,Kastell (rekonstruiert),Kastell (rekonstruiert) (km 769),769.4,122,BW,48.871453,9.642311,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 771),771.3,477,BW,48.861252,9.642778,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 773),772.6,271,BW,48.854247,9.645850,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 775),775.0,0,BW,48.842559,9.663005,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 778),778.0,24,BW,48.826863,9.687105,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 779),778.5,127,BW,48.822266,9.687088,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 781),780.8,368,BW,48.811535,9.690965,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 778),778.0,24,BW,48.826863,9.687105,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 779),778.5,127,BW,48.822266,9.687088,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 781),780.8,368,BW,48.811535,9.690965,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 782),781.9,18,BW,48.803103,9.700605,ja
-TURM,Wachturm-Nachbau,Wachturm-Nachbau (km 782),782.4,249,BW,48.799784,9.705611,ja
+TURM,Wachturm (rekonstruiert),Wachturm (rekonstruiert) (km 782),782.4,249,BW,48.799784,9.705611,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 784),784.5,1127,BW,48.800540,9.727405,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 786),786.3,1009,BW,48.798150,9.737812,ja
 KK-RESTE,Kleinkastell-Reste,Kleinkastell-Reste (km 788),788.0,940,BW,48.797437,9.755272,ja
-KASTELL,Römerkastell,Römerkastell (km 803),803.4,166,BW,48.818441,9.923858,ja
+KASTELL,Kastell (rekonstruiert),Kastell (rekonstruiert) (km 803),803.4,166,BW,48.818441,9.923858,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 806),805.7,2029,BW,48.837509,9.944451,nein (>2 km)
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 806),805.9,2057,BW,48.838494,9.949319,nein (>2 km)
-KASTELL,Römerkastell,Römerkastell (km 820),819.9,201,BW,48.835680,10.084650,ja
+KASTELL,Kastell (rekonstruiert),Kastell (rekonstruiert) (km 820),819.9,201,BW,48.835680,10.084650,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 822),821.8,3718,BW,48.861577,10.044221,nein (>2 km)
-TURM,Wachturm-Nachbau,Wachturm-Nachbau (km 833),833.5,807,BW,48.915800,10.130774,ja
-KASTELL,Römerkastell,Römerkastell (km 834),834.2,200,BW,48.909705,10.145065,ja
+TURM,Wachturm (rekonstruiert),Wachturm (rekonstruiert) (km 833),833.5,807,BW,48.915800,10.130774,ja
+KASTELL,Kastell (rekonstruiert),Kastell (rekonstruiert) (km 834),834.2,200,BW,48.909705,10.145065,ja
 BAD,Römisches Bad,Römisches Bad (km 834),834.4,156,BW,48.910882,10.147793,ja
 LIMESTOR,Limestor,Limestor (km 837),837.2,15,BW,48.926901,10.155606,ja
 KASTELL-R,Kastell-Reste,Kastell-Reste (km 853),852.7,47,BW,48.983148,10.285605,ja
@@ -298,45 +298,45 @@ TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 862),861.7,612,BW,49.008273,10.35664
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 864),863.7,585,BY,49.014969,10.372700,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 865),865.1,521,BY,49.021329,10.393248,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 868),867.8,832,BY,49.027177,10.410381,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 868),868.0,561,BY,49.029908,10.418033,ja
-KASTELL,Römerkastell,Römerkastell (km 873),873.4,519,BY,49.046566,10.480392,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 880),879.5,152,BY,49.089638,10.483673,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 868),868.0,561,BY,49.029908,10.418033,ja
+KASTELL,Kastell (rekonstruiert),Kastell (rekonstruiert) (km 873),873.4,519,BY,49.046566,10.480392,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 880),879.5,152,BY,49.089638,10.483673,ja
 KASTELL-R,Kastell-Reste,Kastell-Reste (km 888),888.5,59,BY,49.102592,10.578776,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 890),889.6,83,BY,49.105191,10.591553,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 891),891.3,522,BY,49.107785,10.609393,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 896),896.3,113,BY,49.111508,10.662399,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 897),897.3,173,BY,49.112097,10.678187,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 906),905.5,209,BY,49.116833,10.771910,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 906),905.7,214,BY,49.116932,10.774058,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 897),897.3,173,BY,49.112097,10.678187,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 906),905.5,209,BY,49.116833,10.771910,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 906),905.7,214,BY,49.116932,10.774058,ja
 KK-RESTE,Kleinkastell-Reste,Kleinkastell-Reste (km 906),906.2,264,BY,49.116702,10.781193,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 906),906.2,254,BY,49.116918,10.782370,ja
 KASTELL-R,Kastell-Reste,Kastell-Reste (km 914),913.8,321,BY,49.090237,10.847583,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 918),917.5,182,BY,49.104445,10.874071,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 920),920.2,40,BY,49.099557,10.899908,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 918),917.5,182,BY,49.104445,10.874071,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 920),920.2,40,BY,49.099557,10.899908,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 925),925.4,397,BY,49.090363,10.936521,ja
 KK-RESTE,Kleinkastell-Reste,Kleinkastell-Reste (km 926),926.2,332,BY,49.086719,10.951103,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 927),927.4,585,BY,49.084739,10.970606,ja
-KASTELL,Römerkastell,Römerkastell (km 931),930.7,1509,BY,49.064075,10.987946,ja
+KASTELL,Kastell (rekonstruiert),Kastell (rekonstruiert) (km 931),930.7,1509,BY,49.064075,10.987946,ja
 KASTELL-R,Kastell-Reste,Kastell-Reste (km 940),940.4,383,BY,49.034257,11.052295,ja
 BURGUS,Burgus (röm. Wachposten),Burgus (röm. Wachposten) (km 943),943.2,122,BY,49.019259,11.076375,ja
-TURM,Wachturm-Nachbau,Wachturm-Nachbau (km 946),945.7,11,BY,49.022430,11.097792,ja
+TURM,Wachturm (rekonstruiert),Wachturm (rekonstruiert) (km 946),945.7,11,BY,49.022430,11.097792,ja
 KK-RESTE,Kleinkastell-Reste,Kleinkastell-Reste (km 946),946.5,153,BY,49.015891,11.105716,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 947),946.6,388,BY,49.014374,11.108233,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 950),950.1,691,BY,49.000691,11.125989,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 951),951.1,471,BY,48.994726,11.133495,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 952),952.1,239,BY,48.987319,11.143784,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 952),952.1,239,BY,48.987319,11.143784,ja
 KK-RESTE,Kleinkastell-Reste,Kleinkastell-Reste (km 952),952.2,500,BY,48.983664,11.150760,ja
-TURM,Wachturm-Nachbau,Wachturm-Nachbau (km 960),960.0,156,BY,48.978066,11.231760,ja
+TURM,Wachturm (rekonstruiert),Wachturm (rekonstruiert) (km 960),960.0,156,BY,48.978066,11.231760,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 962),961.7,680,BY,48.977476,11.243866,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 962),962.4,755,BY,48.976594,11.252873,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 963),962.7,928,BY,48.976144,11.265987,ja
 KK-RESTE,Kleinkastell-Reste,Kleinkastell-Reste (km 963),962.7,907,BY,48.975663,11.266362,ja
-KASTELL,Römerkastell,Römerkastell (km 963),963.4,8946,BY,48.883881,11.263878,nein (>2 km)
+KASTELL,Kastell (rekonstruiert),Kastell (rekonstruiert) (km 963),963.4,8946,BY,48.883881,11.263878,nein (>2 km)
 KK-RESTE,Kleinkastell-Reste,Kleinkastell-Reste (km 964),964.3,1073,BY,48.975805,11.270706,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 966),965.5,664,BY,48.975176,11.284537,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 973),973.0,43,BY,48.953969,11.363830,ja
 KASTELL-R,Kastell-Reste,Kastell-Reste (km 973),973.2,771,BY,48.946259,11.360176,ja
-TURM,Wachturm-Nachbau,Wachturm-Nachbau (km 974),974.0,30,BY,48.951025,11.376560,ja
+TURM,Wachturm (rekonstruiert),Wachturm (rekonstruiert) (km 974),974.0,30,BY,48.951025,11.376560,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 977),976.6,62,BY,48.948640,11.398908,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 978),977.8,16,BY,48.945210,11.414079,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 979),979.0,523,BY,48.941278,11.430507,ja
@@ -352,9 +352,9 @@ TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 1001),1001.2,627,BY,48.893301,11.642
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 1002),1001.6,738,BY,48.890792,11.645033,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 1010),1009.9,204,BY,48.884669,11.740555,ja
 TURMRESTE,Wachturm-Reste,Wachturm-Reste (km 1011),1010.6,303,BY,48.884386,11.749789,ja
-TURMGRUND,Wachturm-Fundament,Wachturm-Fundament (km 1011),1011.1,642,BY,48.883988,11.759369,ja
+TURMGRUND,Wachturm-Grundriss,Wachturm-Grundriss (km 1011),1011.1,642,BY,48.883988,11.759369,ja
 KK-RESTE,Kleinkastell-Reste,Kleinkastell-Reste (km 1012),1012.2,1083,BY,48.883451,11.769108,ja
-TURM,Wachturm-Nachbau,Wachturm-Nachbau (km 1013),1012.6,1166,BY,48.883520,11.773619,ja
+TURM,Wachturm (rekonstruiert),Wachturm (rekonstruiert) (km 1013),1012.6,1166,BY,48.883520,11.773619,ja
 KASTELL-R,Kastell-Reste,Kastell-Reste (km 1015),1014.9,455,BY,48.859251,11.776358,ja
-KASTELL,Römerkastell,Römerkastell (km 1016),1015.8,159,BY,48.849936,11.771135,ja
+KASTELL,Kastell (rekonstruiert),Kastell (rekonstruiert) (km 1016),1015.8,159,BY,48.849936,11.771135,ja
 PRAETORIA,Porta Praetoria (Römertor),Porta Praetoria (Römertor) (km 1076),1075.5,116,BY,49.019823,12.097356,ja

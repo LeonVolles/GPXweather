@@ -81,12 +81,12 @@ Der Routen-km ist die Position des nächstgelegenen Punkts auf dem Gesamttrack 2
 | Code | Neuer Name | Anzahl |
 |---|---|---|
 | TURMRESTE | Wachturm-Reste | 197 |
-| TURMGRUND | Wachturm-Fundament | 46 |
+| TURMGRUND | Wachturm-Grundriss | 46 |
 | KK-RESTE | Kleinkastell-Reste | 44 |
-| TURM | Wachturm-Nachbau | 16 |
+| TURM | Wachturm (rekonstruiert) | 16 |
 | KASTELL-R | Kastell-Reste | 16 |
-| KASTELL | Römerkastell | 14 |
-| K-KASTELL | Kastell-Standort | 12 |
+| KASTELL | Kastell (rekonstruiert) | 14 |
+| K-KASTELL | Kleinkastell (teilrekonstruiert) | 12 |
 | BAD | Römisches Bad | 4 |
 | INSCHRIFT | Römische Inschrift | 2 |
 | TURMAUSGR | Wachturm-Ausgrabung | 1 |
@@ -98,7 +98,7 @@ Der Routen-km ist die Position des nächstgelegenen Punkts auf dem Gesamttrack 2
 | BURGUS | Burgus (röm. Wachposten) | 1 |
 | PRAETORIA | Porta Praetoria (Römertor) | 1 |
 
-Nicht dokumentiert ist, was `TURM` und `K-KASTELL` bedeuten. Die `TURM`-Punkte liegen nach meinem Koordinatenabgleich an Orten bekannter Turm-Nachbauten (u. a. Hillscheid, Zugmantel, Lorch, Erkertshofen), deshalb „Wachturm-Nachbau“. Amtlich bestätigt ist diese Zuordnung nicht. Für `K-KASTELL` habe ich den neutralen Namen „Kastell-Standort“ gewählt.
+Die Namen folgen den Begriffserklärungen zur ASC-Datei: TURM = komplett rekonstruierter Limeswachturm, TURMGRUND = Grundriss erkennbar bzw. rekonstruiert, TURMRESTE = Schutthügel erkennbar, K-KASTELL = Kleinkastell mit rekonstruierten Mauerstücken, KK-RESTE = Kleinkastell als Erhebung erkennbar, KASTELL = ganz oder teilweise rekonstruiertes Erscheinungsbild, KASTELL-R = Reste oder Erhebung erkennbar. Die Erklärung steht bei jedem Wegpunkt auch in `<desc>`. Für die übrigen Codes (BAD, INSCHRIFT, OFEN usw.) gibt es keine Erklärung; ihre Namen sind wörtlich übersetzt.
 
 ### Weggelassen, weil mehr als 2 km von der Route entfernt (13)
 
@@ -106,17 +106,17 @@ Nicht dokumentiert ist, was `TURM` und `K-KASTELL` bedeuten. Die `TURM`-Punkte l
 |---|---|---|---|---|
 | TURMRESTE | Wachturm-Reste | 317 | 2,13 km | 50.35802, 7.76032 |
 | TURMRESTE | Wachturm-Reste | 621 | 4,22 km | 49.68813, 9.28754 |
-| TURMGRUND | Wachturm-Fundament | 633 | 3,96 km | 49.66990, 9.28869 |
+| TURMGRUND | Wachturm-Grundriss | 633 | 3,96 km | 49.66990, 9.28869 |
 | TURMRESTE | Wachturm-Reste | 633 | 3,43 km | 49.66423, 9.28900 |
 | TURMRESTE | Wachturm-Reste | 633 | 3,30 km | 49.65839, 9.29801 |
 | TURMRESTE | Wachturm-Reste | 633 | 3,20 km | 49.65469, 9.30206 |
-| K-KASTELL | Kastell-Standort | 638 | 2,23 km | 49.63354, 9.33059 |
+| K-KASTELL | Kleinkastell (teilrekonstruiert) | 638 | 2,23 km | 49.63354, 9.33059 |
 | TURMRESTE | Wachturm-Reste | 638 | 2,21 km | 49.63136, 9.33468 |
 | TURMRESTE | Wachturm-Reste | 639 | 2,09 km | 49.62747, 9.34002 |
 | TURMRESTE | Wachturm-Reste | 806 | 2,03 km | 48.83751, 9.94445 |
 | TURMRESTE | Wachturm-Reste | 806 | 2,06 km | 48.83849, 9.94932 |
 | TURMRESTE | Wachturm-Reste | 822 | 3,72 km | 48.86158, 10.04422 |
-| KASTELL | Römerkastell | 963 | 8,95 km | 48.88388, 11.26388 |
+| KASTELL | Kastell (rekonstruiert) | 963 | 8,95 km | 48.88388, 11.26388 |
 
 8 der 13 liegen im Odenwald zwischen km 620 und 639, wo der Radweg 2–4 km neben der Limeslinie verläuft. Am weitesten entfernt ist das Kastell bei Pfünz im Altmühltal (8,9 km).
 
