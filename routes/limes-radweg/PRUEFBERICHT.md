@@ -1,26 +1,47 @@
 # Prüfbericht Limes-Radweg-GPX
 
-Erstellt am 08.11.2026 aus den Originaldateien der Deutschen Limes-Straße und von EuroVelo.
+Erstellt am 09.11.2026 aus den Originaldateien von Nederland Fietsland, der Deutschen Limes-Straße und EuroVelo.
 
 ## Ausgabedateien
 
-- `limes-radweg_2026.gpx`: durchgehender Track Kleve – Passau (1.227,3 km), Stand 02/2026, plus 346 POIs als `<wpt>`.
-- `limes-radweg_2026_bis-wien.gpx`: derselbe Track, durchgehend weiter auf EuroVelo 6 bis Wien (1.539,2 km insgesamt), dieselben POIs.
+- `limes-radweg_katwijk-passau.gpx`: ein durchgehender Track Katwijk – Passau (1.452,4 km) mit Höhen und 346 POIs als `<wpt>`.
+- `limes-radweg_katwijk-wien.gpx`: derselbe Track, durchgehend weiter auf EuroVelo 6 bis Wien (1.764,3 km insgesamt), dieselben POIs.
 - `limes-poi.csv`: alle 359 POIs mit Typ, neuem Namen, Routen-km, Abstand und ob aufgenommen.
 
-**Höhen:** Die Originalhöhen sind unbrauchbar: 76 % der Punkte im Gesamttrack haben `ele = 0`, und echte Werte gibt es erst ab km 265. Außerdem liegt das Maximum bei nur 339 m, obwohl die Route im Taunus über 500 m erreicht. Deshalb habe ich die Höhe für jeden Trackpunkt neu aus dem Höhenmodell EU-DEM (25-m-Raster, über OpenTopoData) übernommen, auch auf der EuroVelo-Strecke.
+Aufbau des Tracks:
+
+| Abschnitt | Quelle | km von – bis |
+|---|---|---|
+| Niederländische Limesroute Katwijk – Berg en Dal | Nederland Fietsland (offizielle GPX) | 0 – 210,9 |
+| Verbindung Berg en Dal – Millingen/Grenze | BRouter (Profil trekking) | 210,9 – 225,1 |
+| Deutscher Limes-Radweg Grenze – Passau | Deutsche Limes-Straße, Stand 02/2026 | 225,1 – 1.452,4 |
+| EuroVelo 6 Passau – Wien (nur in der Wien-Datei) | EuroVelo | 1.452,4 – 1.764,3 |
+
+**Höhen:** Die Originalhöhen sind unbrauchbar: 76 % der Punkte im deutschen Gesamttrack haben `ele = 0`, und echte Werte gibt es erst ab DE-km 265. Außerdem liegt das Maximum bei nur 339 m, obwohl die Route im Taunus über 500 m erreicht. Deshalb habe ich die Höhe für jeden Trackpunkt neu aus dem Höhenmodell EU-DEM (25-m-Raster, über OpenTopoData) übernommen. Das gilt auch für die niederländische Strecke (dort waren alle Höhen 0) und für EuroVelo. In den Niederlanden liegen einige Polderabschnitte unter Meereshöhe.
 
 | Strecke | Anstieg | Abstieg | tiefster Punkt | höchster Punkt |
 |---|---|---|---|---|
-| Limes-Radweg Kleve – Passau | 12.115 m | 11.834 m | 11 m | 780 m |
+| Niederlande Katwijk – Berg en Dal | 328 m | 247 m | -5 m | 96 m |
+| Verbindung zur Grenze | 19 m | 90 m | 9 m | 95 m |
+| Deutschland Grenze – Passau | 12.115 m | 11.834 m | 11 m | 780 m |
+| Katwijk – Passau | 12.467 m | 12.177 m | -5 m | 780 m |
 | EuroVelo 6 Passau – Wien | 1.907 m | 2.035 m | 157 m | 312 m |
-| Gesamt bis Wien | 14.022 m | 13.869 m | 11 m | 780 m |
+| Katwijk – Wien | 14.374 m | 14.212 m | -5 m | 780 m |
 
 Die Werte für Anstieg und Abstieg zählen nur Höhenänderungen ab 3 m, damit kleines Rauschen im Höhenmodell nicht mitgezählt wird. Andere Apps rechnen mit anderen Schwellen und können deshalb etwas andere Summen zeigen. Trackpunkte ohne Höhe: 0.
 
-Ein doppelter Punkt (Abstand 0 m) wurde entfernt.
+Doppelte Punkte (Abstand 0 m) wurden entfernt: 1 im deutschen Track, 20 im niederländischen.
 
-## 1. Gesamttrack (02/2026) gegen Etappen (07/2023)
+## 1. Niederländische Limesroute
+
+- **Quelle:** offizielle GPX von [Nederland Fietsland](https://www.nederlandfietsland.nl/fietsroute/limesroute/), Route-ID 1972. Sie ist 210,9 km lang (die Website nennt 211 km), hat einen durchgehenden Track ohne Segmentbrüche und 3652 Punkte. Der größte Abstand zwischen zwei Punkten beträgt 700 m.
+- **Verlauf:** Katwijk aan Zee – Leiden – Woerden – Utrecht – Wijk bij Duurstede – Betuwe – Millingen. Danach führt die Route noch über Nijmegen (Valkhof, km 205) nach Berg en Dal (Museum Park Orientalis, km 210,9).
+- **Anschluss an den deutschen Track:** Der deutsche Track beginnt an der Grenze bei Millingen/Keeken. Die NL-Route kommt dort bei km 184,6 bis auf 700 m heran und macht danach die Schlussschleife über Nijmegen nach Berg en Dal. Damit Nijmegen nicht wegfällt, habe ich die NL-Route vollständig übernommen. Von Berg en Dal zum deutschen Startpunkt führt dann eine mit BRouter berechnete Verbindung über Wyler und Zyfflich (14,2 km). Sie nutzt andere Wege als die NL-Route; nur 0,4 km überschneiden sich. Wer Nijmegen auslassen will, kann in Millingen (km 184,6) direkt nach Deutschland weiterfahren und spart etwa 40 km.
+- **POIs:** Für den niederländischen Teil gibt es in den Daten der Limesstraße keine POIs.
+
+## 2. Deutscher Gesamttrack (02/2026) gegen Etappen (07/2023)
+
+In diesem Abschnitt zählen alle Kilometer ab der deutschen Grenze („DE-km“). Für den km-Wert ab Katwijk 225,1 km addieren.
 
 | Kennzahl | Wert |
 |---|---|
@@ -42,9 +63,9 @@ Die Längendifferenz von +1,41 km erklärt sich fast vollständig durch die Absc
 
 ### Alle abweichenden Abschnitte
 
-„Gesamt-km“ zählt ab Start des Gesamttracks, „Etappen-km“ ab Start der jeweiligen Landesetappe. Die Richtung sagt, wo die Route 2026 relativ zur Route 2023 liegt.
+„DE-km“ zählt ab der deutschen Grenze, „Etappen-km“ ab Start der jeweiligen Landesetappe. Die Richtung sagt, wo die Route 2026 relativ zur Route 2023 liegt.
 
-| Gesamt-km | Etappe (km) | Raum | Länge 2026 | Länge 2023 | Δ | max. Abstand | Lage 2026 |
+| DE-km | Etappe (km) | Raum | Länge 2026 | Länge 2023 | Δ | max. Abstand | Lage 2026 |
 |---|---|---|---|---|---|---|---|
 | 533,6–534,9 | HE 180,1–181,5 | Marköbel / Hammersbach | 1,25 km | 1,49 km | −238 m | 543 m | S |
 | 538,3–538,8 | HE 184,9–185,9 | südlich Marköbel | 0,59 km | 1,01 km | −420 m | 271 m | W |
@@ -82,11 +103,11 @@ Die Abschnitte bei km 538, 542, 1001, 1004, 1042 und 1057 weichen höchstens 271
 - **Weite Punktabstände:** 45 Stellen im Gesamttrack und 45 in den Etappen haben mehr als 500 m zwischen zwei Punkten (max. 954 m bei km 529). Sie liegen an denselben Stellen und sind gerade Wegstücke mit wenigen Stützpunkten, keine Lücken. Die Mitte jedes Sprungs liegt 0 m neben der Etappe. Die einzige Ausnahme ist km 983,8 (316 m), und die liegt im umgelegten Abschnitt bei Denkendorf.
 - **Abschnitte ohne Abdeckung über 500 m** (bei 50 m Toleranz): Das sind genau die umgelegten Abschnitte oben (km 533,6, km 538,3, km 983,4, km 989,4, km 1.001,5, km 1.014,9, km 1.018,5, km 1.025,0, km 1.031,3, km 1.051,8, km 1.056,7), zusammen 31,2 km.
 
-## 2. POIs
+## 3. POIs
 
-Quelle sind `Limes-RW-Waypoints.kml` und `.asc`. Beide enthalten dieselben 359 Punkte mit identischen Namen und Koordinaten. Die POIs liegen nur zwischen km 256 (Rheinbrohl) und km 1076 (Regensburg), also am Obergermanisch-Raetischen Limes. Für Niederrhein/NRW und für Regensburg – Passau gibt es keine POIs.
+Quelle sind `Limes-RW-Waypoints.kml` und `.asc`. Beide enthalten dieselben 359 Punkte mit identischen Namen und Koordinaten. Die POIs liegen nur zwischen km 481 (Rheinbrohl) und km 1301 (Regensburg), also am Obergermanisch-Raetischen Limes. Für die Niederlande, für Niederrhein/NRW und für Regensburg – Passau gibt es keine POIs.
 
-Der Routen-km ist die Position des nächstgelegenen Punkts auf dem Gesamttrack 2026.
+Der Routen-km in den POI-Namen zählt ab Katwijk. Er ist die Position des nächstgelegenen Punkts auf dem Track.
 
 | Code | Neuer Name | Anzahl |
 |---|---|---|
@@ -114,23 +135,23 @@ Die Namen folgen den Begriffserklärungen zur ASC-Datei: TURM = komplett rekonst
 
 | Typ | Name | nächster Routen-km | Abstand | Koordinaten |
 |---|---|---|---|---|
-| TURMRESTE | Wachturm-Reste | 317 | 2,13 km | 50.35802, 7.76032 |
-| TURMRESTE | Wachturm-Reste | 621 | 4,22 km | 49.68813, 9.28754 |
-| TURMGRUND | Wachturm-Grundriss | 633 | 3,96 km | 49.66990, 9.28869 |
-| TURMRESTE | Wachturm-Reste | 633 | 3,43 km | 49.66423, 9.28900 |
-| TURMRESTE | Wachturm-Reste | 633 | 3,30 km | 49.65839, 9.29801 |
-| TURMRESTE | Wachturm-Reste | 633 | 3,20 km | 49.65469, 9.30206 |
-| K-KASTELL | Kleinkastell (teilrekonstruiert) | 638 | 2,23 km | 49.63354, 9.33059 |
-| TURMRESTE | Wachturm-Reste | 638 | 2,21 km | 49.63136, 9.33468 |
-| TURMRESTE | Wachturm-Reste | 639 | 2,09 km | 49.62747, 9.34002 |
-| TURMRESTE | Wachturm-Reste | 806 | 2,03 km | 48.83751, 9.94445 |
-| TURMRESTE | Wachturm-Reste | 806 | 2,06 km | 48.83849, 9.94932 |
-| TURMRESTE | Wachturm-Reste | 822 | 3,72 km | 48.86158, 10.04422 |
-| KASTELL | Kastell (rekonstruiert) | 963 | 8,95 km | 48.88388, 11.26388 |
+| TURMRESTE | Wachturm-Reste | 542 | 2,13 km | 50.35802, 7.76032 |
+| TURMRESTE | Wachturm-Reste | 846 | 4,22 km | 49.68813, 9.28754 |
+| TURMGRUND | Wachturm-Grundriss | 858 | 3,96 km | 49.66990, 9.28869 |
+| TURMRESTE | Wachturm-Reste | 858 | 3,43 km | 49.66423, 9.28900 |
+| TURMRESTE | Wachturm-Reste | 859 | 3,30 km | 49.65839, 9.29801 |
+| TURMRESTE | Wachturm-Reste | 859 | 3,20 km | 49.65469, 9.30206 |
+| K-KASTELL | Kleinkastell (teilrekonstruiert) | 863 | 2,23 km | 49.63354, 9.33059 |
+| TURMRESTE | Wachturm-Reste | 863 | 2,21 km | 49.63136, 9.33468 |
+| TURMRESTE | Wachturm-Reste | 864 | 2,09 km | 49.62747, 9.34002 |
+| TURMRESTE | Wachturm-Reste | 1031 | 2,03 km | 48.83751, 9.94445 |
+| TURMRESTE | Wachturm-Reste | 1031 | 2,06 km | 48.83849, 9.94932 |
+| TURMRESTE | Wachturm-Reste | 1047 | 3,72 km | 48.86158, 10.04422 |
+| KASTELL | Kastell (rekonstruiert) | 1188 | 8,95 km | 48.88388, 11.26388 |
 
-8 der 13 liegen im Odenwald zwischen km 620 und 639, wo der Radweg 2–4 km neben der Limeslinie verläuft. Am weitesten entfernt ist das Kastell bei Pfünz im Altmühltal (8,9 km).
+8 der 13 liegen im Odenwald zwischen km 845 und 864, wo der Radweg 2–4 km neben der Limeslinie verläuft. Am weitesten entfernt ist das Kastell bei Pfünz im Altmühltal (8,9 km).
 
-## 3. EuroVelo 6 Passau – Wien
+## 4. EuroVelo 6 Passau – Wien
 
 Die EuroVelo-Datei enthält 13 Tracks: 01–07 sind die durchgehende Hauptroute, 08–13 sind Varianten am anderen Donauufer. Verwendet wurden 01–07 (311,9 km).
 
